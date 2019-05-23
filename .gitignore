@@ -1,0 +1,67 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.pdb
+
+# VStudio files
+*.ncb
+*.ncb
+*.aps
+*.opt
+*.clw
+*.plg
+*.mak
+*.suo
+*.sbr
+*.idb
+*.res
+*.ilk
+*.exp
+*.bsc
+*.sdf
+*.user
+*.manifest
+*.dep
+*.log
+*.tlog
+*.lastbuildstate
+*.ipch
+*.opensdf
+
+# Local files
+clear.cmd
+backup
+bin
+build
+support
+win
+test
