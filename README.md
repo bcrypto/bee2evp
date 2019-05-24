@@ -1,24 +1,22 @@
-Bee2evp: an engine for OpenSSL
-==============================
+Bee2evp: an OpenSSL engine
+==========================
 
 What is Bee2evp?
 ----------------
 
-Bee2evp is a cryptographic library which connects Bee2 (see 
-[github.com/agievich/bee2](https://github.com/agievich/bee2))
-with OpenSSL. Bee2evp provides cryptographic services using the EVP interface
-(see [wiki.openssl.org/index.php/EVP](https://wiki.openssl.org/index.php/EVP)).
-
-Bee2evp is organized as an OpenSSL engine.
+Bee2evp is a cryptographic library which encapsulates [Bee2](https://github.com/agievich/bee2)
+into [OpenSSL](openssl.org). Bee2evp provides cryptographic services using the 
+[EVP](https://wiki.openssl.org/index.php/EVP) interface. Bee2evp is organized 
+as an OpenSSL engine.
 
 Build
 -----
 ```
-  mkdir build
-  cd build
-  cmake [-DCMAKE_BUILD_TYPE={Release|Debug|Coverage|ASan|ASanDbg|MemSan|MemSanDbg|Check}] ..
-  make
-  [make install]
+mkdir build
+cd build
+cmake [-DCMAKE_BUILD_TYPE={Release|Debug|Coverage|ASan|ASanDbg|MemSan|MemSanDbg|Check}] ..
+make
+[make install]
 ```
 
 Build types (Release by default):
@@ -44,40 +42,40 @@ See instructions in [github.com/agievich/bee2](https://github.com/agievich/bee2)
 2. Unpack files into some directory, for example, `openssl-1.1.1`.
 3. Go to this directory.
 4. Run the following commands:
-```		
-    mkdir build
-    cd build
-    ../config 
-    make
-    make install
-```
+   ```		
+   mkdir build
+   cd build
+   ../config 
+   make
+   make install
+   ```
 
 By default, OpenSSL {headers|binaries|libraries} will be installed
 in the directory `/usr/local/{include|bin|lib}`.
 
 ### Configuring OpenSSL
 
-1. Rename `/usr/local/ssl/openssl.dist` -> `/usr/local/ssl/openssl.cnf`.
+1. Rename `/usr/local/ssl/openssl.conf.dist` -> `/usr/local/ssl/openssl.cnf`.
 2. Open `/usr/local/lib/openssl.cnf`.
 3. Add the following text (before the `[new_oids]` section):
+   ```
+   openssl_conf = openssl_init
+   [openssl_init]
+   engines = engine_section
+   [engine_section]
+   bee2evp = bee2evp_section
+   [bee2evp_section]
+   engine_id = bee2evp
+   dynamic_path = /usr/local/lib/libbee2evp.so
+   default_algorithms = ALL
+   ```
+4. Make sure that `LD_LIBRARY_PATH` includes `/usr/local/lib`.
+   
+### Listing the capabilities
+
 ```
-    openssl_conf = openssl_init
-
-    [openssl_init]
-    engines = engine_section
-
-    [engine_section]
-    bee2evp = bee2evp_section
-
-    [bee2evp_section]
-    engine_id = bee2evp
-    dynamic_path = /usr/local/lib/libbee2evp.so
-    default_algorithms = ALL
+openssl engine -c -t bee2evp
 ```
-
-### Using OpenSSL
-
-`/usr/local/bin/openssl`
 
 License
 -------

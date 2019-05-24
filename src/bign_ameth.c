@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2017.09.21
+\version 2019.05.24
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -361,7 +361,7 @@ static int evpBign_priv_decode(EVP_PKEY* pkey, const PKCS8_PRIV_KEY_INFO* p8)
 	if (!evpBign_pub_decode0(key, params_type, params))
 		goto err;
 	// проверить длину личного ключа
-	if (privkey_len != key->params->l / 4)
+	if (privkey_len * 4 != (int)key->params->l)
 		goto err;
 	// сохранить личный ключ
 	memCopy(key->privkey, privkey, privkey_len);
