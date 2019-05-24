@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2017.02.02
+\version 2019.05.24
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -478,7 +478,7 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		if (dctx->hash_nid != NID_undef)
 		{
 			md = EVP_get_digestbynid(p1);
-			if (params->l != EVP_MD_meth_get_result_size(md) * 4)
+			if ((int)params->l != EVP_MD_meth_get_result_size(md) * 4)
 				return 0;
 		}
 		dctx->params_nid = p1;
@@ -492,7 +492,7 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		{
 			evpBign_nid2params(params, dctx->params_nid);
 			// нарушена совместимость с params_nid?
-			if (params->l != EVP_MD_meth_get_result_size(md) * 4)
+			if ((int)params->l != EVP_MD_meth_get_result_size(md) * 4)
 				return 0;
 		}
 		dctx->hash_nid = p1;
@@ -537,7 +537,7 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		{
 			evpBign_nid2params(params, dctx->params_nid);
 			// нарушена совместимость с params_nid?
-			if (params->l != EVP_MD_meth_get_result_size(md) * 4)
+			if ((int)params->l != EVP_MD_meth_get_result_size(md) * 4)
 				return 0;
 		}
 		dctx->md = md;
