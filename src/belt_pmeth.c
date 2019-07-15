@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for belt-macXXX and belt-hmac (hmac-hbelt) keys
 \created 2014.09.16
-\version 2017.02.02
+\version 2019.07.15
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -154,6 +154,7 @@ static int evpBeltMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 
 static int evpBeltMAC128_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
+	EVP_PKEY* pkey;
 	switch (type)
 	{
 	case EVP_PKEY_CTRL_SET_MAC_KEY:
@@ -162,9 +163,9 @@ static int evpBeltMAC128_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 		beltMACStart(EVP_PKEY_CTX_get_data(ctx), (const octet*)p2, p1);
 		break;
 	case EVP_PKEY_CTRL_MD:
-		if (EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx), 
-				EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx)), beltMAC_keep());
+		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey), 
+				beltMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
 		break;
@@ -176,6 +177,7 @@ static int evpBeltMAC128_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 
 static int evpBeltMAC192_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
+	EVP_PKEY* pkey;
 	switch (type)
 	{
 	case EVP_PKEY_CTRL_SET_MAC_KEY:
@@ -184,9 +186,9 @@ static int evpBeltMAC192_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 		beltMACStart(EVP_PKEY_CTX_get_data(ctx), (const octet*)p2, p1);
 		break;
 	case EVP_PKEY_CTRL_MD:
-		if (EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx), 
-				EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx)), beltMAC_keep());
+		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey), 
+				beltMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
 		break;
@@ -198,6 +200,7 @@ static int evpBeltMAC192_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 
 static int evpBeltMAC256_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
+	EVP_PKEY* pkey;
 	switch (type)
 	{
 	case EVP_PKEY_CTRL_SET_MAC_KEY:
@@ -206,9 +209,9 @@ static int evpBeltMAC256_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 		beltMACStart(EVP_PKEY_CTX_get_data(ctx), (const octet*)p2, p1);
 		break;
 	case EVP_PKEY_CTRL_MD:
-		if (EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx), 
-				EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx)), beltMAC_keep());
+		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey), 
+				beltMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
 		break;
@@ -385,6 +388,7 @@ static int evpBeltHMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 
 static int evpBeltHMAC_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
+	EVP_PKEY* pkey;
 	switch (type)
 	{
 	case EVP_PKEY_CTRL_SET_MAC_KEY:
@@ -393,9 +397,9 @@ static int evpBeltHMAC_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		beltHMACStart(EVP_PKEY_CTX_get_data(ctx), (const octet*)p2, (size_t)p1);
 		break;
 	case EVP_PKEY_CTRL_MD:
-		if (EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx), 
-				EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx)), beltHMAC_keep());
+		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey),
+				beltHMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltHMAC_keep());
 		break;

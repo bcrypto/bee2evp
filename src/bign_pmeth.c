@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2019.05.24
+\version 2019.07.15
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -144,14 +144,17 @@ static int evpBign_pkey_init(EVP_PKEY_CTX* ctx)
 
 static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, EVP_PKEY_CTX* src)
 {
-	bign_pkey_ctx* dctx;
 	bign_pkey_ctx* sctx;
+	bign_pkey_ctx* dctx;
 	// инициализировать контекст
 	if (!evpBign_pkey_init(dst))
 		return 0;
-	// переписать поля
-   	sctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(src);
+	// разобрать указатели
+	sctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(src);
 	dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(dst);
+	ASSERT(memIsValid(sctx, sizeof(bign_pkey_ctx)));
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
+	// переписать поля
 	dctx->params_nid = sctx->params_nid;
 	dctx->hash_nid = sctx->hash_nid;
 	dctx->flags = sctx->flags;
@@ -173,6 +176,7 @@ static void evpBign_pkey_cleanup(EVP_PKEY_CTX* ctx)
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	if (dctx)
 	{
+		ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
 		blobClose(dctx->kdf_ukm);
 		blobClose(dctx);
 	}
@@ -182,6 +186,8 @@ static int evpBign_pkey_paramgen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	bign_key* key;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
 	// идентификатор параметров не задан?
 	if (dctx->params_nid == NID_undef)
 		return 0;
@@ -206,23 +212,26 @@ static int evpBign_pkey_paramgen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
+	EVP_PKEY* ctx_pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 	bign_key* key;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
 	// генератор не работает? 
 	if (!rngIsValid())
 		return 0;
 	// параметры могут передаваться либо в ctx->pkey (при чтении их из файла),
 	// либо в dctx->params_nid (при задании через ctrl-вызовы)
 	// ключ не создан и не задан идентификатор параметров?
-	if (!EVP_PKEY_CTX_get0_pkey(ctx) && !dctx->params_nid)
+	if (!ctx_pkey && !dctx->params_nid)
 		return 0;
 	// создать ключ
 	key = (bign_key*)blobCreate(sizeof(bign_key));
 	if (!key)
 		return 0;
 	// ключ уже есть в контексте
-	if (EVP_PKEY_CTX_get0_pkey(ctx))
+	if (ctx_pkey)
 	{
-		bign_key* old_key = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
+		bign_key* old_key = (bign_key*)EVP_PKEY_get0(ctx_pkey);
 		if (!old_key)
 		{
 			blobClose(key);
@@ -266,11 +275,17 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
-	bign_key* key = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
+	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+	bign_key* key;
 	const ASN1_OBJECT* obj;
 	octet* der;
 	size_t der_len;
 	int ret;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
+	ASSERT(pkey);
+	key = (bign_key*)EVP_PKEY_get0(pkey);
+	ASSERT(memIsValid(key, sizeof(bign_key)));
 	// подготовить возврат подписи
 	if (!sig)
 	{
@@ -312,11 +327,17 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	size_t siglen, const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
-	bign_key* key = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
+	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+	bign_key* key;
 	const ASN1_OBJECT* obj;
 	octet* der;
 	size_t der_len;
 	int ret;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
+	ASSERT(pkey);
+	key = (bign_key*)EVP_PKEY_get0(pkey);
+	ASSERT(memIsValid(dctx, sizeof(bign_key)));
 	// проверить длину подписи
 	if (siglen != key->params->l / 8 * 3)
 		return 0;
@@ -353,7 +374,12 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out, size_t* outlen,
 	const octet* in, size_t inlen)
 {
-	bign_key* key = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
+	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+	bign_key* key;
+	// разобрать указатели
+	ASSERT(pkey);
+	key = (bign_key*)EVP_PKEY_get0(pkey);
+	ASSERT(memIsValid(key, sizeof(bign_key)));
 	// контроль входных данных и генератора
 	if (inlen < 16 || !outlen || !rngIsValid())
 		return 0;
@@ -366,10 +392,15 @@ static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out, size_t* outlen,
 		rngStepR, 0) == ERR_OK;
 }
 
-static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx,
-	octet* out, size_t* outlen, const octet* in, size_t inlen)
+static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx, octet* out, size_t* outlen,
+	const octet* in, size_t inlen)
 {
-	bign_key* key = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
+	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+	bign_key* key;
+	// разобрать указатели
+	ASSERT(pkey);
+	key = (bign_key*)EVP_PKEY_get0(pkey);
+	ASSERT(memIsValid(key, sizeof(bign_key)));
 	// контроль входных данных
 	if (inlen < 16 + 16 + key->params->l / 4 || !outlen)
 		return 0;
@@ -390,18 +421,21 @@ static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx,
 
 static int evpBign_pkey_derive(EVP_PKEY_CTX* ctx, octet* key, size_t* key_len)
 {
+	EVP_PKEY* mypkey = EVP_PKEY_CTX_get0_pkey(ctx);
+	EVP_PKEY* peerpkey = EVP_PKEY_CTX_get0_peerkey(ctx);
 	bign_key* mykey;
 	bign_key* peerkey;
 	// установлены свой и чужой ключи?
-	if (!EVP_PKEY_CTX_get0_pkey(ctx) || !EVP_PKEY_CTX_get0_peerkey(ctx))
+	if (!mypkey || !peerpkey)
 		return 0;
 	// однотипные ключи? с одинаковыми параметрами?
-	if (EVP_PKEY_cmp(EVP_PKEY_CTX_get0_pkey(ctx), 
-		EVP_PKEY_CTX_get0_peerkey(ctx)))
+	if (EVP_PKEY_cmp(mypkey, peerpkey))
 		return 0;
 	// разобрать ключи
-	mykey = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_pkey(ctx));
-	peerkey = (bign_key*)EVP_PKEY_get0(EVP_PKEY_CTX_get0_peerkey(ctx));
+	mykey = (bign_key*)EVP_PKEY_get0(mypkey);
+	peerkey = (bign_key*)EVP_PKEY_get0(peerpkey);
+	ASSERT(memIsValid(mykey, sizeof(bign_key)));
+	ASSERT(memIsValid(peerkey, sizeof(bign_key)));
 	// возвратить максимальную длину ключа?
 	if (!key)
 	{
@@ -421,6 +455,8 @@ static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key,
 	octet* secret;
 	size_t secret_len;
 	err_t code;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
 	// без bake-kdf?
 	if ((dctx->flags & EVP_BIGN_PKEY_KDF_BAKE) == 0)
 		return evpBign_pkey_derive(ctx, key, keylen);
@@ -468,6 +504,8 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	bign_params params[1];
 	const EVP_MD* md;
+	// разобрать указатели
+	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
 	// обработать управляющий код
 	switch (type)
 	{

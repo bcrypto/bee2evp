@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2016.09.21
+\version 2019.07.15
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -36,13 +36,14 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 то функция EVP_CIPHER::init не обязана настраивать синхропосылку 
 в режимах CFB, CBC, CTR --- за нее это делает среда OpenSSL 
 (см. crypto/evp/evp_enc.c::EVP_CipherInit_ex). 
-Настройка в режимах CFB, OFB и CBC:
+Настройка в режимах CFB, OFB и CBC (evpBeltXXX_init):
 \code
-	if(iv) 
+	if (iv)
 		memcpy(EVP_CIPHER_CTX_original_iv(ctx), 
 			iv, EVP_CIPHER_CTX_iv_length(ctx));
-	memcpy(EVP_CIPHER_CTX_iv(ctx), EVP_CIPHER_CTX_original_iv(ctx), 
-		EVP_CIPHER_CTX_iv_length(ctx));
+	if (key)
+		memcpy(EVP_CIPHER_CTX_iv(ctx), EVP_CIPHER_CTX_original_iv(ctx), 
+			EVP_CIPHER_CTX_iv_length(ctx));
 \endcode
 
 \remark Если в EVP_CIPHER::flags не установлен флаг EVP_CIPH_ALWAYS_CALL_INIT,
@@ -272,12 +273,8 @@ static int evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	const octet* iv, int enc)
 {
 	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-//	if (iv)
-//		memCopy(EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
-//		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx), 
-//			EVP_CIPHER_CTX_original_iv(ctx), 16);
 		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx), 
 			EVP_CIPHER_CTX_iv(ctx));
 	}
@@ -371,12 +368,8 @@ static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	const octet* iv, int enc)
 {
 	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-//	if (iv)
-//		memCopy(EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
-//		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx), 
-//			EVP_CIPHER_CTX_original_iv(ctx), 16);
 		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx), 
 			EVP_CIPHER_CTX_iv(ctx));
 	}
