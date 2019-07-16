@@ -11,30 +11,16 @@
 
 import subprocess
 import os
-import locale
-import settings
-from os.path import expanduser
-
-home = expanduser("~")
 
 os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
+OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
 
-encoding = locale.getdefaultlocale()[1]
-
-def openssl_call(cmd):
+def openssl(cmd):
     print('openssl ' + cmd)
-    p = subprocess.Popen(settings.OPENSSL_EXE_PATH + ' ' + cmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         stdin=subprocess.PIPE,
-                         shell=True)
+    p = subprocess.Popen(OPENSSL_EXE_PATH + ' ' + cmd,
+                         stdout = subprocess.PIPE,
+                         stderr = subprocess.PIPE,
+                         stdin = subprocess.PIPE,
+                         shell = True)
     out, err_out = p.communicate()
-
-    retcode = p.poll()
-    if retcode:
-        err_out = err_out.decode(encoding)
-        print(err_out)
-        raise RuntimeError('Openssl call fails with status %s' % retcode)
-    out = out.decode(encoding)
-    print(out)
-    return out
+    return p.poll()

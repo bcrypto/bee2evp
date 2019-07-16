@@ -1,7 +1,7 @@
 # *****************************************************************************
-# \file settings.py
+# \file test.py
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
-# \brief Python settings for openssl
+# \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
 # \version 2019.07.16
 # \license This program is released under the GNU General Public License 
@@ -9,9 +9,14 @@
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 # *****************************************************************************
 
-from os.path import expanduser
+from openssl import openssl
 
-home = expanduser("~")
+def test_version():
+    assert openssl('version') == 0
 
-OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
+def test_engine():
+	assert openssl('engine -c -t bee2evp') == 0
 
+if __name__ == '__main__':
+    test_version()
+    test_engine()

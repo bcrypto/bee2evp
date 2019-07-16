@@ -46,4 +46,4 @@ script:
   - make
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../test
-  - python test_openssl.py
+  - python test.py
