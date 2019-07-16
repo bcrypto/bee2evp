@@ -12,12 +12,8 @@
 import subprocess
 import os
 import locale
-from termcolor import colored
 import settings
-from colorama import init
 from os.path import expanduser
-
-init()
 
 home = expanduser("~")
 
@@ -25,10 +21,8 @@ os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
 
 encoding = locale.getdefaultlocale()[1]
 
-OPENSSL_OUTPUT_COLOR = 'magenta'
-
 def openssl_call(cmd):
-    print(colored('openssl ' + cmd, 'green'))
+    print('openssl ' + cmd)
     p = subprocess.Popen(settings.OPENSSL_EXE_PATH + ' ' + cmd,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
@@ -39,8 +33,8 @@ def openssl_call(cmd):
     retcode = p.poll()
     if retcode:
         err_out = err_out.decode(encoding)
-        print(colored(err_out, 'red', 'on_grey'))
+        print(err_out)
         raise RuntimeError('Openssl call fails with status %s' % retcode)
     out = out.decode(encoding)
-    print(colored(out, OPENSSL_OUTPUT_COLOR))
+    print(out)
     return out

@@ -3,10 +3,6 @@ sudo: required
 dist: xenial
 os: linux
 
-language: python
-python:
-  - "3.6"
-
 env:
   global:
     - OPENSSL_BRANCH=OpenSSL_1_1_1-stable
@@ -17,9 +13,6 @@ matrix:
   include:
   - os: linux
     compiler: gcc
-
-install: 
-  - sudo pip install -r ./test/requirements.txt
 
 before_script:
   - cd ..
