@@ -12,11 +12,10 @@
 from openssl import openssl_call as _
 
 def test_version():
-    assert(_('version') == 0)
-    _('engine -c -t bee2evp')
+    assert _('version') == 0
 
 def test_engine():
-	assert(_('engine -c -t bee2evp') == 0)
+	assert _('engine -c -t bee2evp') == 0
 
 if __name__ == '__main__':
     test_version()
