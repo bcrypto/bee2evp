@@ -14,6 +14,9 @@
 *.la
 *.lo
 
+# Python files
+*.pyc
+
 # Shared objects (inc. Windows DLLs)
 *.dll
 *.so
