@@ -3,6 +3,10 @@ sudo: required
 dist: xenial
 os: linux
 
+language: python
+python:
+  - "3.6"
+
 env:
   global:
     - OPENSSL_BRANCH=OpenSSL_1_1_1-stable
@@ -15,7 +19,7 @@ matrix:
     compiler: gcc
 
 install: 
-  - pip install -r ./test/requirements.txt
+  - sudo pip install -r ./test/requirements.txt
 
 before_script:
   - cd ..
@@ -50,4 +54,3 @@ script:
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../test
   - python test_openssl.py
-
