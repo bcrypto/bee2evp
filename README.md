@@ -1,6 +1,8 @@
 Bee2evp: an OpenSSL engine
 ==========================
 
+[![Build Status](https://travis-ci.org/bcrypto/bee2evp.svg?branch=master)](https://travis-ci.org/bcrypto/bee2evp)
+
 What is Bee2evp?
 ----------------
 
