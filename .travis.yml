@@ -15,6 +15,7 @@ matrix:
     compiler: gcc
 
 before_script:
+  - cd ..
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
   - mkdir build
@@ -46,7 +47,8 @@ script:
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
 
 language: python
-cache: pip
+install: 
+  - pip install -r ./test/requirements.txt
 
 after_script:
   - cd ../test
