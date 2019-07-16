@@ -14,6 +14,9 @@ matrix:
   - os: linux
     compiler: gcc
 
+install: 
+  - pip install -r ./test/requirements.txt
+
 before_script:
   - cd ..
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
@@ -45,11 +48,6 @@ script:
   - cmake .. 
   - make
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
-
-language: python
-install: 
-  - pip install -r ./test/requirements.txt
-
-after_script:
   - cd ../test
   - python test_openssl.py
+
