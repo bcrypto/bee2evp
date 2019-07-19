@@ -49,18 +49,15 @@ script:
   - export LD_LIBRARY_PATH="${PREFIX}/lib:${LD_LIBRARY_PATH:-}"
   - mkdir build
   - cd build
-  - cmake .. 
+  - cmake -DCMAKE_BUILD_TYPE=Coverage .. 
   - make
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
-  - cd ../test
+  - cp ../test/. .
   - python test.py
-  - cd ../build
 
 after_success:
   - lcov -c -i -d src -o coverage_base.info
-  - cd ../test
   - python test.py
-  - cd ../build
   - lcov -c -d src -o coverage_test.info
   - lcov -a coverage_base.info -a coverage_test.info -o coverage.info
   - bash <(curl -s https://codecov.io/bash) -f coverage.info
