@@ -58,7 +58,7 @@ in the directory `/usr/local/{include|bin|lib}`.
 
 ### Configuring OpenSSL
 
-1. Rename `/usr/local/ssl/openssl.conf.dist` -> `/usr/local/ssl/openssl.cnf`.
+1. Rename `/usr/local/ssl/openssl.cnf.dist` -> `/usr/local/lib/openssl.cnf`.
 2. Open `/usr/local/lib/openssl.cnf`.
 3. Add the following text (before the `[new_oids]` section):
    ```

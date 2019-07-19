@@ -3,7 +3,7 @@
 \file info.h
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Common info
-\created 2013.04.01
+\created 2012.04.01
 \version 2019.05.23
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
@@ -25,19 +25,19 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #define BEE2EVP_NAME			"Bee2evp"
 #define BEE2EVP_VERSION_MAJOR	"1"
 #define BEE2EVP_VERSION_MINOR 	"0"
-#define BEE2EVP_VERSION_PATCH	"3"
+#define BEE2EVP_VERSION_PATCH	"4"
 
 #define BEE2EVP_VERSION\
 		BEE2EVP_VERSION_MAJOR "." BEE2EVP_VERSION_MINOR "." BEE2EVP_VERSION_PATCH
 
 #define BEE2EVP_VERSION_NUM\
-		1, 0, 3
+		1, 0, 4
 
 /*!
 *******************************************************************************
 \mainpage Криптографический плагин Bee2evp для OpenSSL
 
-\version 1.0.3
+\version 1.0.4
 
 \section toc Содержание
 
