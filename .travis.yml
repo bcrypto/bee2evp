@@ -52,7 +52,7 @@ script:
   - cmake -DCMAKE_BUILD_TYPE=Coverage .. 
   - make
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
-  - cp ../test/. .
+  - cp -a ../test/. .
   - python test.py
 
 after_success:
