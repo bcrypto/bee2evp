@@ -8,6 +8,7 @@ env:
     - OPENSSL_BRANCH=OpenSSL_1_1_1-stable
     - BEE2_BRANCH=master
     - PREFIX=/usr/local
+    - CODECOV_TOKEN="14692d3c-1602-496f-8bb4-24797238978d"
 
 branches:
   only:
