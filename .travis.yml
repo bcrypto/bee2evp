@@ -29,7 +29,7 @@ before_script:
   - cd build
   - ../config shared -d --prefix=${PREFIX} --openssldir=${PREFIX}
   - make -j$(nproc) all 
-  - sudo make install_sw > build.log 2>&1 || (cat build.log && exit 1)
+  - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - sudo mv ${PREFIX}/openssl.cnf.dist ${PREFIX}/openssl.cnf
   - sudo sed -i '/\[ new\_oids\ ]/i openssl_conf = openssl_init\n[ openssl_init ]\nengines = engine_section\n[ engine_section ]\nbee2evp = bee2evp_section\n[ bee2evp_section ]\nengine_id = bee2evp\ndynamic_path = /usr/local/lib/libbee2evp.so\ndefault_algorithms = ALL' ${PREFIX}/openssl.cnf
   - cd ..
