@@ -2,6 +2,7 @@ Bee2evp: an OpenSSL engine
 ==========================
 
 [![Build Status](https://travis-ci.org/bcrypto/bee2evp.svg?branch=master)](https://travis-ci.org/bcrypto/bee2evp)
+[![Coverage Analysis](https://codecov.io/gh/bcrypto/bee2evp/coverage.svg?branch=master)](https://codecov.io/gh/bcrypto/bee2evp?branch=master)
 
 What is Bee2evp?
 ----------------

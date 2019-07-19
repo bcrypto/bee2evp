@@ -1,7 +1,7 @@
 language: c
-sudo: required
-dist: xenial
 os: linux
+dist: xenial
+sudo: required
 
 env:
   global:
@@ -9,10 +9,16 @@ env:
     - BEE2_BRANCH=master
     - PREFIX=/usr/local
 
+branches:
+  only:
+  - master
+
 matrix:
   include:
-  - os: linux
-    compiler: gcc
+  - compiler: gcc
+
+install:
+  - sudo apt-get install -y lcov
 
 before_script:
   - cd ..
@@ -47,3 +53,13 @@ script:
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../test
   - python test.py
+  - cd ../build
+
+after_success:
+  - lcov -c -i -d src -o coverage_base.info
+  - cd ../test
+  - python test.py
+  - cd ../build
+  - lcov -c -d src -o coverage_test.info
+  - lcov -a coverage_base.info -a coverage_test.info -o coverage.info
+  - bash <(curl -s https://codecov.io/bash) -f coverage.info
