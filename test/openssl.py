@@ -15,14 +15,15 @@ import os
 os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
 OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
 
-def openssl(cmd, echo = False):
+def openssl(cmd, prefix='', echo = False):
 	if echo:
-		print('openssl ' + cmd)
-	p = subprocess.Popen(OPENSSL_EXE_PATH + ' ' + cmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         stdin=subprocess.PIPE,
-                         shell=True)
+		print(prefix + ' ' + cmd)
+	p = subprocess.Popen(prefix + ' ' + OPENSSL_EXE_PATH + ' ' + cmd,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					stdin=subprocess.PIPE,
+					shell=True)
+
 	out, err_out = p.communicate()
 	retcode = p.poll()
 	return retcode, out, err_out
