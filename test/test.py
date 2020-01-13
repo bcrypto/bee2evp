@@ -10,8 +10,7 @@
 # *****************************************************************************
 
 from openssl import openssl
-from belt import Belt_test
-from test_
+from belt import *
 
 def test_version():
 	retcode, out, __ = openssl('version', True)
@@ -105,6 +104,6 @@ def test_belt():
 if __name__ == '__main__':
 	test_version()
 	test_engine()
-	test_belt()
+	#test_belt()
 
 	
