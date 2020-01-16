@@ -17,7 +17,7 @@ OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
 
 def openssl(cmd, prefix='', echo = False):
 	if echo:
-		print(prefix + ' ' + cmd)
+		print(prefix + ' ' + OPENSSL_EXE_PATH + ' ' + cmd)
 	p = subprocess.Popen(prefix + ' ' + OPENSSL_EXE_PATH + ' ' + cmd,
 					stdout=subprocess.PIPE,
 					stderr=subprocess.PIPE,
