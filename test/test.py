@@ -26,10 +26,10 @@ def test_belt():
 
 	#Block (|X| = 128)
 	#A.1 Encrypt
-	block = 'b194bac80a08f53b366d008e584a5de4'.decode('hex')
-	key = ('e9dee72c8f0c0fa62ddb49f46f739647' + '06075316ed247a3739cba38303a98bf6').decode('hex')
+	block = hex_decoder('b194bac80a08f53b366d008e584a5de4')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647' + '06075316ed247a3739cba38303a98bf6')[0]
 	block = beltBlockEncr(bytes(block), bytes(key))
-	assert hex_encoder(block)[0].encode() == '69cca1c93557c9e3d66bc3e0fa88fa6e'
+	assert hex_encoder(block)[0].decode() == '69cca1c93557c9e3d66bc3e0fa88fa6e'
 
 	'''#A.4 Decrypt
 	block = 'e12bdc1ae28257ec703fccf095ee8df1'.decode('hex')

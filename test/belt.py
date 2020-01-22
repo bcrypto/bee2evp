@@ -11,8 +11,8 @@ b64_decoder = codecs.getdecoder('base64')
 def beltBlockEncr(block, key):
 	assert len(block) * 8 == 128
 
-	plain = b64_encoder(block)[0]
-	key = hex_encoder(key)[0]
+	plain = b64_encoder(block)[0].encode()
+	key = hex_encoder(key)[0].encode()
 	key_bitlen = len(key) * 4
 
 	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | python -m base64 -d |'
@@ -24,8 +24,8 @@ def beltBlockEncr(block, key):
 def beltBlockDecr(block, key):
 	assert len(block) * 8 == 128
 
-	plain = block.encode('base64')
-	key = key.encode('hex')
+	plain = block.encode('base64').encode()
+	key = key.encode('hex').encode()
 	key_bitlen = len(key) * 4
 
 	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | ' + OPENSSL_EXE_PATH + ' enc -d -base64 |'
