@@ -1,18 +1,25 @@
 from openssl import openssl, OPENSSL_EXE_PATH
+import codecs
 
 ECHO_EXE_PATH = '/bin/echo'
+
+hex_encoder = codecs.getencoder('hex')
+b64_encoder = codecs.getencoder('base64')
+hex_decoder = codecs.getdecoder('hex')
+b64_decoder = codecs.getdecoder('base64')
 
 def beltBlockEncr(block, key):
 	assert len(block) * 8 == 128
 
-	plain = block.encode('base64')
-	key = key.encode('hex')
+	plain = b64_encoder(block)[0]
+	key = hex_encoder(key)[0]
 	key_bitlen = len(key) * 4
 
 	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | ' + OPENSSL_EXE_PATH + ' enc -d -base64 |'
-	cmd = 'enc -e -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
+	cmd = 'enc -e -belt-ecb{} -nosalt -nopad -e -K {}'.format(key_bitlen, key)
 	retcode, block, er__ = openssl(cmd, prefix, True)
 	return block
+
 
 def beltBlockDecr(block, key):
 	assert len(block) * 8 == 128
@@ -136,8 +143,8 @@ def beltMAC(src, key):
 	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | ' + OPENSSL_EXE_PATH + ' enc -d -base64 |'
 	cmd = 'dgst -mac belt-mac{} -macopt hexkey:{}'.format(256, key)
 	retcode, out, er__ = openssl(cmd, prefix, True)
-	mac = bytes((out.split(' ')[1][:-1]).decode('hex'))
-	return mac
+	mac = out.split(' ')[1][:-1]
+	return bytes(mac.decode('hex'))
 	
 def beltHash(src):
 	plain = src.encode('base64')
@@ -145,5 +152,8 @@ def beltHash(src):
 	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | ' + OPENSSL_EXE_PATH + ' enc -d -base64 |'
 	cmd = 'dgst -belt-hash'.format()
 	retcode, out, er__ = openssl(cmd, prefix, True)
-	hash_ = bytes((out.split(' ')[1][:-1]).decode('hex'))
-	return hash_
+	hash_ = out.split(' ')[1][:-1]
+	return bytes(hash_.decode('hex'))
+
+
+
