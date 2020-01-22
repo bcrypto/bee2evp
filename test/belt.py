@@ -1,4 +1,4 @@
-from openssl import openssl, OPENSSL_EXE_PATH
+from openssl import openssl
 import codecs
 
 ECHO_EXE_PATH = '/bin/echo'
@@ -15,7 +15,7 @@ def beltBlockEncr(block, key):
 	key = hex_encoder(key)[0]
 	key_bitlen = len(key) * 4
 
-	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | ' + OPENSSL_EXE_PATH + ' enc -d -base64 |'
+	prefix = ECHO_EXE_PATH + ' ' + plain[:-1] + ' | python -m base64 -d |'
 	cmd = 'enc -e -belt-ecb{} -nosalt -nopad -e -K {}'.format(key_bitlen, key)
 	retcode, block, er__ = openssl(cmd, prefix, True)
 	return block
