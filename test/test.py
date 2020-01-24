@@ -18,7 +18,8 @@ def test_version():
 	print(out)
 
 def test_engine():
-	retcode, out, __ = openssl('engine -c -t bee2evp', '', True)
+	retcode, out, er__ = openssl('engine -c -t bee2evp', '', True)
+	print(er__)
 	assert retcode == 0
 	print(out)
 
@@ -101,10 +102,16 @@ def test_belt():
 	hash_ = beltHash(bytes(src))
 	assert hex_encoder(hash_)[0].decode()  == ('749e4c3653aece5e48db4761227742eb' + '6dbe13f4a80f7beff1a9cf8d10ee7786')
 
+def test_bign():
+	#Gen key pair
+	retcode, out, er__ = openssl('pkey -inform PEM -in priv.pem -pubout -text_pub', '', True)
+	pub_key = out.split('Pubkey:  ')[1][:-1]
+	assert pub_key == 'bd1a5650179d79e03fcee49d4c2bd5ddf54ce46d0cf11e4ff87bf7a890857fd07ac6a60361e8c8173491686d461b2826190c2eda5909054a9ab84d2ab9d99a90'
 
 if __name__ == '__main__':
 	test_version()
 	test_engine()
 	test_belt()
+	test_bign()
 
 	
