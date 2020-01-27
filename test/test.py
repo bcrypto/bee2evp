@@ -11,6 +11,7 @@
 
 from openssl import openssl
 from belt import *
+from settings import *
 
 def test_version():
 	retcode, out, __ = openssl('version', '', True)

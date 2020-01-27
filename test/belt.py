@@ -1,10 +1,5 @@
 from openssl import openssl
-import codecs
-
-hex_encoder = codecs.getencoder('hex')
-b64_encoder = codecs.getencoder('base64')
-hex_decoder = codecs.getdecoder('hex')
-b64_decoder = codecs.getdecoder('base64')
+from settings import *
 
 def beltBlockEncr(block, key):
 	assert len(block) * 8 == 128
