@@ -120,7 +120,7 @@ def beltCTREncr(src, key, iv):
 	retcode, dest, er__ = openssl(cmd, prefix, True)
 	return dest
 
-def beltCTRDecr(right_plain_msg, right_enc_msg, key, msg_len, iv):
+def beltCTRDecr(src, key, iv):
 	assert (len(src) * 8) % 128 == 0
 
 	plain = b64_encoder(src)[0].encode()
