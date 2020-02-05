@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2017.09.22
+\version 2020.02.05
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -505,8 +505,6 @@ const EVP_PKEY_ASN1_METHOD* evpBeltHMAC_ameth();
 строковые команды:
 -	params --- долговременные параметры (bign-curve256v1, bign-curve384v1
 	или bign-curve512v1);
--	hash --- алгоритм хэширования, который будет использоваться
-	с алгоритмами ЭЦП (belt-hash, bash256, bash384, bash512 и др.);
 -	enc_params --- опции кодирования стандартных долговременных
 	параметров в DomainParameters (specified -- обязательное явное 
 	кодирование, cofactor -- при явном кодировании указывается кофактор);
@@ -523,8 +521,13 @@ const EVP_PKEY_ASN1_METHOD* evpBeltHMAC_ameth();
 		-pkeyopt params:bign-curve256v1\
 		-pkeyopt enc_params:specified\
 		-pkeyopt enc_params:cofactor\
-		-pkeyopt sig:deterministic\
-		-pkeyopt hash:bash256
+        -out privkey.pem
+
+    openssl dgst\
+        -sign privkey.pem\
+        -pkeyopt sig:deterministic\
+		-pkeyopt hash:sha256\
+        file_to_sign
 \endcode
 
 Алгоритмы bign подключаются как методы ключа, через структуру EVP_PKEY_METHOD.
@@ -650,38 +653,64 @@ int evpBign_pkey_set_params(
 	int params_nid				/*!< [in] идентификатор параметров */
 );
 
-/*!	\brief Установить алгоритм хэширования 
+/*!	\brief Установить флаги кодирования bign
 
-	В ctx устанавливается алгоритм хэширования hash_nid, который следует
-	использовать с алгоритмами ЭЦП.
-	\return Признак успеха (<= 0 в случае ошибки).
-	\remark Проверяется совместимость hash_nid с параметрами params_nid, 
-	установленными через evpBign_pkey_set_params(). 
-	При нарушении совместимости возвращается 0.
-*/
-int evpBign_pkey_set_hash(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключа */
-	int hash_nid				/*!< [in] идентификатор хэш-алгоритма */
-);
-
-/*!	\brief Установить флаги ключей bign 
-
-	В ctx устанавливаются флаги flags ключей bign.
+	В ctx устанавливаются флаги кодирования flags ключей параметров bign.
 	\return Признак успеха (<= 0 в случае ошибки).
 */
-int evpBign_pkey_set_flags(
+int evpBign_pkey_set_enc_flags(
 	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
 	u8 flags					/*!< [in] флаги */
 );
 
-/*!	\brief Сбросить флаги ключей bign 
+/*!	\brief Сбросить флаги кодирования bign 
 
-	В ctx сбрасываются флаги flags ключей bign.
+	В ctx сбрасываются флаги кодирования flags ключей и параметров bign.
 	\return Признак успеха (<= 0 в случае ошибки).
 */
-int evpBign_pkey_clear_flags(
+int evpBign_pkey_clr_enc_flags(
 	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
 	u8 flags					/*!< [in] флаги */
+);
+
+/*!	\brief Установить флаги подписи bign
+
+    В ctx устанавливаются флаги flags подписи bign.
+    \return Признак успеха (<= 0 в случае ошибки).
+*/
+int evpBign_pkey_set_sig_flags(
+    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    u8 flags					/*!< [in] флаги */
+);
+
+/*!	\brief Сбросить флаги подписи bign
+
+    В ctx сбрасываются флаги flags подписи bign.
+    \return Признак успеха (<= 0 в случае ошибки).
+*/
+int evpBign_pkey_clr_sig_flags(
+    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    u8 flags					/*!< [in] флаги */
+);
+
+/*!	\brief Установить флаги механизма KDF для ключей bign
+
+    В ctx устанавливаются флаги flags механизма KDF для ключей bign.
+    \return Признак успеха (<= 0 в случае ошибки).
+*/
+int evpBign_pkey_set_kdf_flags(
+    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    u8 flags					/*!< [in] флаги */
+);
+
+/*!	\brief Сбросить флаги механизма KDF для ключей bign
+
+    В ctx сбрасываются флаги flags механизма KDF для ключей bign.
+    \return Признак успеха (<= 0 в случае ошибки).
+*/
+int evpBign_pkey_clr_kdf_flags(
+    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    u8 flags					/*!< [in] флаги */
 );
 
 /*!	\brief Установить данные для метода bake-kdf

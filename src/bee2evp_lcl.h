@@ -62,8 +62,6 @@ int evpBign_asn1_i2d_params(octet** out, bool_t* specified,
 	const bign_key* key);
 int evpBign_asn1_o2i_pubkey(bign_key* key, const octet** in, long len);
 int evpBign_asn1_i2o_pubkey(octet** out, const bign_key* key);
-bign_key* evpBign_asn1_d2i_privkey(bign_key* key, const octet** in, long len);
-int	evpBign_asn1_i2d_privkey(octet** out, const bign_key* key);
 
 /*
 *******************************************************************************

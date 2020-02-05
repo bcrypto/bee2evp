@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2019.07.15
+\version 2020.02.05
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -42,9 +42,8 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 
 \remark Команды EVP_PKEY_CTRL_MD, EVP_PKEY_GET_MD отвечают за установку / 
 чтение идентификатора алгоритма хэширования, который используется в
-алгоритмах ЭЦП. Устанавливаемый идентификатор определяется с помощью команды
-ASN1_PKEY_CTRL_DEFAULT_MD_NID (модуль bign_ameth). Этот идентификатор может 
-быть настроен с помощью 
+алгоритмах ЭЦП. Идентификатор по умолчанию определяется с помощью команды
+ASN1_PKEY_CTRL_DEFAULT_MD_NID (модуль bign_ameth).
 
 \remark Не тестировались:
 	evpBign_pkey_kdf_derive.
@@ -203,8 +202,6 @@ static int evpBign_pkey_paramgen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 	}
 	// установить флаги кодирования
 	key->flags = dctx->flags;
-	// установить рекомендуемый хэш-алгоритм
-	key->hash_nid = dctx->hash_nid;
 	// установить ключ в контекст
 	return EVP_PKEY_assign(pkey, NID_bign_pubkey, key);
 }
@@ -252,8 +249,6 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 	}
 	// установить флаги кодирования
 	key->flags = dctx->flags;
-	// установить рекомендуемый хэш-алгоритм
-	key->hash_nid = dctx->hash_nid;
 	// установить ключ в контекст
 	if (EVP_PKEY_assign(pkey, NID_bign_pubkey, key) <= 0)
 	{
@@ -295,6 +290,8 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	else if (*siglen < key->params->l / 8 * 3)
 		return 0;
 	*siglen = key->params->l / 8 * 3;
+    // установить флаги подписи
+    key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования 
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
 	if (dctx->md == 0 ||
@@ -341,6 +338,8 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	// проверить длину подписи
 	if (siglen != key->params->l / 8 * 3)
 		return 0;
+    // установить флаги подписи
+    key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
 	if (dctx->md == 0 ||
@@ -493,11 +492,14 @@ Ctrl-функции
 */
 
 #define EVP_BIGN_PKEY_CTRL_SET_PARAMS		(EVP_PKEY_ALG_CTRL + 1)
-#define EVP_BIGN_PKEY_CTRL_SET_HASH			(EVP_PKEY_ALG_CTRL + 2)
-#define EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 3)
-#define EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 4)
-#define EVP_BIGN_PKEY_CTRL_SET_KDF_UKM		(EVP_PKEY_ALG_CTRL + 5)
-#define EVP_BIGN_PKEY_CTRL_SET_KDF_NUM		(EVP_PKEY_ALG_CTRL + 6)
+#define EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 2)
+#define EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 3)
+#define EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS	(EVP_PKEY_ALG_CTRL + 4)
+#define EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS	(EVP_PKEY_ALG_CTRL + 5)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS	(EVP_PKEY_ALG_CTRL + 6)
+#define EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS	(EVP_PKEY_ALG_CTRL + 7)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_UKM		(EVP_PKEY_ALG_CTRL + 8)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_NUM		(EVP_PKEY_ALG_CTRL + 9)
 
 static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
@@ -522,29 +524,19 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		dctx->params_nid = p1;
 		return 1;
 
-	case EVP_BIGN_PKEY_CTRL_SET_HASH:
-		md = EVP_get_digestbynid(p1);
-		if (!md)
-			return -2;
-		if (dctx->params_nid != NID_undef)
-		{
-			evpBign_nid2params(params, dctx->params_nid);
-			// нарушена совместимость с params_nid?
-			if ((int)params->l != EVP_MD_meth_get_result_size(md) * 4)
-				return 0;
-		}
-		dctx->hash_nid = p1;
-		return 1;
-
 	case EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS:
-		dctx->flags |= (u8)p1;
+    case EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS:
+    case EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS:
+        dctx->flags |= (u8)p1;
 		return 1;
 
 	case EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS:
-		dctx->flags &= ~(u8)p1;
+    case EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS:
+    case EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS:
+        dctx->flags &= ~(u8)p1;
 		return 1;
 
-	case EVP_BIGN_PKEY_CTRL_SET_KDF_UKM:
+    case EVP_BIGN_PKEY_CTRL_SET_KDF_UKM:
 		if ((dctx->flags & EVP_BIGN_PKEY_KDF_BAKE) == 0)
 			return -2;
 		if (p2)
@@ -604,32 +596,53 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 int evpBign_pkey_set_params(EVP_PKEY_CTX* ctx, int params_nid)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-		EVP_PKEY_OP_PARAMGEN | EVP_PKEY_OP_KEYGEN,
-		EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
+        EVP_PKEY_OP_TYPE_GEN,
+        EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
 }
 
-int evpBign_pkey_set_hash(EVP_PKEY_CTX* ctx, int hash_nid)
+int evpBign_pkey_set_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-		EVP_PKEY_OP_PARAMGEN | EVP_PKEY_OP_KEYGEN,
-		EVP_BIGN_PKEY_CTRL_SET_HASH, hash_nid, 0);
+        EVP_PKEY_OP_TYPE_GEN,
+        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
-int evpBign_pkey_set_flags(EVP_PKEY_CTX* ctx, u8 flags)
+int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-		EVP_PKEY_OP_PARAMGEN | EVP_PKEY_OP_KEYGEN,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
-}
-
-int evpBign_pkey_clr_flags(EVP_PKEY_CTX* ctx, u8 flags)
-{
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-		EVP_PKEY_OP_PARAMGEN | EVP_PKEY_OP_KEYGEN,
+		EVP_PKEY_OP_TYPE_GEN,
 		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
-int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm, 
+int evpBign_pkey_set_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
+{
+    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+        EVP_PKEY_OP_TYPE_SIG,
+        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+}
+
+int evpBign_pkey_clr_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
+{
+    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+        EVP_PKEY_OP_TYPE_SIG,
+        EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+}
+
+int evpBign_pkey_set_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
+{
+    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+        EVP_PKEY_OP_DERIVE,
+        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+}
+
+int evpBign_pkey_clr_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
+{
+    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+        EVP_PKEY_OP_DERIVE,
+        EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+}
+
+int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm,
 	size_t ukm_len)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
@@ -664,25 +677,14 @@ static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 			return 0;
 		return evpBign_pkey_set_params(ctx, nid);
 	}
-	// алгоритм хэширования
-	if (strEq(type, "hash"))
-	{
-		int nid;
-		nid = OBJ_sn2nid(value);
-		if (nid == NID_undef)
-			nid = OBJ_ln2nid(value);
-		if (nid == NID_undef)
-			return 0;
-		return evpBign_pkey_set_hash(ctx, nid);
-	}
 	// опции кодирования параметров
 	if (strEq(type, "enc_params"))
 	{
 		if (strEq(value, "specified"))
-			return evpBign_pkey_set_flags(ctx, 
+			return evpBign_pkey_set_enc_flags(ctx, 
 				EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
 		if (strEq(value, "cofactor"))
-			return evpBign_pkey_set_flags(ctx, 
+			return evpBign_pkey_set_enc_flags(ctx, 
 				EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
 		return -2;
 	}
@@ -690,15 +692,15 @@ static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 	if (strEq(type, "sig"))
 	{
 		if (strEq(value, "deterministic"))
-			return evpBign_pkey_set_flags(ctx, 
-				EVP_BIGN_PKEY_SIG_DETERMINISTIC);
+			return evpBign_pkey_set_sig_flags(ctx,
+                EVP_BIGN_PKEY_SIG_DETERMINISTIC);
 		return -2;
 	}
 	// опции kdf
 	if (strEq(type, "kdf"))
 	{
 		if (strEq(value, "bake"))
-			return evpBign_pkey_set_flags(ctx, EVP_BIGN_PKEY_KDF_BAKE);
+			return evpBign_pkey_set_kdf_flags(ctx, EVP_BIGN_PKEY_KDF_BAKE);
 		return -2;
 	}
 	return -2;
