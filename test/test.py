@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2020.01.29
+# \version 2020.02.17
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -11,18 +11,31 @@
 
 from openssl import openssl
 from belt import *
+from bign import *
 from settings import *
+import color_console as cons
+import sys, os, shutil
+import tempfile
+import re
+
+def test_result(test_name, retcode):
+	if(retcode == 1):
+		sys.stdout.write(test_name + ' : ')
+		cons.print_colored('success', cons.bcolors.OKGREEN)
+	else:
+		#print(test_name + bcolors.FAIL + ' : fail' + bcolors.ENDC)
+		sys.stdout.write(test_name + ' : ')
+		cons.print_colored('fail', cons.bcolors.FAIL)
 
 def test_version():
 	retcode, out, __ = openssl('version', '', True)
-	assert retcode == 0
-	print(out)
+	test_result('version', retcode)
+	print(out.decode())
 
 def test_engine():
 	retcode, out, er__ = openssl('engine -c -t bee2evp', '', True)
-	print(er__)
-	assert retcode == 0
-	print(out)
+	test_result('engine', retcode)
+	print(out.decode())
 
 def test_belt():
 
@@ -32,14 +45,16 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	block = beltBlockEncr(bytes(block), bytes(key))
-	assert hex_encoder(block)[0].decode() == '69cca1c93557c9e3d66bc3e0fa88fa6e'
+	res = hex_encoder(block)[0].decode() == '69cca1c93557c9e3d66bc3e0fa88fa6e'
+	test_result('Block Encrypt', res)
 
 	#A.4 Decrypt
 	block = hex_decoder('e12bdc1ae28257ec703fccf095ee8df1')[0]
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	block = beltBlockDecr(bytes(block), bytes(key))
-	assert hex_encoder(block)[0].decode() == '0dc5300600cab840b38448e5e993f421'
+	res = hex_encoder(block)[0].decode() == '0dc5300600cab840b38448e5e993f421'
+	test_result('Block Decrypt', res)
 	
 	#ECB (|X| = 384)
 	#A.6 Encrypt
@@ -49,9 +64,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltECBEncr(bytes(src), bytes(key))
-	assert hex_encoder(dest)[0].decode() == ('69cca1c93557c9e3d66bc3e0fa88fa6e'
+	res = hex_encoder(dest)[0].decode() == ('69cca1c93557c9e3d66bc3e0fa88fa6e'
 											 '5f23102ef109710775017f73806da9dc'
 											 '46fb2ed2ce771f26dcb5e5d1569f9ab0')
+	test_result('ECB Encrypt', res)
 
 	#A.8 Decrypt	
 	src = hex_decoder('e12bdc1ae28257ec703fccf095ee8df1'
@@ -60,9 +76,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltECBDecr(bytes(src), bytes(key))
-	assert hex_encoder(dest)[0].decode() == ('0dc5300600cab840b38448e5e993f421'
+	res = hex_encoder(dest)[0].decode() == ('0dc5300600cab840b38448e5e993f421'
 											 'e55a239f2ab5c5d5fdb6e81b40938e2a'
 											 '54120ca3e6e19c7ad750fc3531daeab7')
+	test_result('ECB Decrypt', res)
 
 	#CBC (|X| = 384)
 	#A.10 Encrypt
@@ -73,9 +90,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCBCEncr(bytes(src), bytes(key), bytes(iv))
-	assert hex_encoder(dest)[0].decode() == ('10116efae6ad58ee14852e11da1b8a74'
+	res = hex_encoder(dest)[0].decode() == ('10116efae6ad58ee14852e11da1b8a74'
 											 '5cf2480e8d03f1c19492e53ed3a70f60'
 											 '657c1ee8c0e0ae5b58388bf8a68e3309')
+	test_result('CBC Encrypt', res)
 
 	#A.12 Decrypt
 	src = hex_decoder('e12bdc1ae28257ec703fccf095ee8df1'
@@ -85,9 +103,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltCBCDecr(bytes(src), bytes(key), bytes(iv))
-	assert hex_encoder(dest)[0].decode() == ('730894d6158e17cc1600185a8f411cab'
+	res = hex_encoder(dest)[0].decode() == ('730894d6158e17cc1600185a8f411cab'
 											 '0471ff85c83792398d8924ebd57d03db'
 											 '95b97a9b7907e4b020960455e46176f8')
+	test_result('CBC Decrypt', res)
 
 	#CFB (|X| = 384)
 	#A.14 Encrypt
@@ -98,9 +117,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCFBEncr(bytes(src), bytes(key), bytes(iv))
-	assert hex_encoder(dest)[0].decode() == ('c31e490a90efa374626cc99e4b7b8540'
+	res = hex_encoder(dest)[0].decode() == ('c31e490a90efa374626cc99e4b7b8540'
 											 'a6e48685464a5a06849c9ca769a1b0ae'
 											 '55c2cc5939303ec832dd2fe16c8e5a1b')
+	test_result('CFB Encrypt', res)
 
 	#A.15 Decrypt
 	src = hex_decoder('e12bdc1ae28257ec703fccf095ee8df1'
@@ -110,9 +130,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltCFBDecr(bytes(src), bytes(key), bytes(iv))
-	assert hex_encoder(dest)[0].decode() == ('fa9d107a86f375ee65cd1db881224bd0'
+	res = hex_encoder(dest)[0].decode() == ('fa9d107a86f375ee65cd1db881224bd0'
 											 '16aff814938ed39b3361abb0bf0851b6'
 											 '52244eb06842dd4c94aa4500774e40bb')
+	test_result('CFB Decrypt', res)
 
 	#CTR (|X| = 384)
 	#A.16
@@ -123,9 +144,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCTREncr(bytes(src), bytes(key), bytes(iv))
-	assert hex_encoder(dest)[0].decode() == ('52c9af96ff50f64435fc43def56bd797'
+	res = hex_encoder(dest)[0].decode() == ('52c9af96ff50f64435fc43def56bd797'
 											 'd5b5b1ff79fb41257ab9cdf6e63e81f8'
 											 'f00341473eae409833622de05213773a')
+	test_result('CTR Encrypt', res)
 
 	#MAC
 	#A.18
@@ -135,24 +157,189 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	mac = beltMAC(bytes(src), bytes(key))
-	assert hex_encoder(mac)[0].decode()  == '2dab59771b4b16d0'
+	res = hex_encoder(mac)[0].decode()  == '2dab59771b4b16d0'
+	test_result('MAC', res)
 
 	#HASH
 	#A.25
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
 					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
 	hash_ = beltHash(bytes(src))
-	assert hex_encoder(hash_)[0].decode()  == ('749e4c3653aece5e48db4761227742eb'
+	res = hex_encoder(hash_)[0].decode()  == ('749e4c3653aece5e48db4761227742eb'
 											   '6dbe13f4a80f7beff1a9cf8d10ee7786')
+	test_result('HASH', res)
 
 def test_bign():
-	#Gen key pair
-	retcode, out, er__ = openssl('pkey -inform PEM -in priv.pem -pubout -text_pub', '', True)
-	pub_key = out.split('Pubkey:  ')[1][:-1]
-	assert pub_key == ('bd1a5650179d79e03fcee49d4c2bd5dd'
-					   'f54ce46d0cf11e4ff87bf7a890857fd0'
-					   '7ac6a60361e8c8173491686d461b2826'
-					   '190c2eda5909054a9ab84d2ab9d99a90')
+	# Create temporary directory for testing
+	tmpdirname = tempfile.mkdtemp()
+	# Gen params bign-curve256v1
+	params256 = os.path.join(tmpdirname, 'params256v1.pem')
+	bignStdParams('bign-curve256v1', params256, specified=False, cofactor=False)
+	out = openssl('asn1parse -in {}'.format(params256))
+	res = out[1].decode().find('bign-curve256v1') != -1
+	test_result('Gen params bign-curve256v1', res)
+
+	# Gen params bign-curve384v1
+	params384 = os.path.join(tmpdirname, 'params384v1.pem')
+	bignStdParams('bign-curve384v1', params384, specified=False, cofactor=False)
+	out = openssl('asn1parse -in {}'.format(params384))
+	res = out[1].decode().find('bign-curve384v1') != -1
+	test_result('Gen params bign-curve384v1', res)
+
+	# Gen params bign-curve512v1
+	params512 = os.path.join(tmpdirname, 'params512v1.pem')
+	bignStdParams('bign-curve512v1', params512, specified=False, cofactor=False)
+	out = openssl('asn1parse -in {}'.format(params512))
+	res = out[1].decode().find('bign-curve512v1') != -1
+	test_result('Gen params bign-curve512v1', res)
+
+	# Gen private key bign-curve256v1
+	prkey256 = os.path.join(tmpdirname,'prkey256v1.pem')
+	bignGenKeypair(params256, prkey256)
+	out = openssl('asn1parse -in {}'.format(prkey256))
+	res = (out[1].decode().find('bign-curve256v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Gen private key bign-curve256v1', res)
+
+	# Gen private key G.1
+	asn1cnf = '''
+	asn1 = SEQUENCE:SubjectPublicKeyInfo
+	[SubjectPublicKeyInfo]
+	version = INTEGER:0
+
+	algorithm = SEQUENCE:AlgorithmIdentifier
+
+	subjectPublicKey = FORMAT:HEX,OCTETSTRING:1F66B5B84B7339674533F0329C74F21834281FED0732429E0C79235FC273E269
+
+	[AlgorithmIdentifier]
+	algorithm = OBJECT:bign-pubkey
+
+	parameters = OBJECT:bign-curve256v1
+	'''
+	asn1_conf_file = os.path.join(tmpdirname, 'asn1_conf')
+	with open(asn1_conf_file,'w') as f:
+		f.write(asn1cnf)
+	G1prkey256der = os.path.join(tmpdirname, 'G1prkey256.der')
+	G1prkey256pem = os.path.join(tmpdirname, 'G1prkey256.pem')
+	retcode, out, er__ = openssl('asn1parse -genconf {} -out {}'.format(asn1_conf_file, G1prkey256der))
+	openssl('pkey -inform DER -in {} -outform PEM -out {}'.format(G1prkey256der, G1prkey256pem))
+	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
+	res= out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1] == '1F66B5B84B7339674533F0329C74F21834281FED0732429E0C79235FC273E269'
+	test_result('Generate private key G.1', 1)
+
+	# Gen private key bign-curve384v1
+	prkey384 = os.path.join(tmpdirname, 'prkey384v1.pem')
+	bignGenKeypair(params384, prkey384)
+	out = openssl('asn1parse -in {}'.format(prkey384))
+	res = (out[1].decode().find('bign-curve384v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Gen private key bign-curve384v1', res)
+
+	# Gen private key bign-curve512v1
+	prkey512 = os.path.join(tmpdirname, 'prkey512v1.pem')
+	bignGenKeypair(params512, prkey512)
+	out = openssl('asn1parse -in {}'.format(prkey512))
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Gen private key bign-curve512v1', res)
+
+	# Calc public key bign-curve256v1
+	pubkey256 = os.path.join(tmpdirname, 'pubkey256v1.pem')
+	bignCalcPubkey(prkey256, pubkey256)
+	out = openssl('asn1parse -in {}'.format(pubkey256))
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Calc public key bign-curve256v1', res)
+
+	# Calc public key G.1
+	G1pubkey256 = os.path.join(tmpdirname, 'G1pubkey256v1.pem')
+	bignCalcPubkey(G1prkey256pem, G1pubkey256)
+	out = openssl('asn1parse -in {} -offset 28 -dump'.format(G1pubkey256))
+	out = re.sub('[\s\n]', '', out[1].decode())
+	matches = re.findall('[0-9A-Fa-f]{4}-[0-9A-Fa-f]+-*[0-9A-Fa-f]+', out)
+	ans = ''
+	for match in matches:
+		items = match.split('-')
+		for item in items[1:]:
+			ans += item
+	res = (ans[2:] == ('bd1a5650179d79e03fcee49d4c2bd5dd'
+					  'f54ce46d0cf11e4ff87bf7a890857fd0'
+					  '7ac6a60361e8c8173491686d461b2826'
+					  '190c2eda5909054a9ab84d2ab9d99a90'))
+	test_result('Calc public key G.1', res) 
+
+	# Calc public key bign-curve384v1
+	pubkey384 = os.path.join(tmpdirname, 'pubkey384v1.pem')
+	bignCalcPubkey(prkey384, pubkey384)
+	out = openssl('asn1parse -in {}'.format(pubkey384))
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Calc public key bign-curve384v1', res)
+
+	# Calc public key bign-curve512v1
+	pubkey512 = os.path.join(tmpdirname, 'pubkey512v1.pem')
+	bignCalcPubkey(prkey512, pubkey512)
+	out = openssl('asn1parse -in {}'.format(pubkey512))
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	test_result('Calc public key bign-curve512v1', res)
+
+	# Calc dgst belt-hash
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	signbelth = os.path.join(tmpdirname, 'signbelth.sign')
+	retcode = bignSign(prkey256, 'belt-hash', bytes(src), signbelth)
+	res = (retcode == 1)
+	test_result('Calc dgst belt-hash', res)
+
+	# Verify dgst belt-hash
+	out = bignVerify(prkey256, 'belt-hash', bytes(src), signbelth)
+	res = (out == 'Verified OK')
+	test_result('Verify dgst belt-hash', res)
+
+	# Calc deterministic dgst belt-hash
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	dsignbelth = os.path.join(tmpdirname, 'dsignbelth.sign')
+	retcode = bignSign(G1prkey256pem, 'belt-hash', bytes(src), dsignbelth)
+	res = (retcode == 1)
+	test_result('Calc deterministic dgst belt-hash', res)
+
+	# Verify deterministic dgst belt-hash
+	out = bignVerify(G1prkey256pem, 'belt-hash', bytes(src), dsignbelth)
+	res = (out == 'Verified OK')
+	test_result('Verify deterministic dgst belt-hash', res)
+
+	shutil.rmtree(tmpdirname)
+
+	'''
+	# Calc dgst bash256
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign(prkey256, 'bash256', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+	test_result('Calc dgst bash256', res)
+
+	# Calc dgst bash384
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign(prkey384, 'bash384', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+	test_result('Calc dgst bash384', res)
+
+	# Calc dgst bash512
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign(prkey512, 'bash512', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+	test_result('Calc dgst bash512', res)
+	'''
+
+	'''
+	# Calc deterministic dgst bash256
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign2(prkey256, 'bash256', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+
+	# Calc deterministic dgst bash384
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign2(prkey384, 'bash384', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+
+	# Calc deterministic dgst bash512
+	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
+	sign = bignSign2(prkey512, 'bash512', src)
+	res = (hex_encoder(sign)[0].decode() != '')
+	'''
 
 if __name__ == '__main__':
 	test_version()

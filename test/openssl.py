@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over openssl commmands
 # \created 2019.07.10
-# \version 2019.07.19
+# \version 2020.02.17
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -16,9 +16,11 @@ os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
 OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
 
 def openssl(cmd, prefix='', echo = False):
+	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)
 	if echo:
-		print(prefix + ' ' + OPENSSL_EXE_PATH + ' ' + cmd)
-	p = subprocess.Popen(prefix + ' ' + OPENSSL_EXE_PATH + ' ' + cmd,
+		print(cmd)
+	
+	p = subprocess.Popen(cmd,
 					stdout=subprocess.PIPE,
 					stderr=subprocess.PIPE,
 					stdin=subprocess.PIPE,
@@ -26,4 +28,4 @@ def openssl(cmd, prefix='', echo = False):
 
 	out, err_out = p.communicate()
 	retcode = p.poll()
-	return retcode, out, err_out
+	return retcode^1, out, err_out
