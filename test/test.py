@@ -149,7 +149,7 @@ def test_belt():
 											 'f00341473eae409833622de05213773a')
 	test_result('CTR Encrypt', res)
 
-	#MAC
+	#MAC-256
 	#A.18
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
 					  '8504fa9d1bb6c7ac252e72c202fdce0d'
@@ -157,17 +157,67 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	mac = beltMAC(bytes(src), bytes(key))
-	res = hex_encoder(mac)[0].decode()  == '2dab59771b4b16d0'
-	test_result('MAC', res)
+	res = hex_encoder(mac)[0].decode() == '2dab59771b4b16d0'
+	test_result('MAC-256', res)
+
+	#MAC-128
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	test_result('MAC-128', res)
+
+	#MAC-192
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
+					  '06075316ed247a37')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	test_result('MAC-192', res)
+
+	#HMAC
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
+					  '06075316ed247a37')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	test_result('HMAC', res)
 
 	#HASH
 	#A.25
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
 					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
 	hash_ = beltHash(bytes(src))
-	res = hex_encoder(hash_)[0].decode()  == ('749e4c3653aece5e48db4761227742eb'
+	res = hex_encoder(hash_)[0].decode() == ('749e4c3653aece5e48db4761227742eb'
 											   '6dbe13f4a80f7beff1a9cf8d10ee7786')
-	test_result('HASH', res)
+	test_result('belt-hash', res)
+
+	#Bash256
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	hash_ = bash256Hash(bytes(src))
+	res = hex_encoder(hash_)[0].decode() != ''
+	test_result('bash256', res)
+
+	#Bash384
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	hash_ = bash384Hash(bytes(src))
+	res = hex_encoder(hash_)[0].decode() != ''
+	test_result('bash384', res)
+
+	#Bash512
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	hash_ = bash512Hash(bytes(src))
+	res = hex_encoder(hash_)[0].decode() != ''
+	test_result('bash384', res)
 
 def test_bign():
 	# Create temporary directory for testing
