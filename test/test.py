@@ -13,7 +13,6 @@ from openssl import openssl
 from belt import *
 from bign import *
 from settings import *
-import color_console as cons
 import sys, os, shutil
 import tempfile
 import re
@@ -21,11 +20,11 @@ import re
 def test_result(test_name, retcode):
 	if(retcode == 1):
 		sys.stdout.write(test_name + ' : ')
-		cons.print_colored('success', cons.bcolors.OKGREEN)
+		print_colored('success', bcolors.OKGREEN)
 	else:
 		#print(test_name + bcolors.FAIL + ' : fail' + bcolors.ENDC)
 		sys.stdout.write(test_name + ' : ')
-		cons.print_colored('fail', cons.bcolors.FAIL)
+		print_colored('fail', bcolors.FAIL)
 
 def test_version():
 	retcode, out, __ = openssl('version', '', True)
@@ -64,9 +63,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltECBEncr(bytes(src), bytes(key))
-	res = hex_encoder(dest)[0].decode() == ('69cca1c93557c9e3d66bc3e0fa88fa6e'
-											 '5f23102ef109710775017f73806da9dc'
-											 '46fb2ed2ce771f26dcb5e5d1569f9ab0')
+	res = hex_encoder(dest)[0].decode() == (
+		'69cca1c93557c9e3d66bc3e0fa88fa6e'
+		'5f23102ef109710775017f73806da9dc'
+		'46fb2ed2ce771f26dcb5e5d1569f9ab0')
 	test_result('ECB Encrypt', res)
 
 	#A.8 Decrypt	
@@ -76,9 +76,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltECBDecr(bytes(src), bytes(key))
-	res = hex_encoder(dest)[0].decode() == ('0dc5300600cab840b38448e5e993f421'
-											 'e55a239f2ab5c5d5fdb6e81b40938e2a'
-											 '54120ca3e6e19c7ad750fc3531daeab7')
+	res = hex_encoder(dest)[0].decode() == (
+		'0dc5300600cab840b38448e5e993f421'
+		'e55a239f2ab5c5d5fdb6e81b40938e2a'
+		'54120ca3e6e19c7ad750fc3531daeab7')
 	test_result('ECB Decrypt', res)
 
 	#CBC (|X| = 384)
@@ -90,9 +91,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCBCEncr(bytes(src), bytes(key), bytes(iv))
-	res = hex_encoder(dest)[0].decode() == ('10116efae6ad58ee14852e11da1b8a74'
-											 '5cf2480e8d03f1c19492e53ed3a70f60'
-											 '657c1ee8c0e0ae5b58388bf8a68e3309')
+	res = hex_encoder(dest)[0].decode() == (
+		'10116efae6ad58ee14852e11da1b8a74'
+		'5cf2480e8d03f1c19492e53ed3a70f60'
+		'657c1ee8c0e0ae5b58388bf8a68e3309')
 	test_result('CBC Encrypt', res)
 
 	#A.12 Decrypt
@@ -103,9 +105,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltCBCDecr(bytes(src), bytes(key), bytes(iv))
-	res = hex_encoder(dest)[0].decode() == ('730894d6158e17cc1600185a8f411cab'
-											 '0471ff85c83792398d8924ebd57d03db'
-											 '95b97a9b7907e4b020960455e46176f8')
+	res = hex_encoder(dest)[0].decode() == (
+		'730894d6158e17cc1600185a8f411cab'
+		'0471ff85c83792398d8924ebd57d03db'
+		'95b97a9b7907e4b020960455e46176f8')
 	test_result('CBC Decrypt', res)
 
 	#CFB (|X| = 384)
@@ -117,9 +120,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCFBEncr(bytes(src), bytes(key), bytes(iv))
-	res = hex_encoder(dest)[0].decode() == ('c31e490a90efa374626cc99e4b7b8540'
-											 'a6e48685464a5a06849c9ca769a1b0ae'
-											 '55c2cc5939303ec832dd2fe16c8e5a1b')
+	res = hex_encoder(dest)[0].decode() == (
+		'c31e490a90efa374626cc99e4b7b8540'
+		'a6e48685464a5a06849c9ca769a1b0ae'
+		'55c2cc5939303ec832dd2fe16c8e5a1b')
 	test_result('CFB Encrypt', res)
 
 	#A.15 Decrypt
@@ -130,9 +134,10 @@ def test_belt():
 	key = hex_decoder('92bd9b1ce5d141015445fbc95e4d0ef2'
 					  '682080aa227d642f2687f93490405511')[0]
 	dest = beltCFBDecr(bytes(src), bytes(key), bytes(iv))
-	res = hex_encoder(dest)[0].decode() == ('fa9d107a86f375ee65cd1db881224bd0'
-											 '16aff814938ed39b3361abb0bf0851b6'
-											 '52244eb06842dd4c94aa4500774e40bb')
+	res = hex_encoder(dest)[0].decode() == (
+		'fa9d107a86f375ee65cd1db881224bd0'
+		'16aff814938ed39b3361abb0bf0851b6'
+		'52244eb06842dd4c94aa4500774e40bb')
 	test_result('CFB Decrypt', res)
 
 	#CTR (|X| = 384)
@@ -144,9 +149,10 @@ def test_belt():
 	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
 					  '06075316ed247a3739cba38303a98bf6')[0]
 	dest = beltCTREncr(bytes(src), bytes(key), bytes(iv))
-	res = hex_encoder(dest)[0].decode() == ('52c9af96ff50f64435fc43def56bd797'
-											 'd5b5b1ff79fb41257ab9cdf6e63e81f8'
-											 'f00341473eae409833622de05213773a')
+	res = hex_encoder(dest)[0].decode() == (
+		'52c9af96ff50f64435fc43def56bd797'
+		'd5b5b1ff79fb41257ab9cdf6e63e81f8'
+		'f00341473eae409833622de05213773a')
 	test_result('CTR Encrypt', res)
 
 	#MAC-256
@@ -194,8 +200,9 @@ def test_belt():
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
 					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
 	hash_ = beltHash(bytes(src))
-	res = hex_encoder(hash_)[0].decode() == ('749e4c3653aece5e48db4761227742eb'
-											   '6dbe13f4a80f7beff1a9cf8d10ee7786')
+	res = hex_encoder(hash_)[0].decode() == (
+		'749e4c3653aece5e48db4761227742eb'
+		'6dbe13f4a80f7beff1a9cf8d10ee7786')
 	test_result('belt-hash', res)
 
 	#Bash256
@@ -224,21 +231,21 @@ def test_bign():
 	tmpdirname = tempfile.mkdtemp()
 	# Gen params bign-curve256v1
 	params256 = os.path.join(tmpdirname, 'params256v1.pem')
-	bignStdParams('bign-curve256v1', params256, specified=False, cofactor=False)
+	bignStdParams('bign-curve256v1', params256)
 	out = openssl('asn1parse -in {}'.format(params256))
 	res = out[1].decode().find('bign-curve256v1') != -1
 	test_result('Gen params bign-curve256v1', res)
 
 	# Gen params bign-curve384v1
 	params384 = os.path.join(tmpdirname, 'params384v1.pem')
-	bignStdParams('bign-curve384v1', params384, specified=False, cofactor=False)
+	bignStdParams('bign-curve384v1', params384)
 	out = openssl('asn1parse -in {}'.format(params384))
 	res = out[1].decode().find('bign-curve384v1') != -1
 	test_result('Gen params bign-curve384v1', res)
 
 	# Gen params bign-curve512v1
 	params512 = os.path.join(tmpdirname, 'params512v1.pem')
-	bignStdParams('bign-curve512v1', params512, specified=False, cofactor=False)
+	bignStdParams('bign-curve512v1', params512)
 	out = openssl('asn1parse -in {}'.format(params512))
 	res = out[1].decode().find('bign-curve512v1') != -1
 	test_result('Gen params bign-curve512v1', res)
@@ -354,45 +361,34 @@ def test_bign():
 
 	shutil.rmtree(tmpdirname)
 
-	'''
-	# Calc dgst bash256
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign(prkey256, 'bash256', src)
-	res = (hex_encoder(sign)[0].decode() != '')
-	test_result('Calc dgst bash256', res)
+def test_kwp_dwp():
+	tmpdirname = tempfile.mkdtemp()
+	params256 = os.path.join(tmpdirname, 'params256.pem')
+	openssl('genpkey -genparam -algorithm bign -pkeyopt params:bign-curve256v1 -pkeyopt enc_params:specified -pkeyopt enc_params:cofactor -out {}'.format(params256))
 
-	# Calc dgst bash384
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign(prkey384, 'bash384', src)
-	res = (hex_encoder(sign)[0].decode() != '')
-	test_result('Calc dgst bash384', res)
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp128 -pass pass:root'.format(params256))
+	test_result('belt-kwp128', retcode)
 
-	# Calc dgst bash512
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign(prkey512, 'bash512', src)
-	res = (hex_encoder(sign)[0].decode() != '')
-	test_result('Calc dgst bash512', res)
-	'''
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp192 -pass pass:root'.format(params256))
+	test_result('belt-kwp192', retcode)
 
-	'''
-	# Calc deterministic dgst bash256
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign2(prkey256, 'bash256', src)
-	res = (hex_encoder(sign)[0].decode() != '')
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp256 -pass pass:root'.format(params256))
+	test_result('belt-kwp256', retcode)
 
-	# Calc deterministic dgst bash384
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign2(prkey384, 'bash384', src)
-	res = (hex_encoder(sign)[0].decode() != '')
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp128 -pass pass:root'.format(params256))
+	test_result('belt-dwp128', retcode)
 
-	# Calc deterministic dgst bash512
-	src = hex_decoder('b194bac80a08f53b366d008e58')[0]
-	sign = bignSign2(prkey512, 'bash512', src)
-	res = (hex_encoder(sign)[0].decode() != '')
-	'''
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp192 -pass pass:root'.format(params256))
+	test_result('belt-dwp192', retcode)
+
+	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp256 -pass pass:root'.format(params256))
+	test_result('belt-dwp256', retcode)
+
+	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
 	test_version()
 	test_engine()
 	test_belt()
 	test_bign()
+	test_kwp_dwp()

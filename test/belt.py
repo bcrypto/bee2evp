@@ -10,7 +10,7 @@
 # *****************************************************************************
 
 from openssl import openssl
-from settings import *
+from settings import hex_encoder, b64_encoder, hex_decoder, b64_decoder
 
 def beltBlockEncr(block, key):
 	assert len(block) * 8 == 128
@@ -148,6 +148,7 @@ def beltMAC(src, key):
 	cmd = 'dgst -mac belt-mac{} -macopt hexkey:{}'.format(key_bitlen, key)
 	retcode, out, er__ = openssl(cmd, prefix)
 	mac = out.decode().split(' ')[1][:-1]
+	mac = mac.strip()
 	return bytes(hex_decoder(mac)[0])
 
 def beltHMAC(src, key):
@@ -159,6 +160,7 @@ def beltHMAC(src, key):
 	cmd = 'dgst -mac belt-hmac -macopt hexkey:{}'.format(256, key)
 	retcode, out, er__ = openssl(cmd, prefix)
 	mac = out.decode().split(' ')[1][:-1]
+	mac = mac.strip()
 	return bytes(hex_decoder(mac)[0])
 
 def beltHash(src):
@@ -168,6 +170,7 @@ def beltHash(src):
 	cmd = 'dgst -belt-hash'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
+	hash_ = hash_.strip()
 	return bytes(hex_decoder(hash_)[0])
 
 def bash256Hash(src):
@@ -177,6 +180,7 @@ def bash256Hash(src):
 	cmd = 'dgst -bash256'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
+	hash_ = hash_.strip()
 	return bytes(hex_decoder(hash_)[0])
 
 def bash384Hash(src):
@@ -186,6 +190,7 @@ def bash384Hash(src):
 	cmd = 'dgst -bash384'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
+	hash_ = hash_.strip()
 	return bytes(hex_decoder(hash_)[0])
 
 def bash512Hash(src):
@@ -195,4 +200,5 @@ def bash512Hash(src):
 	cmd = 'dgst -bash512'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
+	hash_ = hash_.strip()
 	return bytes(hex_decoder(hash_)[0])

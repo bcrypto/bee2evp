@@ -9,7 +9,7 @@
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 # *****************************************************************************
 from openssl import openssl
-from settings import *
+from settings import hex_encoder, b64_encoder, hex_decoder, b64_decoder
 
 def bignStdParams(name, out_filename, specified=False, cofactor=False):
 	options = '-pkeyopt params:{}'.format(name)
@@ -53,46 +53,3 @@ def bignVerify(prkey, hashname, src, sign_file):
 	cmd = 'dgst -{} -prverify {} -hex -signature {}'.format(hashname, prkey, sign_file)
 	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
 	return out.decode()[:-1]
-
-'''def bignStdParams(name, specified=False, cofactor=False):
-	options = '-pkeyopt params:{}'.format(name)
-	if specified:
-		options += ' -pkeyopt enc_params:specified'
-
-	if cofactor:
-		options += ' -pkeyopt enc_params:cofactor'
-
-	cmd = 'genpkey -genparam -algorithm bign {}'.format(options)
-	retcode, out, er__ = openssl(cmd)
-	return out'''
-	
-'''def bignGenKeypair(name, specified=False, cofactor=False):
-	options = '-pkeyopt params:{}'.format(name)
-	if specified:
-		options += ' -pkeyopt enc_params:specified'
-
-	if cofactor:
-		options += ' -pkeyopt enc_params:cofactor'
-
-	cmd = 'genpkey -algorithm bign {}'.format(options)
-	retcode, out, er__ = openssl(cmd)
-	return out'''
-
-'''def bignCalcPubkey(private_key):
-	private_key = b64_encoder(private_key)[0].decode()
-	private_key = private_key.replace('\n','')
-	prefix = 'echo ' + private_key + ' | python -m base64 -d | '
-	cmd = 'pkey -pubout'
-	retcode, public_key, er__ = openssl(cmd, prefix, False)
-	return public_key'''
-
-'''def bignSign(private_key):
-	private_key = b64_encoder(private_key)[0].decode()
-	private_key = private_key.replace('\n','')
-	
-	prefix = 'privkey=$(echo {} | python -m base64 -d); /dev/fd/0>$privkey; echo 123;'.format(private_key)
-	cmd = 'dgst -d -hex -keyform PEM -sign /dev/fd/0 test.py'
-	#cmd = "dgst -sign {} -hex".format("<(echo "+ private_key + "  | python -m base64 -d)")
-	retcode, sign, er__ = openssl(cmd, prefix=prefix,echo=True)
-	print(er__.decode())
-	return sign'''
