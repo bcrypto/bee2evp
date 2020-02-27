@@ -70,7 +70,8 @@ def beltCBCEncr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -e -belt-cbc{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -e -belt-cbc{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -83,7 +84,8 @@ def beltCBCDecr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -d -belt-cbc{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -d -belt-cbc{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -96,7 +98,8 @@ def beltCFBEncr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -e -belt-cfb{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -e -belt-cfb{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -109,7 +112,8 @@ def beltCFBDecr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -d -belt-cfb{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -d -belt-cfb{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -122,7 +126,8 @@ def beltCTREncr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -e -belt-ctr{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -e -belt-ctr{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -135,7 +140,8 @@ def beltCTRDecr(src, key, iv):
 	key_bitlen = len(key) * 4
 
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'enc -d -belt-ctr{} -nosalt -nopad -K {} -iv {}'.format(key_bitlen, key, iv)
+	cmd = 'enc -d -belt-ctr{} -nosalt -nopad -K {} -iv {}'.format(
+	key_bitlen, key, iv)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 

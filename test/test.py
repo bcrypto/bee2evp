@@ -254,10 +254,12 @@ def test_bign():
 	prkey256 = os.path.join(tmpdirname,'prkey256v1.pem')
 	bignGenKeypair(params256, prkey256)
 	out = openssl('asn1parse -in {}'.format(prkey256))
-	res = (out[1].decode().find('bign-curve256v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve256v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Gen private key bign-curve256v1', res)
 
 	# Gen private key G.1
+	key = '1F66B5B84B7339674533F0329C74F21834281FED0732429E0C79235FC273E269'
 	asn1cnf = '''
 	asn1 = SEQUENCE:SubjectPublicKeyInfo
 	[SubjectPublicKeyInfo]
@@ -265,43 +267,49 @@ def test_bign():
 
 	algorithm = SEQUENCE:AlgorithmIdentifier
 
-	subjectPublicKey = FORMAT:HEX,OCTETSTRING:1F66B5B84B7339674533F0329C74F21834281FED0732429E0C79235FC273E269
+	subjectPublicKey = FORMAT:HEX,OCTETSTRING:{}
 
 	[AlgorithmIdentifier]
 	algorithm = OBJECT:bign-pubkey
 
 	parameters = OBJECT:bign-curve256v1
-	'''
+	'''.format(key)
 	asn1_conf_file = os.path.join(tmpdirname, 'asn1_conf')
 	with open(asn1_conf_file,'w') as f:
 		f.write(asn1cnf)
 	G1prkey256der = os.path.join(tmpdirname, 'G1prkey256.der')
 	G1prkey256pem = os.path.join(tmpdirname, 'G1prkey256.pem')
-	retcode, out, er__ = openssl('asn1parse -genconf {} -out {}'.format(asn1_conf_file, G1prkey256der))
-	openssl('pkey -inform DER -in {} -outform PEM -out {}'.format(G1prkey256der, G1prkey256pem))
+	retcode, out, er__ = openssl('asn1parse -genconf {} -out {}'
+	.format(asn1_conf_file, G1prkey256der))
+	openssl('pkey -inform DER -in {} -outform PEM -out {}'
+	.format(G1prkey256der,G1prkey256pem))
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
-	res= out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1] == '1F66B5B84B7339674533F0329C74F21834281FED0732429E0C79235FC273E269'
+	out = out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1]
+	res = (out == key)
 	test_result('Generate private key G.1', 1)
 
 	# Gen private key bign-curve384v1
 	prkey384 = os.path.join(tmpdirname, 'prkey384v1.pem')
 	bignGenKeypair(params384, prkey384)
 	out = openssl('asn1parse -in {}'.format(prkey384))
-	res = (out[1].decode().find('bign-curve384v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve384v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Gen private key bign-curve384v1', res)
 
 	# Gen private key bign-curve512v1
 	prkey512 = os.path.join(tmpdirname, 'prkey512v1.pem')
 	bignGenKeypair(params512, prkey512)
 	out = openssl('asn1parse -in {}'.format(prkey512))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Gen private key bign-curve512v1', res)
 
 	# Calc public key bign-curve256v1
 	pubkey256 = os.path.join(tmpdirname, 'pubkey256v1.pem')
 	bignCalcPubkey(prkey256, pubkey256)
 	out = openssl('asn1parse -in {}'.format(pubkey256))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Calc public key bign-curve256v1', res)
 
 	# Calc public key G.1
@@ -325,14 +333,16 @@ def test_bign():
 	pubkey384 = os.path.join(tmpdirname, 'pubkey384v1.pem')
 	bignCalcPubkey(prkey384, pubkey384)
 	out = openssl('asn1parse -in {}'.format(pubkey384))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Calc public key bign-curve384v1', res)
 
 	# Calc public key bign-curve512v1
 	pubkey512 = os.path.join(tmpdirname, 'pubkey512v1.pem')
 	bignCalcPubkey(prkey512, pubkey512)
 	out = openssl('asn1parse -in {}'.format(pubkey512))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode().find('bign-pubkey') != -1)
+	res = (out[1].decode().find('bign-curve512v1') != -1 & out[1].decode()
+	.find('bign-pubkey') != -1)
 	test_result('Calc public key bign-curve512v1', res)
 
 	# Calc dgst belt-hash
@@ -364,31 +374,39 @@ def test_bign():
 def test_kwp_dwp():
 	tmpdirname = tempfile.mkdtemp()
 	params256 = os.path.join(tmpdirname, 'params256.pem')
-	openssl('genpkey -genparam -algorithm bign -pkeyopt params:bign-curve256v1 -pkeyopt enc_params:specified -pkeyopt enc_params:cofactor -out {}'.format(params256))
+	cmd = ('genpkey -genparam -algorithm bign -pkeyopt params:bign-curve256v1'
+	' -pkeyopt enc_params:specified -pkeyopt enc_params:cofactor -out')
+	openssl('{} {}'.format(cmd, params256))
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp128 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-kwp128 -pass pass:root'.format(params256))
 	test_result('belt-kwp128', retcode)
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp192 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-kwp192 -pass pass:root'.format(params256))
 	test_result('belt-kwp192', retcode)
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-kwp256 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-kwp256 -pass pass:root'.format(params256))
 	test_result('belt-kwp256', retcode)
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp128 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-dwp128 -pass pass:root'.format(params256))
 	test_result('belt-dwp128', retcode)
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp192 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-dwp192 -pass pass:root'.format(params256))
 	test_result('belt-dwp192', retcode)
 
-	retcode, out, er__ = openssl('genpkey -paramfile {} -belt-dwp256 -pass pass:root'.format(params256))
+	retcode, out, er__ = openssl(
+	'genpkey -paramfile {} -belt-dwp256 -pass pass:root'.format(params256))
 	test_result('belt-dwp256', retcode)
 
 	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
-	test_version()
-	test_engine()
+	#test_version()
+	#test_engine()
 	test_belt()
 	test_bign()
 	test_kwp_dwp()
