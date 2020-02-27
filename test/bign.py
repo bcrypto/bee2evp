@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over bign methods
 # \created 2019.12.09
-# \version 2020.02.17
+# \version 2020.02.27
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -21,7 +21,7 @@ def bignStdParams(name, out_filename, specified=False, cofactor=False):
 		options += ' -pkeyopt enc_params:cofactor'
 
 	cmd = 'genpkey -genparam -algorithm bign {} -out {}'.format(
-	options, out_filename)
+		options, out_filename)
 	retcode, out, er__ = openssl(cmd)
 	return out
 
@@ -46,7 +46,7 @@ def bignSign2(prkey, hashname, src, dest):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
 	cmd = 'dgst -{} -sign {} -sigopt sig:deterministic -out {}'.format(
-	hashname, prkey, dest)
+		hashname, prkey, dest)
 	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
 	return retcode
 
@@ -54,6 +54,6 @@ def bignVerify(prkey, hashname, src, sign_file):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
 	cmd = 'dgst -{} -prverify {} -hex -signature {}'.format(
-	hashname, prkey, sign_file)
+		hashname, prkey, sign_file)
 	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
 	return out.decode()[:-1].strip()

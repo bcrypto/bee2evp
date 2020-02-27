@@ -15,7 +15,7 @@ import os
 os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
 OPENSSL_EXE_PATH = '/usr/local/bin/openssl'
 
-def openssl(cmd, prefix='', echo = False):
+def openssl(cmd, prefix='', echo=False):
 	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)
 	if echo:
 		print(cmd)
