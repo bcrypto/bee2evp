@@ -290,8 +290,8 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	else if (*siglen < key->params->l / 8 * 3)
 		return 0;
 	*siglen = key->params->l / 8 * 3;
-    // установить флаги подписи
-    key->flags = dctx->flags;
+	// установить флаги подписи
+	key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования 
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
 	if (dctx->md == 0 ||
@@ -338,8 +338,8 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	// проверить длину подписи
 	if (siglen != key->params->l / 8 * 3)
 		return 0;
-    // установить флаги подписи
-    key->flags = dctx->flags;
+	// установить флаги подписи
+	key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
 	if (dctx->md == 0 ||
@@ -525,18 +525,18 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		return 1;
 
 	case EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS:
-    case EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS:
-    case EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS:
-        dctx->flags |= (u8)p1;
+	case EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS:
+	case EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS:
+		dctx->flags |= (u8)p1;
 		return 1;
 
 	case EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS:
-    case EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS:
-    case EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS:
-        dctx->flags &= ~(u8)p1;
+	case EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS:
+	case EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS:
+		dctx->flags &= ~(u8)p1;
 		return 1;
 
-    case EVP_BIGN_PKEY_CTRL_SET_KDF_UKM:
+	case EVP_BIGN_PKEY_CTRL_SET_KDF_UKM:
 		if ((dctx->flags & EVP_BIGN_PKEY_KDF_BAKE) == 0)
 			return -2;
 		if (p2)
@@ -596,15 +596,15 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 int evpBign_pkey_set_params(EVP_PKEY_CTX* ctx, int params_nid)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-        EVP_PKEY_OP_TYPE_GEN,
-        EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
+		EVP_PKEY_OP_TYPE_GEN,
+		EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
 }
 
 int evpBign_pkey_set_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
 	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
-        EVP_PKEY_OP_TYPE_GEN,
-        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+		EVP_PKEY_OP_TYPE_GEN,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
@@ -616,30 +616,30 @@ int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 
 int evpBign_pkey_set_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
-        EVP_PKEY_OP_TYPE_SIG,
-        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+		EVP_PKEY_OP_TYPE_SIG,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
-        EVP_PKEY_OP_TYPE_SIG,
-        EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+		EVP_PKEY_OP_TYPE_SIG,
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_set_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
-        EVP_PKEY_OP_DERIVE,
-        EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+		EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-    return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
-        EVP_PKEY_OP_DERIVE,
-        EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+		EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm,
@@ -693,7 +693,7 @@ static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 	{
 		if (strEq(value, "deterministic"))
 			return evpBign_pkey_set_sig_flags(ctx,
-                EVP_BIGN_PKEY_SIG_DETERMINISTIC);
+				EVP_BIGN_PKEY_SIG_DETERMINISTIC);
 		return -2;
 	}
 	// опции kdf

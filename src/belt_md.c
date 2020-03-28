@@ -176,5 +176,5 @@ int evpBeltMD_bind(ENGINE* e)
 void evpBeltMD_destroy()
 {
 	EVP_MD_meth_free(EVP_belt_hash);
-    EVP_belt_hash = 0;
+	EVP_belt_hash = 0;
 }

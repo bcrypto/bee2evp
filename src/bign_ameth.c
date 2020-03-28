@@ -163,8 +163,8 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 в СТБ 34.101.45 [приложение Д]:
 
  SubjectPublicKeyInfo ::= SEQUENCE {
-    algorithm         AlgorithmIdentifier,
-    subjectPublicKey  PublicKey
+	algorithm         AlgorithmIdentifier,
+	subjectPublicKey  PublicKey
   }
 
 Этой структуре соответствует тип X509_PUBKEY.

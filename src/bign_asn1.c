@@ -92,13 +92,13 @@ typedef struct
 typedef struct 
 {
 	ASN1_OBJECT* algorithm;
-    BIGN_DOMAINPARAMS* parameters;
+	BIGN_DOMAINPARAMS* parameters;
 } BIGN_ALGID;
 
 typedef struct 
 {
 	long version;
-    BIGN_ALGID* keyAlgorithm;
+	BIGN_ALGID* keyAlgorithm;
 	ASN1_OCTET_STRING* privateKey;
 } BIGN_PRIVATEKEY;
 
@@ -233,7 +233,7 @@ static int evpBign_asn1_params2curve(BIGN_CURVE* curve,
 		return 0;
 	// установить a и b
 	if (!ASN1_OCTET_STRING_set(curve->a, params->a, params->l / 4) ||
-	    !ASN1_OCTET_STRING_set(curve->b, params->b, params->l / 4))
+		!ASN1_OCTET_STRING_set(curve->b, params->b, params->l / 4))
 		return 0;
 	// установить seed (optional)
 	if (!curve->seed && !(curve->seed = ASN1_BIT_STRING_new()))
