@@ -17,13 +17,17 @@ import sys, os, shutil
 import tempfile
 import re
 
+fail = False
+
 def test_result(test_name, retcode):
+	global fail
 	if(retcode == 1):
 		sys.stdout.write(test_name + ': ')
 		print_colored('success', bcolors.OKGREEN)
 	else:
 		sys.stdout.write(test_name + ': ')
 		print_colored('fail', bcolors.FAIL)
+		fail = True
 
 def test_version():
 	retcode, out, __ = openssl('version')
@@ -285,7 +289,7 @@ def test_bign():
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
 	out = out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1]
 	res = (out == key)
-	test_result('Generate private key G.1', 1)
+	test_result('Generate private key G.1', res)
 
 	# Gen private key bign-curve384v1
 	prkey384 = os.path.join(tmpdirname, 'prkey384v1.pem')
@@ -326,7 +330,7 @@ def test_bign():
 					  'f54ce46d0cf11e4ff87bf7a890857fd0'
 					  '7ac6a60361e8c8173491686d461b2826'
 					  '190c2eda5909054a9ab84d2ab9d99a90'))
-	test_result('Calc public key G.1', res) 
+	test_result('Calc public key G.1', res)
 
 	# Calc public key bign-curve384v1
 	pubkey384 = os.path.join(tmpdirname, 'pubkey384v1.pem')
@@ -404,8 +408,11 @@ def test_belt_kwp_dwp():
 	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
+	global fail
 	test_version()
 	test_engine()
 	test_belt()
 	test_bign()
 	test_belt_kwp_dwp()
+	if (fail == True):
+		sys.exit(1)
