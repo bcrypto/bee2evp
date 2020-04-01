@@ -53,9 +53,6 @@ script:
   - make
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - cp -a ../test/. .
-  - python belt.py
-
-after_success:
   - lcov -c -i -d . -o coverage_base.info
   - python test.py
   - lcov -c -d . -o coverage_test.info
