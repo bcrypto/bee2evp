@@ -6,7 +6,7 @@ Developement lead
 
 - Sergey Agievich [agievich@{bsu.by|gmail.com}] 
 
-Contributors
+Contributors*
 ------------
 
 - Mihail Koypish [mkoypish@gmail.com] 
@@ -17,6 +17,11 @@ Contributors
 - Egor Lawrenov [egor_lawr@tut.by]
   - continuous integration
   - tests
+- Yury Kashcheyeu
+  - [RPM packages](https://copr.fedorainfracloud.org/coprs/kashcheyeu/bee2evp/)
+
+---
+*in chronological order of the first contribution
 
 You are welcome!
 

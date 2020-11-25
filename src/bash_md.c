@@ -243,5 +243,5 @@ void evpBash_destroy()
 	EVP_MD_meth_free(EVP_bash384);
 	EVP_bash384 = 0;
 	EVP_MD_meth_free(EVP_bash256);
-	EVP_bash256 = 0;
+    EVP_bash256 = 0;
 }

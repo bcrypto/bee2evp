@@ -60,7 +60,7 @@
 *.ipch
 *.opensdf
 
-# Local files
+# Specific files
 clear.cmd
 backup
 bin

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2019.05.24
+\version 2020.11.25
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -37,6 +37,9 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 \warning Не тестировались:
 	evpBign_cms_XXX,
 	evpBign_pkcs7_XXX.
+
+\todo Разобраться с методами item_verify, item_sign, siginf_set, set_priv_key,
+set_pub_key, get_priv_key, get_pub_key, sig_print [EVP_PKEY_ASN1_METHOD.pod].
 *******************************************************************************
 */
 
@@ -155,6 +158,12 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 	return 1;
 }
 
+static int evpBign_param_check(const EVP_PKEY* pkey)
+{
+	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
+	return bignValParams(key->params) == ERR_OK;
+}
+
 /*
 *******************************************************************************
 Открытый ключ
@@ -162,9 +171,9 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 Реализована поддержка следующей структуры ASN.1, описанной
 в СТБ 34.101.45 [приложение Д]:
 
- SubjectPublicKeyInfo ::= SEQUENCE {
-	algorithm         AlgorithmIdentifier,
-	subjectPublicKey  PublicKey
+  SubjectPublicKeyInfo ::= SEQUENCE {
+    algorithm AlgorithmIdentifier,
+    subjectPublicKey PublicKey
   }
 
 Этой структуре соответствует тип X509_PUBKEY.
@@ -313,6 +322,12 @@ static int evpBign_pub_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 		BIO_printf(bp, "\n") > 0;
 }
 
+static int evpBign_pub_check(const EVP_PKEY* pkey)
+{
+	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
+	return bignValPubkey(key->params, key->pubkey) == ERR_OK;
+}
+
 /*
 *******************************************************************************
 Личный ключ
@@ -414,6 +429,12 @@ static int evpBign_priv_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 		BIO_printf(bp, "Privkey: ") > 0 &&
 		evpBign_print_hex(bp, key->privkey, len) &&
 		BIO_printf(bp, "\n") > 0;
+}
+
+static int evpBign_keypair_check(const EVP_PKEY* pkey)
+{
+	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
+	return bignValKeypair(key->params, key->privkey, key->pubkey) == ERR_OK;
 }
 
 /*
@@ -989,17 +1010,6 @@ int evpBign_ameth_bind(ENGINE* e)
 	if (!EVP_bign_ameth)
 		return 0;
 	// настроить описатель
-	EVP_PKEY_asn1_set_public(EVP_bign_ameth,
-		evpBign_pub_decode,
-		evpBign_pub_encode,
-		evpBign_pub_cmp,
-		evpBign_pub_print,
-		evpBign_pkey_size,
-		evpBign_pkey_bits);
-	EVP_PKEY_asn1_set_private(EVP_bign_ameth,
-		evpBign_priv_decode,
-		evpBign_priv_encode,
-		evpBign_priv_print);
 	EVP_PKEY_asn1_set_param(EVP_bign_ameth,
 		evpBign_param_decode,
 		evpBign_param_encode,
@@ -1007,6 +1017,23 @@ int evpBign_ameth_bind(ENGINE* e)
 		evpBign_param_copy,
 		evpBign_param_cmp,
 		evpBign_param_print);
+	EVP_PKEY_asn1_set_param_check(EVP_bign_ameth,
+		evpBign_param_check);
+	EVP_PKEY_asn1_set_public(EVP_bign_ameth,
+		evpBign_pub_decode,
+		evpBign_pub_encode,
+		evpBign_pub_cmp,
+		evpBign_pub_print,
+		evpBign_pkey_size,
+		evpBign_pkey_bits);
+	EVP_PKEY_asn1_set_public_check(EVP_bign_ameth,
+		evpBign_pub_check);
+	EVP_PKEY_asn1_set_private(EVP_bign_ameth,
+		evpBign_priv_decode,
+		evpBign_priv_encode,
+		evpBign_priv_print);
+	EVP_PKEY_asn1_set_check(EVP_bign_ameth,
+		evpBign_keypair_check);
 	EVP_PKEY_asn1_set_free(EVP_bign_ameth,
 		evpBign_pkey_free);
 	EVP_PKEY_asn1_set_ctrl(EVP_bign_ameth,
