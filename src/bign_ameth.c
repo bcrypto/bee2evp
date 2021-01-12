@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2020.11.25
+\version 2021.01.12
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -35,11 +35,10 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 \remark По мотивам схемы подключения EC (openssl/crypto/ec/ec_ameth.c).
 
 \warning Не тестировались:
-	evpBign_cms_XXX,
 	evpBign_pkcs7_XXX.
 
-\todo Разобраться с методами item_verify, item_sign, siginf_set, set_priv_key,
-set_pub_key, get_priv_key, get_pub_key, sig_print [EVP_PKEY_ASN1_METHOD.pod].
+\todo Поддержать методы set_priv_key, set_pub_key, get_priv_key,
+get_pub_key, siginf_set, sig_print [EVP_PKEY_ASN1_METHOD.pod]?
 *******************************************************************************
 */
 
@@ -84,6 +83,9 @@ static int evpBign_param_encode(const EVP_PKEY* pkey, octet** der)
 static int evpBign_param_missing(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
+	if (!key)
+		return 1;
+	ASSERT(memIsValid(key, sizeof(bign_key)));
 	if (key->params->l != 128 && 
 		key->params->l != 192 && 
 		key->params->l != 256)
@@ -95,6 +97,16 @@ static int evpBign_param_copy(EVP_PKEY* to, const EVP_PKEY* from)
 {
 	const bign_key* keyfrom = (const bign_key*)EVP_PKEY_get0(from);
 	bign_key* keyto = (bign_key*)EVP_PKEY_get0(to);
+	if (!keyto)
+	{
+		if ((keyto = (bign_key*)blobCreate(sizeof(bign_key))) == 0)
+			return 0;
+		if (!EVP_PKEY_assign(to, NID_bign_pubkey, keyto))
+		{
+			blobClose(keyto);
+			return 0;
+		}
+	}
 	memCopy(keyto->params, keyfrom->params, sizeof(bign_params));
 	return 1;
 }
@@ -712,6 +724,7 @@ static int evpBign_pkcs7_encrypt(PKCS7_RECIP_INFO* ri)
 
 static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 {
+	bign_key* key;
 	switch (op)
 	{
 	case ASN1_PKEY_CTRL_PKCS7_SIGN:
@@ -755,7 +768,7 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 		else
 		{
 			// в соответствии со связками хэш + ЭЦП, заданными в bee2evp_bind()
-			bign_key* key = (bign_key*)EVP_PKEY_get0(pkey);
+			key = (bign_key*)EVP_PKEY_get0(pkey);
 			if (key->hash_nid != NID_undef)
 				*(int*)arg2 = key->hash_nid;
 			else if (key->params->l == 128)
@@ -768,6 +781,25 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 				return -1;
 			return 2;
 		}
+
+	case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
+		key = (bign_key*)EVP_PKEY_get0(pkey);
+		ASSERT(memIsValid(key, sizeof(bign_key)));
+		if (arg1 != key->params->l / 2)
+			return 0;
+		memCopy(key->pubkey, arg2, arg1);
+		return 1;
+
+	case ASN1_PKEY_CTRL_GET1_TLS_ENCPT:
+		key = (bign_key*)EVP_PKEY_get0(pkey);
+		ASSERT(memIsValid(key, sizeof(bign_key)));
+		if (!EVP_PKEY_missing_parameters(pkey))
+		{
+			octet** pt = arg2;
+			if (*pt = OPENSSL_memdup(key->pubkey, key->params->l / 2))
+				return key->params->l / 2;
+		}
+		return 0;
 
 	default:
 		return -2;
@@ -934,10 +966,8 @@ static int bign_ameth_count;
 #define BIGN_AMETH_REG(name, tmp)\
 	(((tmp = NID_##name) != NID_undef) ?\
 		bign_ameth_nids[bign_ameth_count++] = tmp :\
-		(((tmp =\
-			OBJ_create(OID_##name, SN_##name, LN_##name)) != NID_undef) ?\
-			bign_ameth_nids[bign_ameth_count++] = tmp :\
-			NID_undef))
+		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
+			bign_ameth_nids[bign_ameth_count++] = tmp : NID_undef))
 
 /*
 *******************************************************************************
@@ -987,14 +1017,6 @@ static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 /*
 *******************************************************************************
 Связывание
-
-\warning Выполняется прямой доступ к полям EVP_bign_ameth::item_verify, 
-EVP_bign_ameth::item_sign: интерфейс для настройки этих полей в OpenSSL 
-не предусмотрен.
-
-\remark При добавлении в evpBign_ameth_destroy() вызова 
-EVP_PKEY_asn1_free(EVP_bign_ameth) будет ошибка: к моменту вызова 
-описатель уже освобожден в ядре OpenSSL.
 *******************************************************************************
 */
 

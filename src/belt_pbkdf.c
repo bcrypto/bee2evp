@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt-based PBKDF
 \created 2015.01.19
-\version 2019.05.23
+\version 2021.01.12
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -136,10 +136,8 @@ static int belt_pbkdf_count;
 #define BELT_PBKDF_REG(name, tmp)\
 	(((tmp = NID_##name) != NID_undef) ?\
 		belt_pbkdf_nids[belt_pbkdf_count++] = tmp :\
-		(((tmp =\
-			OBJ_create(OID_##name, SN_##name, LN_##name)) != NID_undef) ?\
-			belt_pbkdf_nids[belt_pbkdf_count++] = tmp :\
-			NID_undef))
+		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
+			belt_pbkdf_nids[belt_pbkdf_count++] = tmp : NID_undef))
 
 /*
 *******************************************************************************

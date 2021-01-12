@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for belt-macXXX and belt-hmac (hmac-hbelt)
 \created 2013.07.01
-\version 2017.02.02
+\version 2021.01.12
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -119,10 +119,8 @@ static int belt_ameth_count;
 #define BELT_AMETH_REG(name, tmp)\
 	(((tmp = NID_##name) != NID_undef) ?\
 		belt_ameth_nids[belt_ameth_count++] = tmp :\
-		(((tmp =\
-			OBJ_create(OID_##name, SN_##name, LN_##name)) != NID_undef) ?\
-			belt_ameth_nids[belt_ameth_count++] = tmp :\
-			NID_undef))
+		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
+			belt_ameth_nids[belt_ameth_count++] = tmp :	NID_undef))
 
 /*
 *******************************************************************************
