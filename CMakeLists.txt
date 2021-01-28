@@ -3,7 +3,7 @@ project(BEE2EVP C)
 
 set(BEE2EVP_VERSION_MAJOR "1")
 set(BEE2EVP_VERSION_MINOR "0")
-set(BEE2EVP_VERSION_PATCH "5")
+set(BEE2EVP_VERSION_PATCH "6")
 set(BEE2EVP_VERSION "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
@@ -105,6 +105,7 @@ set(src
   src/belt_md.c
   src/belt_pbkdf.c
   src/belt_pmeth.c
+  src/belt_tls.c
   src/bign_ameth.c
   src/bign_asn1.c
   src/bign_pmeth.c

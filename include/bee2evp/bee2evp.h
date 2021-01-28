@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2020.02.05
+\version 2021.01.27
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -374,6 +374,19 @@ extern const char LN_belt_dwp256[];
 	\return Описание алгоритмов. 
 */
 const EVP_CIPHER* evpBeltDWP256();
+
+/* belt-dwpt */
+extern const char OID_belt_dwpt[];
+extern const char SN_belt_dwpt[];
+extern const char LN_belt_dwpt[];
+#define NID_belt_dwpt OBJ_sn2nid(SN_belt_dwpt)
+
+/*!	\brief Описание алгоритмов belt-dwpt
+
+	Возвращается описание алгоритмов belt-dwpt (редакция belt-dwp для TLS).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltDWPT();
 
 /* belt-kwp128 */
 extern const char OID_belt_kwp128[];

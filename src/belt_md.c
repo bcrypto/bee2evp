@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
-\version 2021.01.12
+\version 2021.01.28
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -18,6 +18,35 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
 #include "bee2evp/bee2evp.h"
+
+/*
+*******************************************************************************
+Ссылка на блоб в EVP_MD_CTX::md_data
+
+OpenSSL не всегда гарантирует выделение памяти под указатель
+EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data
+(см. EVP_MD_CTX_copy_ex() при установке флага EVP_MD_CTX_FLAG_REUSE).
+Поэтому указатель проверяется перед обращением к памяти, на которую он
+ссылается.
+
+Реализация запрашивает под указатель память объема sizeof(blob_t)
+и размещает в выделенной памяти объект типа blob_t, фактически еще один
+указатель.
+*******************************************************************************
+*/
+
+void EVP_MD_CTX_set_blob(EVP_MD_CTX *ctx, const blob_t blob)
+{
+	if (EVP_MD_CTX_md_data(ctx))
+		*(blob_t*)EVP_MD_CTX_md_data(ctx) = blob;
+}
+
+blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX *ctx)
+{
+	if (EVP_MD_CTX_md_data(ctx))
+		return *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	return 0;
+}
 
 /*
 *******************************************************************************
@@ -40,38 +69,40 @@ static int evpBeltHash_init(EVP_MD_CTX* ctx)
 	blob_t state = blobCreate(beltHash_keep());
 	if (!state)
 		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(ctx) = state;
+	EVP_MD_CTX_set_blob(ctx, state);
 	beltHashStart(state);
 	return 1;
 }
 
 static int evpBeltHash_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	blob_t state = EVP_MD_CTX_get_blob(ctx);
+	ASSERT(state);
 	beltHashStepH(data, count, state);
 	return 1;
 }
 
 static int evpBeltHash_final(EVP_MD_CTX* ctx, octet* md)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	blob_t state = EVP_MD_CTX_get_blob(ctx);
+	ASSERT(state);
 	beltHashStepG(md, state);
 	return 1;
 }
 
 static int evpBeltHash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
 {
-	blob_t state_from = *(blob_t*)EVP_MD_CTX_md_data(from);
+	blob_t state_from = EVP_MD_CTX_get_blob(from);
 	blob_t state_to = blobCopy(0, state_from);
 	if (state_from && !state_to)
 		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(to) = state_to;
+	EVP_MD_CTX_set_blob(to, state_to);
 	return 1;
 }
 
 static int evpBeltHash_cleanup(EVP_MD_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	blob_t state = EVP_MD_CTX_get_blob(ctx);
 	blobClose(state);
 	return 1;
 }

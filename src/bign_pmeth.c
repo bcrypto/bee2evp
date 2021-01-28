@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2020.02.05
+\version 2021.01.12
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -731,10 +731,8 @@ static int bign_pmeth_count;
 #define BIGN_PMETH_REG(name, tmp)\
 	(((tmp = NID_##name) != NID_undef) ?\
 		bign_pmeth_nids[bign_pmeth_count++] = tmp :\
-		(((tmp =\
-			OBJ_create(OID_##name, SN_##name, LN_##name)) != NID_undef) ?\
-			bign_pmeth_nids[bign_pmeth_count++] = tmp :\
-			NID_undef))
+		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
+			bign_pmeth_nids[bign_pmeth_count++] = tmp :	NID_undef))
 
 /*
 *******************************************************************************

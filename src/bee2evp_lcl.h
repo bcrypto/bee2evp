@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Internal definitions
 \created 2013.11.11
-\version 2016.09.21
+\version 2021.01.27
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -74,6 +74,7 @@ int evpBeltMD_bind(ENGINE* e);
 int evpBelt_ameth_bind(ENGINE* e);
 int evpBelt_pmeth_bind(ENGINE* e);
 int evpBeltPBKDF_bind(ENGINE* e);
+int evpBeltTLS_bind(ENGINE* e);
 int evpBign_ameth_bind(ENGINE* e);
 int evpBign_pmeth_bind(ENGINE* e);
 int evpBash_bind(ENGINE* e);
@@ -89,6 +90,7 @@ void evpBeltMD_destroy();
 void evpBelt_ameth_destroy();
 void evpBelt_pmeth_destroy();
 void evpBeltPBKDF_destroy();
+void evpBeltTLS_destroy();
 void evpBign_ameth_destroy();
 void evpBign_pmeth_destroy();
 void evpBash_destroy();
