@@ -11,6 +11,8 @@
 
 import subprocess
 import os
+import signal
+
 
 os.environ['OPENSSL_CONF'] = '/usr/local/openssl.cnf'
 OPENSSL_EXE_PATH = '/usr/local/bin/openssl'

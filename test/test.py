@@ -3,24 +3,25 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2020.02.27
+# \version 2021.02.02
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 # *****************************************************************************
 
 from openssl import openssl
+import subprocess
 from belt import *
 from bign import *
 from settings import *
 import sys, os, shutil
+import signal
 import tempfile
 import re
+import threading
 
 fail = False
-
 def test_result(test_name, retcode):
-	global fail
 	if(retcode == 1):
 		sys.stdout.write(test_name + ': ')
 		print_colored('success', bcolors.OKGREEN)
@@ -311,7 +312,7 @@ def test_bign():
 	pubkey256 = os.path.join(tmpdirname, 'pubkey256v1.pem')
 	bignCalcPubkey(prkey256, pubkey256)
 	out = openssl('asn1parse -in {}'.format(pubkey256))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & 
+	res = (out[1].decode().find('bign-curve256v1') != -1 & 
 		out[1].decode().find('bign-pubkey') != -1)
 	test_result('Calc public key bign-curve256v1', res)
 
@@ -336,7 +337,7 @@ def test_bign():
 	pubkey384 = os.path.join(tmpdirname, 'pubkey384v1.pem')
 	bignCalcPubkey(prkey384, pubkey384)
 	out = openssl('asn1parse -in {}'.format(pubkey384))
-	res = (out[1].decode().find('bign-curve512v1') != -1 & 
+	res = (out[1].decode().find('bign-curve384v1') != -1 & 
 		out[1].decode().find('bign-pubkey') != -1)
 	test_result('Calc public key bign-curve384v1', res)
 
@@ -381,38 +382,86 @@ def test_belt_kwp_dwp():
 		' -pkeyopt enc_params:specified -pkeyopt enc_params:cofactor -out')
 	openssl('{} {}'.format(cmd, params256))
 
+	kwp128 = os.path.join(tmpdirname, 'kwp128.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp128 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-kwp128 -pass pass:root -out {}'
+		.format(params256, kwp128))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(kwp128))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-kwp128', retcode)
 
+	kwp192 = os.path.join(tmpdirname, 'kwp192.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp192 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-kwp192 -pass pass:root -out {}'
+		.format(params256, kwp192))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(kwp192))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-kwp192', retcode)
 
+	kwp256 = os.path.join(tmpdirname, 'kwp256.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp256 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-kwp256 -pass pass:root -out {}'
+		.format(params256, kwp256))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(kwp256))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-kwp256', retcode)
 
+	dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp128 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-dwp128 -pass pass:root -out {}'
+		.format(params256, dwp128))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(dwp128))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-dwp128', retcode)
 
+	dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp192 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-dwp192 -pass pass:root -out {}'
+		.format(params256, dwp192))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(dwp192))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-dwp192', retcode)
 
+
+	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp256 -pass pass:root'.format(params256))
+		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
+		.format(params256, dwp256))
+	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+		.format(dwp256))
+	out = out.decode()
+	retcode = (out.find('valid') != -1)
 	test_result('belt-dwp256', retcode)
 
 	shutil.rmtree(tmpdirname)
 
+def btls_client(name):
+	client = subprocess.check_output('openssl s_client -connect localhost:44330', shell=True)
+	retcode = (client.decode().find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
+	os.kill(name.pid, signal.SIGTERM)
+
+def test_btls():
+	proc = subprocess.Popen('python btls_server.py', shell=True, stdout=subprocess.PIPE)
+
+	x = threading.Thread(target=btls_client,  args=(proc,)).start()
+
 if __name__ == '__main__':
-	global fail
 	test_version()
 	test_engine()
 	test_belt()
 	test_bign()
 	test_belt_kwp_dwp()
+	test_btls()
 	if (fail == True):
 		sys.exit(1)

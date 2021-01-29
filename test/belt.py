@@ -142,7 +142,7 @@ def beltCTRDecr(src, key, iv):
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
 	cmd = 'enc -d -belt-ctr{} -nosalt -nopad -K {} -iv {}'.format(
 		key_bitlen, key, iv)
-	retcode, dest, er__ = openssl(cmd, prefix)
+	retcode, dest, er__ = openssl(cmd, prefix, True)
 	return dest
 
 def beltMAC(src, key):
