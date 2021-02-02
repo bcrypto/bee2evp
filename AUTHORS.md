@@ -15,6 +15,7 @@ Contributors*
 - Oleg Solovey [solovey@bsu.by] 
   - belt_ameth
 - Egor Lawrenov [egor_lawr@tut.by]
+  - btls
   - continuous integration
   - tests
 - Yury Kashcheyeu

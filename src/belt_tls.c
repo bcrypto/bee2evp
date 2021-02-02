@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.01.29
+\version 2021.02.02
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -191,6 +191,7 @@ static int evpBeltDWPT_cleanup(EVP_CIPHER_CTX* ctx)
 static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 {
 	belt_dwpt_ctx* state;
+	size_t len;
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
@@ -234,7 +235,6 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 		return 1;
 	case EVP_CTRL_AEAD_TLS1_AAD:
 		state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
-		size_t len;
 		// сохранить заголовок фрагмента
 		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
 			return 0;
