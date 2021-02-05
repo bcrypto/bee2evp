@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2021.02.02
+# \version 2021.02.05
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,7 @@ import signal
 import tempfile
 import re
 import threading
+import time
 
 fail = False
 def test_result(test_name, retcode):
@@ -432,7 +433,6 @@ def test_belt_kwp_dwp():
 	retcode = (out.find('valid') != -1)
 	test_result('belt-dwp192', retcode)
 
-
 	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
@@ -445,16 +445,41 @@ def test_belt_kwp_dwp():
 
 	shutil.rmtree(tmpdirname)
 
+def btls_gen_privkey(privfile):
+	cmd = 'genpkey -algorithm bign -pkeyopt params:bign-curve256v1 -out {}'.format(privfile)
+	retcode, block, er__ = openssl(cmd)
+
+def btls_issue_cert(privfile, certfile):
+	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK" -new -key {} -nodes -out {}'
+		.format(privfile, certfile))
+	retcode, block, er__ = openssl(cmd)
+
+def btls_server():
+	tmpdirname = tempfile.mkdtemp()
+
+	priv256 = os.path.join(tmpdirname, 'priv256.key') 
+	btls_gen_privkey(priv256)
+
+	cert = os.path.join(tmpdirname, 'cert.pem') 
+	btls_issue_cert(priv256, cert)
+
+	prefix = 'echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |'
+	cmd = 's_server -key {} -cert {} -tls1_2 -engine bee2evp -cipher {}'.format(
+		priv256, cert, 'DHE-BIGN-WITH-BELT-DWP-HBELT')
+	cmd = '{} {} {}'.format(prefix, '/usr/local/bin/openssl', cmd)
+	server_ = subprocess.Popen(cmd, shell=True)
+
 def btls_client(name):
-	client = subprocess.check_output('openssl s_client -connect localhost:44330', shell=True)
+	client = subprocess.check_output('openssl s_client', shell=True)
+	print(client.decode())
 	retcode = (client.decode().find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
 	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
-	os.kill(name.pid, signal.SIGTERM)
 
 def test_btls():
-	proc = subprocess.Popen('python btls_server.py', shell=True, stdout=subprocess.PIPE)
-
-	x = threading.Thread(target=btls_client,  args=(proc,)).start()
+	s = threading.Thread(target=btls_server)
+	s.run()
+	time.sleep(1)
+	x = threading.Thread(target=btls_client,  args=(s,)).run()
 
 if __name__ == '__main__':
 	test_version()
