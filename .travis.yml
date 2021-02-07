@@ -7,7 +7,7 @@ env:
   global:
     - OPENSSL_BRANCH=OpenSSL_1_1_1i
     - BEE2_BRANCH=master
-    - PREFIX=/usr/local
+    - PREFIX=${HOME}/usr/local
     - CODECOV_TOKEN="14692d3c-1602-496f-8bb4-24797238978d"
 
 branches:
@@ -32,9 +32,9 @@ before_script:
   - cd build
   - ../config shared -d --prefix=${PREFIX} --openssldir=${PREFIX}
   - make -j$(nproc) all 
-  - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
-  - sudo mv ${PREFIX}/openssl.cnf.dist ${PREFIX}/openssl.cnf
-  - sudo sed -i '/\[ new\_oids\ ]/i openssl_conf = openssl_init\n[ openssl_init ]\nengines = engine_section\n[ engine_section ]\nbee2evp = bee2evp_section\n[ bee2evp_section ]\nengine_id = bee2evp\ndynamic_path = /usr/local/lib/libbee2evp.so\ndefault_algorithms = ALL' ${PREFIX}/openssl.cnf
+  - make install > build.log 2>&1 || (cat build.log && exit 1)
+  - mv ${PREFIX}/openssl.cnf.dist ${PREFIX}/openssl.cnf
+  - sed -i "/\[ new\_oids\ ]/i openssl_conf = openssl_init\n[ openssl_init ]\nengines = engine_section\n[ engine_section ]\nbee2evp = bee2evp_section\n[ bee2evp_section ]\nengine_id = bee2evp\ndynamic_path = ${PREFIX}/lib/libbee2evp.so\ndefault_algorithms = ALL" ${PREFIX}/openssl.cnf
   - cd ..
   - cd ..
   - git clone --depth 1 -b ${BEE2_BRANCH} https://github.com/agievich/bee2.git
@@ -43,21 +43,25 @@ before_script:
   - cd build
   - cmake ..
   - make > build.log 2>&1 || (cat build.log && exit 1)
-  - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
+  - make install DESTDIR=${HOME} > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - cd ..
 
 script:
   - cd bee2evp
+  - sed -i '/find\_package/d' CMakeLists.txt
+  - sed -i '/pkg\_search/d' CMakeLists.txt
+  - sed -i "s|/usr|$HOME/usr|g" CMakeLists.txt
   - export LD_LIBRARY_PATH="${PREFIX}/lib:${LD_LIBRARY_PATH:-}"
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=Coverage .. 
   - make
-  - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
+  - make install DESTDIR=${HOME} > build.log 2>&1 || (cat build.log && exit 1)
   - cp -a ../test/. .
   - lcov -c -i -d . -o coverage_base.info
   - python test.py
   - lcov -c -d . -o coverage_test.info
   - lcov -a coverage_base.info -a coverage_test.info -o coverage.info
+  - LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | sed -e "s|$HOME/usr/local/lib:||")
   - bash <(curl -s https://codecov.io/bash) -f coverage.info

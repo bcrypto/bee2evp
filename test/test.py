@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2021.02.05
+# \version 2021.02.07
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -20,6 +20,8 @@ import tempfile
 import re
 import threading
 import time
+from os.path import expanduser
+home = expanduser("~")
 
 fail = False
 def test_result(test_name, retcode):
@@ -466,11 +468,11 @@ def btls_server():
 	prefix = 'echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |'
 	cmd = 's_server -key {} -cert {} -tls1_2 -engine bee2evp -cipher {}'.format(
 		priv256, cert, 'DHE-BIGN-WITH-BELT-DWP-HBELT')
-	cmd = '{} {} {}'.format(prefix, '/usr/local/bin/openssl', cmd)
+	cmd = '{} {} {}'.format(prefix, home + '/usr/local/bin/openssl', cmd)
 	server_ = subprocess.Popen(cmd, shell=True)
 
 def btls_client(name):
-	client = subprocess.check_output('openssl s_client', shell=True)
+	client = subprocess.check_output(home + '/usr/local/bin/openssl s_client', shell=True)
 	print(client.decode())
 	retcode = (client.decode().find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
 	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
