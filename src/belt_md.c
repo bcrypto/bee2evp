@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
-\version 2021.01.28
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -18,35 +18,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
 #include "bee2evp/bee2evp.h"
-
-/*
-*******************************************************************************
-Ссылка на блоб в EVP_MD_CTX::md_data
-
-OpenSSL не всегда гарантирует выделение памяти под указатель
-EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data
-(см. EVP_MD_CTX_copy_ex() при установке флага EVP_MD_CTX_FLAG_REUSE).
-Поэтому указатель проверяется перед обращением к памяти, на которую он
-ссылается.
-
-Реализация запрашивает под указатель память объема sizeof(blob_t)
-и размещает в выделенной памяти объект типа blob_t, фактически еще один
-указатель.
-*******************************************************************************
-*/
-
-void EVP_MD_CTX_set_blob(EVP_MD_CTX *ctx, const blob_t blob)
-{
-	if (EVP_MD_CTX_md_data(ctx))
-		*(blob_t*)EVP_MD_CTX_md_data(ctx) = blob;
-}
-
-blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX *ctx)
-{
-	if (EVP_MD_CTX_md_data(ctx))
-		return *(blob_t*)EVP_MD_CTX_md_data(ctx);
-	return 0;
-}
+#include "bee2evp_lcl.h"
 
 /*
 *******************************************************************************
@@ -102,8 +74,7 @@ static int evpBeltHash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
 
 static int evpBeltHash_cleanup(EVP_MD_CTX* ctx)
 {
-	blob_t state = EVP_MD_CTX_get_blob(ctx);
-	blobClose(state);
+	EVP_MD_CTX_set_blob(ctx, 0);
 	return 1;
 }
 

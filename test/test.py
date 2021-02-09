@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2021.02.07
+# \version 2021.02.09
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -291,7 +291,7 @@ def test_bign():
 	openssl('pkey -inform DER -in {} -outform PEM -out {}'
 	.format(G1prkey256der,G1prkey256pem))
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
-	out = out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1]
+	out = out.decode().strip()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1]
 	res = (out == key)
 	test_result('Generate private key G.1', res)
 

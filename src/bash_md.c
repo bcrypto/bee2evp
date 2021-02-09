@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Bash hashing algorithm (bash)
 \created 2016.09.20
-\version 2021.01.12
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -18,6 +18,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/bash.h>
 #include "bee2evp/bee2evp.h"
+#include "bee2evp_lcl.h"
 
 /*
 *******************************************************************************
@@ -66,7 +67,7 @@ static int evpBash_init(EVP_MD_CTX* ctx)
 	state = blobCreate(bashHash_keep());
 	if (!state)
 		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(ctx) = state;
+	EVP_MD_CTX_set_blob(ctx, state);
 	// стартовать
 	bashHashStart(state, md_len * 4);
 	return 1;
@@ -74,7 +75,7 @@ static int evpBash_init(EVP_MD_CTX* ctx)
 
 static int evpBash_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	blob_t state = EVP_MD_CTX_get_blob(ctx);
 	bashHashStepH(data, count, state);
 	return 1;
 }
@@ -82,7 +83,7 @@ static int evpBash_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 static int evpBash_final(EVP_MD_CTX* ctx, octet* md)
 {
 	size_t md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	blob_t state = EVP_MD_CTX_get_blob(ctx);
 	bashHashStepG(md, md_len, state);
 	return 1;
 }
@@ -93,14 +94,13 @@ static int evpBash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
 	blob_t state_to = blobCopy(0, state_from);
 	if (state_from && !state_to)
 		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(to) = state_to;
+	EVP_MD_CTX_set_blob(to, state_to);
 	return 1;
 }
 
 static int evpBash_cleanup(EVP_MD_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
-	blobClose(state);
+	EVP_MD_CTX_set_blob(ctx, 0);
 	return 1;
 }
 

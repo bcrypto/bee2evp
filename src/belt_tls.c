@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.02.02
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
 #include "bee2evp/bee2evp.h"
+#include "bee2evp_lcl.h"
 
 /*
 *******************************************************************************
@@ -119,8 +120,7 @@ typedef struct belt_dwpt_ctx
 static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	belt_dwpt_ctx* state;
-	state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
 	{
 		memCopy(state->iv, iv, 8);
@@ -137,8 +137,7 @@ static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 	const octet* in, size_t len)
 {
-	belt_dwpt_ctx* state;
-	state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// выполняются соглашения libssl?
 	if (out != in || !state->aad_len || len < 8 + 8)
 		return -1;
@@ -183,31 +182,28 @@ static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 
 static int evpBeltDWPT_cleanup(EVP_CIPHER_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
 static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 {
 	belt_dwpt_ctx* state;
-	size_t len;
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) =
-			blobCreate(sizeof(belt_dwpt_ctx) + beltDWP_keep()))
+		if (EVP_CIPHER_CTX_set_blob(ctx,
+			blobCreate(sizeof(belt_dwpt_ctx) + beltDWP_keep())))
 			break;
 		return 0;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
 		{
 			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
+			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
+			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
+			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
 				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
+			EVP_CIPHER_CTX_set_blob(dctx, dstate);
 		}
 		break;
 	case EVP_CTRL_GET_IVLEN:
@@ -218,23 +214,24 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	case EVP_CTRL_AEAD_SET_IV_FIXED:
 		if (p1 != 8)
 			return 0;
-		state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		memCopy(state->iv, p2, 8);
 		return 1;
 	case EVP_CTRL_AEAD_SET_TAG:
 		if (p1 != 8)
 			return 0;
-		state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		memCopy(state->tag, p2, 8);
 		return 1;
 	case EVP_CTRL_AEAD_GET_TAG:
 		if (p1 != 8)
 			return 0;
-		state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		memCopy(p2, state->tag, 8);
 		return 1;
 	case EVP_CTRL_AEAD_TLS1_AAD:
-		state = *(belt_dwpt_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		size_t len;
 		// сохранить заголовок фрагмента
 		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
 			return 0;
@@ -246,7 +243,8 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 		// защита снимается?
 		if (!EVP_CIPHER_CTX_encrypting(ctx))
 		{
-			// уменьшить длину фрагмента на длину явной синхропосылки и имитовставки
+			// уменьшить длину фрагмента на длину явной
+			// синхропосылки и имитовставки
 			if (len < 8 + 8)
 				return 0;
 			len -= 8 + 8;
@@ -331,7 +329,7 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 	if (EVP_##name == 0 ||\
 		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||\
 		!EVP_CIPHER_meth_set_flags(EVP_##name, flags) ||\
-		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, sizeof(blob_t)) ||\
+		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, 0) ||\
 		!EVP_CIPHER_meth_set_init(EVP_##name, init) ||\
 		!EVP_CIPHER_meth_set_do_cipher(EVP_##name, cipher) ||\
 		!EVP_CIPHER_meth_set_cleanup(EVP_##name, cleanup) ||\

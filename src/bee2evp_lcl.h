@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Internal definitions
 \created 2013.11.11
-\version 2021.01.27
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -15,11 +15,27 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #define __BEE2EVP_LCL_H
 
 #include <openssl/evp.h>
+#include <bee2/core/blob.h>
 #include <bee2/crypto/bign.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*
+*******************************************************************************
+Блобы
+
+В контекстах EVP_CIPHER_CTX, EVP_MD_CTX размещаются ссылки на блобы. В блобах
+(контролируемых фрагментах памяти) размещаются вспомогательные структуры
+данных.
+*******************************************************************************
+*/
+
+blob_t EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob);
+blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx);
+blob_t EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob);
+blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx);
 
 /*
 *******************************************************************************

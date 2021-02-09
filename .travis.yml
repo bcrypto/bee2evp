@@ -63,5 +63,5 @@ script:
   - python test.py
   - lcov -c -d . -o coverage_test.info
   - lcov -a coverage_base.info -a coverage_test.info -o coverage.info
-  - LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | sed -e "s|$HOME/usr/local/lib:||")
+  - LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | sed -e "s|$PREFIX/lib:||")
   - bash <(curl -s https://codecov.io/bash) -f coverage.info

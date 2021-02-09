@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.01.27
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/mt.h>
 #include <bee2/core/rng.h>
 #include <bee2/core/str.h>
+#include <bee2/core/util.h>
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
 
@@ -33,9 +34,75 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 
 /*
 *******************************************************************************
+Блобы
+
+В структуре EVP_MD_CTX реализация запрашивает под указатель память объема
+sizeof(blob_t)  размещает в выделенной памяти объект типа blob_t,
+фактически еще один указатель. Так сделано потому, что set-доступ к указателю
+на пользовательские данные (md_data) закрыт.
+
+В структуре EVP_CIPHER_CTX set-доступ к указателю на пользовательские данные
+(cipher_data) открыт и реализация проще.
+
+\warning OpenSSL не всегда гарантирует выделение памяти под указатель
+EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data()
+(см. EVP_MD_CTX_copy_ex() при установке флага EVP_MD_CTX_FLAG_REUSE).
+Поэтому указатель проверяется перед обращением к памяти, на которую он
+ссылается.
+
+\warning Закрытие старого блоба в EVP_MD_CTX_set_blob(), т.е. вызов
+\code
+	blobClose(EVP_MD_CTX_get_blob(ctx));
+\endcode
+приводит к ошибке.
+*******************************************************************************
+*/
+
+blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx)
+{
+	return (blob_t)EVP_CIPHER_CTX_get_cipher_data(ctx);
+}
+
+blob_t EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
+{
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_cipher_data(ctx, blob);
+	return blob;
+}
+
+blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx)
+{
+	if (EVP_MD_CTX_md_data(ctx))
+		return *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	return 0;
+}
+
+blob_t EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob)
+{
+	if (EVP_MD_CTX_md_data(ctx))
+	{
+		*(blob_t*)EVP_MD_CTX_md_data(ctx) = blob;
+		return blob;
+	}
+	return 0;
+}
+
+/*
+*******************************************************************************
 Интерфейс плагина
 
-\remark Команды не обрабатываются
+\remark Выдержка из https://eprint.iacr.org/2018/354:
+- the bind() method is called by the OpenSSL built-in dynamic ENGINE upon
+  load and is used to set the internal state of the ENGINE object and allocate
+  needed resources, to set its id and name, and the pointers to the init(),
+  finish(), and destroy() functions;
+- the init() function is called to derive a fully initialized functional
+  reference to the ENGINE from a structural reference;
+- the finish() function is called when releasing an ENGINE functional
+  reference, to free up any resource allocated to it;
+- the destroy() function is called upon unloading the ENGINE, when the last
+  structural reference to it is released, to cleanly free any resource
+  allocated upon loading it into memory.
 *******************************************************************************
 */
 
@@ -48,11 +115,6 @@ static int bee2evp_init(ENGINE* e)
 
 static int bee2evp_finish(ENGINE* e)
 { 
-	return 1;
-}
-
-static int bee2evp_destroy(ENGINE* e)
-{ 
 	evpBeltCipher_destroy();
 	evpBeltMD_destroy();
 	evpBelt_pmeth_destroy();
@@ -62,7 +124,12 @@ static int bee2evp_destroy(ENGINE* e)
 	evpBign_pmeth_destroy();
 	evpBign_ameth_destroy();
 	evpBash_destroy();
-	rngClose(); 
+	rngClose();
+	return 1;
+}
+
+static int bee2evp_destroy(ENGINE* e)
+{ 
 	return 1;
 }
 
