@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2021.01.27
+\version 2021.02.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -269,6 +269,19 @@ extern const char LN_belt_ctr256[];
 	\return Описание алгоритмов. 
 */
 const EVP_CIPHER* evpBeltCTR256();
+
+/* belt-ctrt */
+extern const char OID_belt_ctrt[];
+extern const char SN_belt_ctrt[];
+extern const char LN_belt_ctrt[];
+#define NID_belt_ctrt OBJ_sn2nid(SN_belt_ctrt)
+
+/*!	\brief Описание алгоритмов belt-ctrt
+
+	Возвращается описание алгоритмов belt-ctrt (редакция belt-ctr для TLS).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltCTRT();
 
 /* belt-mac128 */
 extern const char OID_belt_mac128[];

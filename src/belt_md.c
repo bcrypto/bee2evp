@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
-\version 2021.02.09
+\version 2021.02.17
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -38,10 +38,16 @@ const EVP_MD* evpBeltHash()
 
 static int evpBeltHash_init(EVP_MD_CTX* ctx) 
 {
-	blob_t state = blobCreate(beltHash_keep());
-	if (!state)
-		return 0;
-	EVP_MD_CTX_set_blob(ctx, state);
+	blob_t state;
+	if (!EVP_MD_CTX_get_blob(ctx))
+	{
+		state = blobCreate(beltHash_keep());
+		if (!state || !EVP_MD_CTX_set_blob(ctx, state))
+		{
+			blobClose(state);
+			return 0;
+		}
+	}
 	beltHashStart(state);
 	return 1;
 }
@@ -64,16 +70,12 @@ static int evpBeltHash_final(EVP_MD_CTX* ctx, octet* md)
 
 static int evpBeltHash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
 {
-	blob_t state_from = EVP_MD_CTX_get_blob(from);
-	blob_t state_to = blobCopy(0, state_from);
-	if (state_from && !state_to)
-		return 0;
-	EVP_MD_CTX_set_blob(to, state_to);
-	return 1;
+	return EVP_MD_CTX_copy_blob(to, from);
 }
 
 static int evpBeltHash_cleanup(EVP_MD_CTX* ctx)
 {
+	blobClose(EVP_MD_CTX_get_blob(ctx));
 	EVP_MD_CTX_set_blob(ctx, 0);
 	return 1;
 }

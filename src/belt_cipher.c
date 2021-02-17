@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2021.02.09
+\version 2021.02.17
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -121,6 +121,9 @@ ASN1-кодирования), алгоритмы режимов CBC и CFB об�
 EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами 
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 
+\remark Обращение к cleanup-функциям почему-то может выполняться два раза.
+Поэтому вызов EVP_CIPHER_CTX_set_blob(ctx, 0) необходим.
+
 \pre Среда проверяет указатели и размерности буферов, передаваемых
 в функции интерфейсов EVP_CIPHER, EVP_MD.
 
@@ -190,6 +193,7 @@ static int evpBeltECB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltECB_cleanup(EVP_CIPHER_CTX *ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -210,23 +214,21 @@ static int evpBeltECB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx, blobCreate(beltECB_keep())))
+	{
+		blob_t blob = blobCreate(beltECB_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -305,6 +307,7 @@ static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCBC_cleanup(EVP_CIPHER_CTX *ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -314,23 +317,21 @@ static int evpBeltCBC_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx, blobCreate(beltCBC_keep())))
+	{
+		blob_t blob = blobCreate(beltCBC_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-	}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -409,6 +410,7 @@ static int evpBeltCFB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCFB_cleanup(EVP_CIPHER_CTX *ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -418,23 +420,21 @@ static int evpBeltCFB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx, blobCreate(beltCFB_keep())))
+	{
+		blob_t blob = blobCreate(beltCFB_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -520,6 +520,7 @@ static int evpBeltCTR_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCTR_cleanup(EVP_CIPHER_CTX* ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -529,23 +530,21 @@ int evpBeltCTR_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx, blobCreate(beltCTR_keep())))
+	{
+		blob_t blob = blobCreate(beltCTR_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -708,6 +707,7 @@ static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltDWP_cleanup(EVP_CIPHER_CTX* ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -717,24 +717,21 @@ static int evpBeltDWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx,
-			blobCreate(sizeof(belt_dwp_ctx) + beltDWP_keep())))
+	{
+		blob_t blob = blobCreate(sizeof(belt_dwp_ctx) + beltDWP_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -841,6 +838,7 @@ static int evpBeltKWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltKWP_cleanup(EVP_CIPHER_CTX* ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -863,27 +861,25 @@ int evpBeltKWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
-		if (EVP_CIPHER_CTX_set_blob(ctx,
-			blobCreate(sizeof(belt_kwp_ctx) + beltKWP_keep())))
+	{
+		blob_t blob = blobCreate(sizeof(belt_kwp_ctx) + beltKWP_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+		{
+			EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 			break;
+		}
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
-
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
 		break;

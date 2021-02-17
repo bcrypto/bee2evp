@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.02.09
+\version 2021.02.17
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -50,11 +50,12 @@ EVP_MD_CTX::md_data, который возвращается функцией EV
 Поэтому указатель проверяется перед обращением к памяти, на которую он
 ссылается.
 
-\warning Закрытие старого блоба в EVP_MD_CTX_set_blob(), т.е. вызов
-\code
-	blobClose(EVP_MD_CTX_get_blob(ctx));
-\endcode
-приводит к ошибке.
+\remark При копировании структур EVP_MD_CTX сначала механически копируются
+пользовательские данные md_data, в том числе блобы. Механическое копирование
+указателей приводит к ошибкам освобождения памяти. Поэтому в
+EVP_MD_CTX_copy_blob() совпадение блобов проверяется. При совпадении создается
+новая копия копируемого блоба. Похожая логика реализована в
+EVP_CIPHER_CTX_copy_blob(), хотя в ней, по-видимому, нет необходимости.
 *******************************************************************************
 */
 
@@ -63,11 +64,20 @@ blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx)
 	return (blob_t)EVP_CIPHER_CTX_get_cipher_data(ctx);
 }
 
-blob_t EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
+int EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
 {
-	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_cipher_data(ctx, blob);
-	return blob;
+	return 1;
+}
+
+int EVP_CIPHER_CTX_copy_blob(EVP_CIPHER_CTX* to, const EVP_CIPHER_CTX* from)
+{
+	blob_t blob_from = EVP_CIPHER_CTX_get_blob(from);
+	blob_t blob_to = EVP_CIPHER_CTX_get_blob(to);
+	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
+	if (blob_from && !blob_to)
+		return 0;
+	return EVP_CIPHER_CTX_set_blob(to, blob_to);
 }
 
 blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx)
@@ -77,14 +87,30 @@ blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx)
 	return 0;
 }
 
-blob_t EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob)
+int EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob)
 {
 	if (EVP_MD_CTX_md_data(ctx))
 	{
 		*(blob_t*)EVP_MD_CTX_md_data(ctx) = blob;
-		return blob;
+		return 1;
 	}
 	return 0;
+}
+
+int EVP_MD_CTX_copy_blob(EVP_MD_CTX* to, const EVP_MD_CTX* from)
+{
+	blob_t blob_from, blob_to;
+	// блоб нельзя скопировать?
+	if (EVP_MD_CTX_md_data(from) && !EVP_MD_CTX_md_data(to))
+		return 0;
+	// копировать
+	blob_from = EVP_MD_CTX_get_blob(from);
+	blob_to = EVP_MD_CTX_get_blob(to);
+	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
+	if (blob_from && !blob_to)
+		return 0;
+	// установить
+	return EVP_MD_CTX_set_blob(to, blob_to);
 }
 
 /*
@@ -130,7 +156,7 @@ static int bee2evp_finish(ENGINE* e)
 
 static int bee2evp_destroy(ENGINE* e)
 { 
-	return 1;
+		return 1;
 }
 
 static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] = 

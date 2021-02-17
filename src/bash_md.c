@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Bash hashing algorithm (bash)
 \created 2016.09.20
-\version 2021.02.09
+\version 2021.02.17
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -58,16 +58,21 @@ const EVP_MD* evpBash512()
 
 static int evpBash_init(EVP_MD_CTX* ctx) 
 {
-	size_t md_len;
 	blob_t state;
+	size_t md_len;
+	// создать состояние
+	if (!EVP_MD_CTX_get_blob(ctx))
+	{
+		state = blobCreate(bashHash_keep());
+		if (!state || !EVP_MD_CTX_set_blob(ctx, state))
+		{
+			blobClose(state);
+			return 0;
+		}
+	}
 	// длина хэш-значения
 	md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
 	ASSERT(md_len == 32 || md_len == 48 || md_len == 64);
-	// состояние
-	state = blobCreate(bashHash_keep());
-	if (!state)
-		return 0;
-	EVP_MD_CTX_set_blob(ctx, state);
 	// стартовать
 	bashHashStart(state, md_len * 4);
 	return 1;
@@ -76,6 +81,7 @@ static int evpBash_init(EVP_MD_CTX* ctx)
 static int evpBash_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 {
 	blob_t state = EVP_MD_CTX_get_blob(ctx);
+	ASSERT(state);
 	bashHashStepH(data, count, state);
 	return 1;
 }
@@ -84,22 +90,19 @@ static int evpBash_final(EVP_MD_CTX* ctx, octet* md)
 {
 	size_t md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
 	blob_t state = EVP_MD_CTX_get_blob(ctx);
+	ASSERT(state);
 	bashHashStepG(md, md_len, state);
 	return 1;
 }
 
 static int evpBash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
 {
-	blob_t state_from = *(blob_t*)EVP_MD_CTX_md_data(from);
-	blob_t state_to = blobCopy(0, state_from);
-	if (state_from && !state_to)
-		return 0;
-	EVP_MD_CTX_set_blob(to, state_to);
-	return 1;
+	return EVP_MD_CTX_copy_blob(to, from);
 }
 
 static int evpBash_cleanup(EVP_MD_CTX* ctx)
 {
+	blobClose(EVP_MD_CTX_get_blob(ctx));
 	EVP_MD_CTX_set_blob(ctx, 0);
 	return 1;
 }

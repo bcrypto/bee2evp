@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.02.09
+\version 2021.02.17
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -51,7 +51,6 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 *******************************************************************************
 */
 
-
 /*
 *******************************************************************************
 Алгоритмы belt-dwp-tls: belt-dwp для TLS
@@ -81,8 +80,8 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 seq_num всякий раз подмешивается к fixed-части синхропосылки. Поддержка
 нестандартной длины fixed_iv_len не нужна.
 
-2. Алгоритму belt-dwp-tls назначен нестандартный идентификатор
-"1.2.112.0.2.0.34.101.31.67". Возможно он будет пересмотрен.
+2. Алгоритму belt-dwp-tls назначен нестандартный (технический) идентификатор
+"1.2.112.0.2.0.34.101.31.67". Он может быть пересмотрен.
 
 3. Обработка ctrl-кодов
   EVP_CTRL_GET_IVLEN, EVP_CTRL_AEAD_SET_IVLEN,
@@ -182,6 +181,7 @@ static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 
 static int evpBeltDWPT_cleanup(EVP_CIPHER_CTX* ctx)
 {
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
 	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
@@ -192,19 +192,16 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (EVP_CIPHER_CTX_set_blob(ctx,
-			blobCreate(sizeof(belt_dwpt_ctx) + beltDWP_keep())))
+	{
+		blob_t blob = blobCreate(sizeof(belt_dwpt_ctx) + beltDWP_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_COPY:
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = EVP_CIPHER_CTX_get_blob(dctx);
-			dstate = blobCopy(dstate, EVP_CIPHER_CTX_get_blob(ctx));
-			if (EVP_CIPHER_CTX_get_blob(ctx) && !dstate)
-				return 0;
-			EVP_CIPHER_CTX_set_blob(dctx, dstate);
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_GET_IVLEN:
 		*(int*)p2 = 8;
@@ -230,8 +227,9 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 		memCopy(p2, state->tag, 8);
 		return 1;
 	case EVP_CTRL_AEAD_TLS1_AAD:
-		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	{
 		size_t len;
+		state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		// сохранить заголовок фрагмента
 		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
 			return 0;
@@ -254,6 +252,163 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 		state->aad[state->aad_len - 1] = (octet)len;
 		// возвратить поправку длины
 		return 8 + 8;
+	}
+	default:
+		return -1;
+	}
+	return 1;
+}
+
+/*
+*******************************************************************************
+Алгоритмы belt-ctr-tls: belt-ctr для TLS
+
+1. Введен специальный алгоритм belt-ctr-tls (belt_ctrt в программах),
+длина синхропосылки которого объявляется равной 0. При этом синхропосылка
+продолжает состоять из 16 октетов, ее первая часть заполняется 8 октетами
+seq_num, вторая часть нулевая. Ключ belt-ctr-tls всегда состоит из 32 октетов.
+
+2. Счетчик seq_num передается с помощью управляющей команды
+EVP_CTRL_AEAD_TLS1_AAD.
+
+3. Алгоритм belt-ctr-tls дополнительно выполняет имитозащиту (перед
+зашифрованием). Используется алгоритм belt-mac. Длина ключа имитозащиты --
+32 октета. Ключ передается с помощью управляющей команды
+EVP_CTRL_AEAD_SET_MAC_KEY. 
+
+4. Алгоритму belt-ctr-tls назначен нестандартный (технический) идентификатор
+"1.2.112.0.2.0.34.101.31.44". Он может быть пересмотрен.
+
+5. Похожая схема подключения: crypto\evp\e_rc4_hmac_md5.c.
+*******************************************************************************
+*/
+
+const char OID_belt_ctrt[] = "1.2.112.0.2.0.34.101.31.44";
+const char SN_belt_ctrt[] = "belt-ctr-tls";
+const char LN_belt_ctrt[] = "belt-ctr-tls";
+
+#define FLAGS_belt_ctrt (EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_STREAM_CIPHER |\
+	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT)
+
+static EVP_CIPHER* EVP_belt_ctrt;
+const EVP_CIPHER* evpBeltCTRT()
+{
+	return EVP_belt_ctrt;
+}
+
+typedef struct belt_ctrt_ctx
+{
+	octet ekey[32];		/*< ключ шифрования */
+	octet mkey[32];		/*< ключ имитозащиты */
+	octet iv[16];		/*< синхропосылка */
+	octet aad[16];		/*< заголовок TLS */
+	size_t aad_len;		/*< длина заголовка TLS */
+	octet state[];		/*< состояние beltCTR + beltMAC */
+} belt_ctrt_ctx;
+
+static int evpBeltCTRT_init(EVP_CIPHER_CTX* ctx, const octet* key,
+	const octet* iv, int enc)
+{
+	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	if (key)
+		memCopy(state->ekey, key, 32);
+	state->aad_len = 0;
+	return 1;
+}
+
+static int evpBeltCTRT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
+	const octet* in, size_t len)
+{
+	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	// выполняются соглашения libssl?
+	if (out != in || !state->aad_len || len < 8)
+		return -1;
+	// запустить шифрование
+	memCopy(state->iv, state->aad, 8);
+	memSetZero(state->iv + 8, 8);
+	beltCTRStart(state->state, state->ekey, 32, state->iv);
+	// запустить имитозащиту
+	beltMACStart(state->state + beltCTR_keep(), state->mkey, 32);
+	beltMACStepA(state->aad, state->aad_len, state->state + beltCTR_keep());
+	// обработать фрагмент (без имитовставки)
+	if (EVP_CIPHER_CTX_encrypting(ctx))
+	{
+		beltMACStepA(out, len - 8, state->state + beltCTR_keep());
+		beltMACStepG(out + len - 8, state->state + beltCTR_keep());
+		beltCTRStepE(out, len, state->state);
+	}
+	else
+	{
+		beltCTRStepD(out, len, state->state);
+		beltMACStepA(out, len - 8, state->state + beltCTR_keep());
+		if (!beltMACStepV(out + len - 8, state->state + beltCTR_keep()))
+		{
+			memWipe(out, len);
+			return -1;
+		}
+		len -= 8;
+	}
+	// число октетов, записанных в out
+	return (int)len;
+}
+
+static int evpBeltCTRT_cleanup(EVP_CIPHER_CTX* ctx)
+{
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
+	return 1;
+}
+
+static int evpBeltCTRT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
+{
+	belt_ctrt_ctx* state;
+	switch (type)
+	{
+	case EVP_CTRL_INIT:
+	{
+		blob_t blob = blobCreate(sizeof(belt_ctrt_ctx) +
+			beltCTR_keep() + beltMAC_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+			break;
+		blobClose(blob);
+		return 0;
+	}
+	case EVP_CTRL_COPY:
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
+		break;
+	case EVP_CTRL_AEAD_SET_MAC_KEY:
+		if (p1 != 32)
+			return 0;
+		state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		memCopy(state->mkey, p2, 32);
+		break;
+	case EVP_CTRL_AEAD_TLS1_AAD:
+	{
+		size_t len;
+		state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		// сохранить заголовок фрагмента
+		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
+			return 0;
+		ASSERT(sizeof(state->aad) >= EVP_AEAD_TLS1_AAD_LEN);
+		memCopy(state->aad, p2, state->aad_len = EVP_AEAD_TLS1_AAD_LEN);
+		// определить длину фрагмента
+		len = state->aad[state->aad_len - 2], len <<= 8;
+		len += state->aad[state->aad_len - 1];
+		// защита снимается?
+		if (!EVP_CIPHER_CTX_encrypting(ctx))
+		{
+			// уменьшить длину фрагмента на длину имитовставки
+			if (len < 8)
+				return 0;
+			len -= 8;
+		}
+		// сохранить уточненную длину
+		state->aad[state->aad_len - 2] = (octet)(len >> 8);
+		state->aad[state->aad_len - 1] = (octet)len;
+		// возвратить поправку длины
+		return 8;
+	}
 	default:
 		return -1;
 	}
@@ -309,6 +464,8 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 	// обработать запрос
 	if (nid == NID_belt_dwpt)
 		*cipher = EVP_belt_dwpt;
+	else if (nid == NID_belt_ctrt)
+		*cipher = EVP_belt_ctrt;
 	else if (prev_enum && prev_enum != evpBeltTLS_enum)
 		return prev_enum(e, cipher, nids, nid);
 	else
@@ -349,17 +506,23 @@ int evpBeltTLS_bind(ENGINE* e)
 	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,
 		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup, 
 		0, 0, evpBeltDWPT_ctrl);
+	BELT_TLS_DESCR(belt_ctrt, 1, 32, 0, FLAGS_belt_ctrt,
+		evpBeltCTRT_init, evpBeltCTRT_cipher, evpBeltCTRT_cleanup,
+		0, 0, evpBeltCTRT_ctrl);
 	// задать перечислитель
 	prev_enum = ENGINE_get_ciphers(e);
 	if (!ENGINE_set_ciphers(e, evpBeltTLS_enum))
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_ciphers(e) &&
-		EVP_add_cipher(EVP_belt_dwpt);
+		EVP_add_cipher(EVP_belt_dwpt) &&
+		EVP_add_cipher(EVP_belt_ctrt);
 }
 
 void evpBeltTLS_destroy()
 {
+	EVP_CIPHER_meth_free(EVP_belt_ctrt);
+	EVP_belt_ctrt = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwpt);
 	EVP_belt_dwpt = 0;
 }
