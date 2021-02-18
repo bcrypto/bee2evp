@@ -32,12 +32,12 @@ extern "C" {
 /* obj_mac.h */
 #define NID_bign_pubkey 	(NUM_NID + 0)
 #define NID_belt_dwpt		(NUM_NID + 1)
-#define NID_belt_ctr256 	(NUM_NID + 2)
-#define NID_belt_mac256		(NUM_NID + 3)
-#define NID_belt_hash 		(NUM_NID + 4)
-#define NID_bign_with_hbelt (NUM_NID + 5)
-#define NID_belt_hmac		(NUM_NID + 6)
-#define NID_bign_curve256v1 (NUM_NID + 7)
+#define NID_belt_ctrt	 	(NUM_NID + 2)
+#define NID_belt_hash 		(NUM_NID + 3)
+#define NID_bign_with_hbelt (NUM_NID + 4)
+#define NID_belt_hmac		(NUM_NID + 5)
+#define NID_bign_curve256v1 (NUM_NID + 6)
+#define NID_belt_mac_tls	(NUM_NID + 7)
 #define NID_kxbdhe			(NUM_NID + 8)
 #define NID_bign128_auth	(NUM_NID + 9)
 

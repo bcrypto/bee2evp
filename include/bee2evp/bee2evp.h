@@ -459,6 +459,19 @@ extern const char LN_belt_hash[];
 */
 const EVP_MD* evpBeltHash();
 
+/* belt-mac-tls */
+extern const char OID_belt_mac_tls[];
+extern const char SN_belt_mac_tls[];
+extern const char LN_belt_mac_tls[];
+#define NID_belt_mac_tls OBJ_sn2nid(SN_belt_mac_tls)
+
+/*!	\brief Описание алгоритма belt-mac-tls
+
+	Возвращается описание алгоритма belt-hash (хэширование).
+	\return Описание алгоритма. 
+*/
+const EVP_MD* evpBeltMacTls();
+
 /* belt-hmac (hmac-hbelt) */
 extern const char OID_belt_hmac[];
 extern const char SN_belt_hmac[];
