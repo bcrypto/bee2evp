@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2021.02.17
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -130,6 +130,39 @@ EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 \todo Разобраться с выравниванием на границу блока в режимах ECB, CBC.
 *******************************************************************************
 */
+
+/*
+*******************************************************************************
+Блобы
+
+\remark При копировании блоба из одного контекста в другой проверяется, что
+блоб-источник отличается от блоба-приемника. При совпадении состается
+новый блоб-приемник. При отличии по возможности используется уже существующий
+блоб. Впрочем совпадений скорее всего происходить не будет. И блоб-приемник
+скорее всего будет пустым (нулевой указатель).
+*******************************************************************************
+*/
+
+blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx)
+{
+	return (blob_t)EVP_CIPHER_CTX_get_cipher_data(ctx);
+}
+
+int EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
+{
+	EVP_CIPHER_CTX_set_cipher_data(ctx, blob);
+	return 1;
+}
+
+int EVP_CIPHER_CTX_copy_blob(EVP_CIPHER_CTX* to, const EVP_CIPHER_CTX* from)
+{
+	blob_t blob_from = EVP_CIPHER_CTX_get_blob(from);
+	blob_t blob_to = EVP_CIPHER_CTX_get_blob(to);
+	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
+	if (blob_from && !blob_to)
+		return 0;
+	return EVP_CIPHER_CTX_set_blob(to, blob_to);
+}
 
 /*
 *******************************************************************************
@@ -1115,7 +1148,7 @@ int evpBeltCipher_bind(ENGINE* e)
 		EVP_add_cipher(EVP_belt_kwp256);
 }
 
-void evpBeltCipher_destroy()
+void evpBeltCipher_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_kwp256);
 	EVP_belt_kwp256 = 0;

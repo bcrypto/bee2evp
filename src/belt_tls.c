@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.02.17
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -519,7 +519,7 @@ int evpBeltTLS_bind(ENGINE* e)
 		EVP_add_cipher(EVP_belt_ctrt);
 }
 
-void evpBeltTLS_destroy()
+void evpBeltTLS_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_ctrt);
 	EVP_belt_ctrt = 0;

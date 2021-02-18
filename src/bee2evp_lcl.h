@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Internal definitions
 \created 2013.11.11
-\version 2021.02.17
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -24,22 +24,25 @@ extern "C" {
 
 /*
 *******************************************************************************
-Блобы
+Блобы EVP_CIPHER_CTX
 
-В контекстах EVP_CIPHER_CTX, EVP_MD_CTX размещаются ссылки на блобы.
-В блобах (контролируемых фрагментах памяти) размещаются вспомогательные
-структуры данных.
+В контексте EVP_CIPHER_CTX состояние алгоритма шифрования размещается в блобе
+(контролируемом фрагменте памяти).
+
+\todo Разобраться с блобами в EVP_MD_CTX. Здесь все намного сложнеe:
+1. Закрыт set-доступ к указателю на пользовательские данные (md_data).
+2. OpenSSL не всегда гарантирует выделение памяти под указатель
+   EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data()
+   (см. EVP_MD_CTX_copy_ex() при установке флага EVP_MD_CTX_FLAG_REUSE).
+3. При копировании контекстов EVP_MD_CTX сначала механически копируются
+   пользовательские данные md_data, в том числе блобы. Механическое копирование
+   указателей приводит к ошибкам освобождения памяти.
 *******************************************************************************
 */
 
 blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx);
 int EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob);
 int EVP_CIPHER_CTX_copy_blob(EVP_CIPHER_CTX* to, const EVP_CIPHER_CTX* from);
-
-blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx);
-int EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob);
-int EVP_MD_CTX_copy_blob(EVP_MD_CTX* to, const EVP_MD_CTX* from);
-int EVP_MD_CTX_copy_blob(EVP_MD_CTX* to, const EVP_MD_CTX* from);
 
 /*
 *******************************************************************************
@@ -105,15 +108,15 @@ int evpBash_bind(ENGINE* e);
 *******************************************************************************
 */
 
-void evpBeltCipher_destroy();
-void evpBeltMD_destroy();
-void evpBelt_ameth_destroy();
-void evpBelt_pmeth_destroy();
-void evpBeltPBKDF_destroy();
-void evpBeltTLS_destroy();
-void evpBign_ameth_destroy();
-void evpBign_pmeth_destroy();
-void evpBash_destroy();
+void evpBeltCipher_finish();
+void evpBeltMD_finish();
+void evpBelt_ameth_finish();
+void evpBelt_pmeth_finish();
+void evpBeltPBKDF_finish();
+void evpBeltTLS_finish();
+void evpBign_ameth_finish();
+void evpBign_pmeth_finish();
+void evpBash_finish();
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.02.17
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -34,87 +34,6 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 
 /*
 *******************************************************************************
-Блобы
-
-В структуре EVP_MD_CTX реализация запрашивает под указатель память объема
-sizeof(blob_t)  размещает в выделенной памяти объект типа blob_t,
-фактически еще один указатель. Так сделано потому, что set-доступ к указателю
-на пользовательские данные (md_data) закрыт.
-
-В структуре EVP_CIPHER_CTX set-доступ к указателю на пользовательские данные
-(cipher_data) открыт и реализация проще.
-
-\warning OpenSSL не всегда гарантирует выделение памяти под указатель
-EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data()
-(см. EVP_MD_CTX_copy_ex() при установке флага EVP_MD_CTX_FLAG_REUSE).
-Поэтому указатель проверяется перед обращением к памяти, на которую он
-ссылается.
-
-\remark При копировании структур EVP_MD_CTX сначала механически копируются
-пользовательские данные md_data, в том числе блобы. Механическое копирование
-указателей приводит к ошибкам освобождения памяти. Поэтому в
-EVP_MD_CTX_copy_blob() совпадение блобов проверяется. При совпадении создается
-новая копия копируемого блоба. Похожая логика реализована в
-EVP_CIPHER_CTX_copy_blob(), хотя в ней, по-видимому, нет необходимости.
-*******************************************************************************
-*/
-
-blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx)
-{
-	return (blob_t)EVP_CIPHER_CTX_get_cipher_data(ctx);
-}
-
-int EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
-{
-	EVP_CIPHER_CTX_set_cipher_data(ctx, blob);
-	return 1;
-}
-
-int EVP_CIPHER_CTX_copy_blob(EVP_CIPHER_CTX* to, const EVP_CIPHER_CTX* from)
-{
-	blob_t blob_from = EVP_CIPHER_CTX_get_blob(from);
-	blob_t blob_to = EVP_CIPHER_CTX_get_blob(to);
-	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
-	if (blob_from && !blob_to)
-		return 0;
-	return EVP_CIPHER_CTX_set_blob(to, blob_to);
-}
-
-blob_t EVP_MD_CTX_get_blob(const EVP_MD_CTX* ctx)
-{
-	if (EVP_MD_CTX_md_data(ctx))
-		return *(blob_t*)EVP_MD_CTX_md_data(ctx);
-	return 0;
-}
-
-int EVP_MD_CTX_set_blob(EVP_MD_CTX* ctx, const blob_t blob)
-{
-	if (EVP_MD_CTX_md_data(ctx))
-	{
-		*(blob_t*)EVP_MD_CTX_md_data(ctx) = blob;
-		return 1;
-	}
-	return 0;
-}
-
-int EVP_MD_CTX_copy_blob(EVP_MD_CTX* to, const EVP_MD_CTX* from)
-{
-	blob_t blob_from, blob_to;
-	// блоб нельзя скопировать?
-	if (EVP_MD_CTX_md_data(from) && !EVP_MD_CTX_md_data(to))
-		return 0;
-	// копировать
-	blob_from = EVP_MD_CTX_get_blob(from);
-	blob_to = EVP_MD_CTX_get_blob(to);
-	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
-	if (blob_from && !blob_to)
-		return 0;
-	// установить
-	return EVP_MD_CTX_set_blob(to, blob_to);
-}
-
-/*
-*******************************************************************************
 Интерфейс плагина
 
 \remark Выдержка из https://eprint.iacr.org/2018/354:
@@ -141,15 +60,15 @@ static int bee2evp_init(ENGINE* e)
 
 static int bee2evp_finish(ENGINE* e)
 { 
-	evpBeltCipher_destroy();
-	evpBeltMD_destroy();
-	evpBelt_pmeth_destroy();
-	evpBelt_ameth_destroy();
-	evpBeltPBKDF_destroy();
-	evpBeltTLS_destroy();
-	evpBign_pmeth_destroy();
-	evpBign_ameth_destroy();
-	evpBash_destroy();
+	evpBeltCipher_finish();
+	evpBeltMD_finish();
+	evpBelt_pmeth_finish();
+	evpBelt_ameth_finish();
+	evpBeltPBKDF_finish();
+	evpBeltTLS_finish();
+	evpBign_pmeth_finish();
+	evpBign_ameth_finish();
+	evpBash_finish();
 	rngClose();
 	return 1;
 }

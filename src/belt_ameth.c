@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for belt-macXXX and belt-hmac (hmac-hbelt)
 \created 2013.07.01
-\version 2021.01.12
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -230,6 +230,6 @@ int evpBelt_ameth_bind(ENGINE* e)
 	return ENGINE_set_pkey_asn1_meths(e, evpBelt_ameth_enum);
 }
 
-void evpBelt_ameth_destroy()
+void evpBelt_ameth_finish()
 {
 }
