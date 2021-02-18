@@ -456,32 +456,51 @@ def btls_issue_cert(privfile, certfile):
 		.format(privfile, certfile))
 	retcode, block, er__ = openssl(cmd)
 
-def btls_server():
-	tmpdirname = tempfile.mkdtemp()
-
-	priv256 = os.path.join(tmpdirname, 'priv256.key') 
+def btls_server(tmpdirname, log_file):
+	priv256 = os.path.join(tmpdirname, 'priv256.key')
 	btls_gen_privkey(priv256)
 
-	cert = os.path.join(tmpdirname, 'cert.pem') 
+	cert = os.path.join(tmpdirname, 'cert.pem')
 	btls_issue_cert(priv256, cert)
 
-	prefix = 'echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |'
-	cmd = 's_server -key {} -cert {} -tls1_2 -engine bee2evp -cipher {}'.format(
-		priv256, cert, 'DHE-BIGN-WITH-BELT-DWP-HBELT')
-	cmd = '{} {} {}'.format(prefix, home + '/usr/local/bin/openssl', cmd)
-	server_ = subprocess.Popen(cmd, shell=True)
+	cmd = ('s_server -key {} -cert {} -quiet -tls1_2 -engine bee2evp > {}'
+			.format(priv256, cert, log_file))
+	global server
+	server = openssl(cmd, type_=1)
 
-def btls_client(name):
-	client = subprocess.check_output(home + '/usr/local/bin/openssl s_client', shell=True)
-	print(client.decode())
-	retcode = (client.decode().find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
+def btls_client():
+	cmd = 's_client -cipher {}'.format('DHE-BIGN-WITH-BELT-DWP-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {}'.format('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
 
 def test_btls():
-	s = threading.Thread(target=btls_server)
+
+	tmpdirname = tempfile.mkdtemp()
+	log_file = os.path.join(tmpdirname, 'log.txt')
+
+	s = threading.Thread(target=btls_server, args=(tmpdirname, log_file,))
 	s.run()
 	time.sleep(1)
-	x = threading.Thread(target=btls_client,  args=(s,)).run()
+	c = threading.Thread(target=btls_client)
+	c.run()
+
+	# kill openssl s_server
+	os.killpg(os.getpgid(server.pid), signal.SIGTERM)
+
+	with open(log_file, 'r') as f:
+		server_out = f.read()
+
+	# DHE-BIGN-WITH-BELT-DWP-HBELT testing result
+	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
+
+	# DHE-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
+	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
+	test_result('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
 	test_version()
