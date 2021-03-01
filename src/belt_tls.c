@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.02.18
+\version 2021.03.01
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -417,6 +417,22 @@ static int evpBeltCTRT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 
 /*
 *******************************************************************************
+Алгоритм belt_mac_tls
+*******************************************************************************
+*/
+
+const char OID_belt_mact[] = "1.2.112.0.2.0.34.101.31.82";
+const char SN_belt_mact[] = "belt-mac-tls";
+const char LN_belt_mact[] = "belt-mac-tls";
+
+EVP_MD* EVP_belt_mact;
+const EVP_MD* evpBeltMACT()
+{
+	return EVP_belt_mact;
+}
+
+/*
+*******************************************************************************
 Регистрация алгоритмов
 *******************************************************************************
 */
@@ -474,6 +490,42 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 	return 1;
 }
 
+static ENGINE_DIGESTS_PTR prev_md_enum;
+
+static int evpBeltTLS_md_enum(ENGINE* e, const EVP_MD** md,
+	const int** nids, int nid)
+{
+	// возвратить таблицу идентификаторов?
+	if (!md)
+	{
+		// объединить таблицы?
+		if (prev_md_enum && prev_md_enum != evpBeltTLS_md_enum)
+		{
+			nid = prev_md_enum(e, md, nids, nid);
+			if (nid <= 0)
+				return 0;
+			if (belt_tls_count + nid >= (int)COUNT_OF(belt_tls_nids))
+				return 0;
+			memCopy(belt_tls_nids + belt_tls_count, *nids, 
+				nid * sizeof(int));
+			*nids = belt_tls_nids;
+			return belt_tls_count + nid;
+		}
+		// нет, просто отчитаться за себя
+		*nids = belt_tls_nids;
+		return belt_tls_count;
+	}
+	// обработать запрос
+	if (nid == NID_belt_mact)
+		*md = EVP_belt_mact;
+	else if (prev_md_enum && prev_md_enum != evpBeltTLS_md_enum)
+		return prev_md_enum(e, md, nids, nid);
+	else
+		return 0;
+	// ответ найден
+	return 1;
+}
+
 /*
 *******************************************************************************
 Подключение / закрытие
@@ -496,7 +548,7 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 		return 0;\
 
 
-int evpBeltTLS_bind(ENGINE* e)
+int evpBeltTLS_cipher_bind(ENGINE* e)
 {
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
@@ -519,10 +571,34 @@ int evpBeltTLS_bind(ENGINE* e)
 		EVP_add_cipher(EVP_belt_ctrt);
 }
 
+int evpBeltTLS_md_bind(ENGINE* e)
+{
+	int tmp;
+	// зарегистрировать алгоритмы и получить nid'ы
+	if (BELT_TLS_REG(belt_mact, tmp) == NID_undef)
+		return 0;
+	EVP_belt_mact = EVP_MD_meth_new(NID_belt_mact, 0);
+	if (EVP_belt_mact == 0) return 0;
+	// задать перечислитель
+	prev_md_enum = ENGINE_get_digests(e);
+	if (!ENGINE_set_digests(e, evpBeltTLS_md_enum)) 
+		return 0;
+	// зарегистрировать алгоритмы
+	return ENGINE_register_digests(e) &&
+		EVP_add_digest(EVP_belt_mact);
+}
+
+int evpBeltTLS_bind(ENGINE* e)
+{
+	return evpBeltTLS_cipher_bind(e) && evpBeltTLS_md_bind(e);
+}
+
 void evpBeltTLS_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_ctrt);
 	EVP_belt_ctrt = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwpt);
 	EVP_belt_dwpt = 0;
+	EVP_MD_meth_free(EVP_belt_mact);
+	EVP_belt_mact = 0;
 }

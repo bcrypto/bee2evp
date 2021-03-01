@@ -63,7 +63,7 @@ int btls_init()
 		"bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)
 		return 0;
 	if (OBJ_create("1.2.112.0.2.0.34.101.31.82", 
-		"belt-mac-tls", "belt-mac-tls") != NID_belt_mac_tls)
+		"belt-mac-tls", "belt-mac-tls") != NID_belt_mact)
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdhe)
 		return 0;

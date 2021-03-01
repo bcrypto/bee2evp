@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2021.02.09
+\version 2021.03.01
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -460,17 +460,17 @@ extern const char LN_belt_hash[];
 const EVP_MD* evpBeltHash();
 
 /* belt-mac-tls */
-extern const char OID_belt_mac_tls[];
-extern const char SN_belt_mac_tls[];
-extern const char LN_belt_mac_tls[];
-#define NID_belt_mac_tls OBJ_sn2nid(SN_belt_mac_tls)
+extern const char OID_belt_mact[];
+extern const char SN_belt_mact[];
+extern const char LN_belt_mact[];
+#define NID_belt_mact OBJ_sn2nid(SN_belt_mact)
 
-/*!	\brief Описание алгоритма belt-mac-tls
+/*!	\brief Описание алгоритма belt-mact
 
-	Возвращается описание алгоритма belt-hash (хэширование).
+	Возвращается описание алгоритма belt-mact (редакция belt-mac для TLS).
 	\return Описание алгоритма. 
 */
-const EVP_MD* evpBeltMacTls();
+const EVP_MD* evpBeltMACT();
 
 /* belt-hmac (hmac-hbelt) */
 extern const char OID_belt_hmac[];

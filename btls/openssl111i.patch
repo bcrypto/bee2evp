@@ -92,7 +92,7 @@ index 0c47241c..114b67d8 100644
 +    {NID_bign_pubkey, SSL_aBIGN} /* SSL_PKEY_BIGN */
  };
 diff --git a/ssl/ssl_ciph.c b/ssl/ssl_ciph.c
-index 735a483c..c52515f7 100644
+index 735a483c..2d2821b8 100644
 --- a/ssl/ssl_ciph.c
 +++ b/ssl/ssl_ciph.c
 @@ -20,6 +20,7 @@
@@ -127,7 +127,7 @@ index 735a483c..c52515f7 100644
      {0, NID_sha224},            /* SSL_MD_SHA224_IDX 10 */
 -    {0, NID_sha512}             /* SSL_MD_SHA512_IDX 11 */
 +    {0, NID_sha512},             /* SSL_MD_SHA512_IDX 11 */
-+    {SSL_BELTMAC, NID_belt_mac_tls}, /* SSL_MD_BELTMAC_IDX 12 */
++    {SSL_BELTMAC, NID_belt_mact}, /* SSL_MD_BELTMAC_IDX 12 */
 +    {SSL_HBELT, NID_belt_hash} /* SSL_MD_HBELT_IDX 13 */
  };
  
