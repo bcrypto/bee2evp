@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2021.02.02
+\version 2021.03.03
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -31,18 +31,14 @@ extern "C" {
 
 /* obj_mac.h */
 #define NID_bign_pubkey 	(NUM_NID + 0)
-#define NID_belt_dwpt		(NUM_NID + 1)
-#define NID_belt_ctrt	 	(NUM_NID + 2)
-#define NID_belt_hash 		(NUM_NID + 3)
-#define NID_bign_with_hbelt (NUM_NID + 4)
-#define NID_belt_hmac		(NUM_NID + 5)
+#define NID_belt_hash 		(NUM_NID + 1)
+#define NID_belt_dwpt		(NUM_NID + 2)
+#define NID_belt_ctrt	 	(NUM_NID + 3)
+#define NID_belt_mac256		(NUM_NID + 4)
+#define NID_bign_with_hbelt (NUM_NID + 5)
 #define NID_bign_curve256v1 (NUM_NID + 6)
-#define NID_belt_mac_tls	(NUM_NID + 7)
-#define NID_kxbdhe			(NUM_NID + 8)
-#define NID_bign128_auth	(NUM_NID + 9)
-
-/* ssl_ciph.c */
-#define SSL_ENC_BELTCTR_IDX     22
+#define NID_kxbdhe			(NUM_NID + 7)
+#define NID_bign128_auth	(NUM_NID + 8)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U

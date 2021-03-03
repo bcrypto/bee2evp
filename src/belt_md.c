@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
-\version 2021.02.18
+\version 2021.03.02
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -62,22 +62,6 @@ static int evpBeltHash_final(EVP_MD_CTX* ctx, octet* md)
 
 /*
 *******************************************************************************
-Алгоритм belt_mac_tls
-*******************************************************************************
-*/
-
-const char OID_belt_mac_tls[] = "1.2.112.0.2.0.34.101.31.82";
-const char SN_belt_mac_tls[] = "belt-mac-tls";
-const char LN_belt_mac_tls[] = "belt-mac-tls";
-
-EVP_MD* EVP_belt_mac_tls;
-const EVP_MD* evpBeltMacTls()
-{
-	return EVP_belt_mac_tls;
-}
-
-/*
-*******************************************************************************
 Регистрация алгоритмов
 *******************************************************************************
 */
@@ -125,8 +109,6 @@ static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 	// обработать запрос
 	if (nid == NID_belt_hash)
 		*md = EVP_belt_hash;
-	else if (nid == NID_belt_mac_tls)
-		*md = EVP_belt_mac_tls;
 	else if (prev_enum && prev_enum != evpBeltMD_enum)
 		return prev_enum(e, md, nids, nid);
 	else
@@ -149,35 +131,29 @@ int evpBeltMD_bind(ENGINE* e)
 {
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
-	if (BELT_MD_REG(belt_hash, tmp) == NID_undef ||
-		BELT_MD_REG(belt_mac_tls, tmp) == NID_undef)
+	if (BELT_MD_REG(belt_hash, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатель belt_hash
 	EVP_belt_hash = EVP_MD_meth_new(NID_belt_hash, 0);
 	if (EVP_belt_hash == 0 ||
 		!EVP_MD_meth_set_result_size(EVP_belt_hash, 32) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_belt_hash, 32) ||
-		!EVP_MD_meth_set_app_datasize(EVP_belt_hash, beltHash_keep()) ||
+		!EVP_MD_meth_set_app_datasize(EVP_belt_hash, (int)beltHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_belt_hash, evpBeltHash_init) ||
 		!EVP_MD_meth_set_update(EVP_belt_hash, evpBeltHash_update) ||
 		!EVP_MD_meth_set_final(EVP_belt_hash, evpBeltHash_final))
 		return 0;
-	EVP_belt_mac_tls = EVP_MD_meth_new(NID_belt_mac_tls, 0);
-	if (EVP_belt_mac_tls == 0) return 0;
 	// задать перечислитель
 	prev_enum = ENGINE_get_digests(e);
 	if (!ENGINE_set_digests(e, evpBeltMD_enum)) 
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_digests(e) &&
-		EVP_add_digest(EVP_belt_hash) &&
-		EVP_add_digest(EVP_belt_mac_tls);
+		EVP_add_digest(EVP_belt_hash);
 }
 
 void evpBeltMD_finish()
 {
 	EVP_MD_meth_free(EVP_belt_hash);
-	EVP_MD_meth_free(EVP_belt_mac_tls);
     EVP_belt_hash = 0;
-	EVP_belt_mac_tls = 0;
 }

@@ -4,16 +4,55 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief BTLS ciphersuites
 \created 2021.01.11
-\version 2021.02.02
+\version 2021.03.03
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 *******************************************************************************
 */
 
+#include <crypto/evp.h>
+#include <openssl/evp.h>
 #include <openssl/objects.h>
-#include "btls.h"
 #include "ssl_local.h"
+#include "../crypto/evp/evp_local.h"
+
+#include "btls.h"
+
+/*
+*******************************************************************************
+Алгоритм belt-mac256 для TLS
+
+Для представления алгоритма belt-mac256 в связке BELT_CTR_MAC криптонаборов 
+BTLS алгоритм belt-mac56 позиционируется ка алгоритм хэширования (MD). 
+Это вынужденная мера, потому что альтернативный вариант -- AEAD -- будет 
+означать, что при генерации ключевого материала ключи имитозащиты связки 
+BELT_CTR_MAC не будут выделены как отдельные (см. функцию 
+tls1_change_cipher_state() модуля t1_enc.c).
+
+MD-интерфейс belt-mac256 объявлен, но не реализован. Функционал belt-mac256 
+встроен в алгоритм belt-ctr-tls (TLS-версия belt-ctr). Это алгоритм объявлен 
+с флагом AEAD и поэтому обращения к MD-интерфейсу belt-mac256 не используются 
+(см. обработку флага EVP_CIPH_FLAG_AEAD_CIPHER в модуле t1_enc.c).
+
+Регистрация belt-mac256 выполняется в модуле ssl_ciph.c и состоит в следующем:
+- идентификатор NID_belt_mac256 добавляется в таблицу ssl_cipher_table_mac
+  и связывается с флагом SSL_BELTMAC. Флаг SSL_BELTMAC устанавливается в слове 
+  описания криптонабора для указания на использование belt-mac256;
+- в таблице ssl_mac_pkey_id устанавливается ссылка на методы belt-mac256;
+- в таблице ssl_mac_secret_size устанавливается длина ключа belt-mac256
+  (32 октета).
+*******************************************************************************
+*/
+
+const EVP_MD* evpMDBeltMac256()
+{
+	static const EVP_MD md_belt_mac256 = 
+	{
+		NID_belt_mac256,
+    };
+	return &md_belt_mac256;
+}
 
 /*
 *******************************************************************************
@@ -33,8 +72,6 @@ nid'ы.
 *******************************************************************************
 */
 
-#include <stdio.h>
-
 static int btls_inited = 0;
 
 int btls_init()
@@ -44,30 +81,29 @@ int btls_init()
 	if (OBJ_create("1.2.112.0.2.0.34.101.45.2.1", 
 		"bign-pubkey", "bign-pubkey") != NID_bign_pubkey)
 		return 0;
+	if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
+		"belt-hash", "belt-hash") != NID_belt_hash)
+		return 0;
 	if (OBJ_create("1.2.112.0.2.0.34.101.31.67",
 		"belt-dwp-tls", "belt-dwp-tls") != NID_belt_dwpt)
 		return 0;
 	if (OBJ_create("1.2.112.0.2.0.34.101.31.44", 
 		"belt-ctr-tls", "belt-ctr-tls") != NID_belt_ctrt)
 		return 0;
-	if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
-		"belt-hash", "belt-hash") != NID_belt_hash)
+	if (OBJ_create("1.2.112.0.2.0.34.101.31.53", 
+		"belt-mac256", "belt-mac256") != NID_belt_mac256)
 		return 0;
 	if (OBJ_create("1.2.112.0.2.0.34.101.45.12", 
 		"bign-with-hbelt", "bign-with-hbelt") != NID_bign_with_hbelt)
 		return 0;
-	if (OBJ_create("1.2.112.0.2.0.34.101.47.12", 
-		"belt-hmac", "belt-hmac") != NID_belt_hmac)
-		return 0;
 	if (OBJ_create("1.2.112.0.2.0.34.101.45.3.1", 
 		"bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)
-		return 0;
-	if (OBJ_create("1.2.112.0.2.0.34.101.31.82", 
-		"belt-mac-tls", "belt-mac-tls") != NID_belt_mac_tls)
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdhe)
 		return 0;
 	if (OBJ_new_nid(1) != NID_bign128_auth)
+		return 0;
+	if (!EVP_add_digest(evpMDBeltMac256()))
 		return 0;
 	btls_inited++;
 	return 1;

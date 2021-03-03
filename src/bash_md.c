@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Bash hashing algorithm (bash)
 \created 2016.09.20
-\version 2021.02.18
+\version 2021.03.02
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -168,7 +168,7 @@ int evpBash_bind(ENGINE* e)
 	if (EVP_bash256 == 0 ||
 		!EVP_MD_meth_set_result_size(EVP_bash256, 32) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash256, 128) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash256, bashHash_keep()) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash256, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash256, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash256, evpBash_update) ||
 		!EVP_MD_meth_set_final(EVP_bash256, evpBash_final))
@@ -178,7 +178,7 @@ int evpBash_bind(ENGINE* e)
 	if (EVP_bash384 == 0 ||
 		!EVP_MD_meth_set_result_size(EVP_bash384, 48) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash384, 96) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash384, bashHash_keep()) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash384, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash384, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash384, evpBash_update) ||
 		!EVP_MD_meth_set_final(EVP_bash384, evpBash_final))
@@ -188,7 +188,7 @@ int evpBash_bind(ENGINE* e)
 	if (EVP_bash512 == 0 ||
 		!EVP_MD_meth_set_result_size(EVP_bash512, 64) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash512, 64) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash512, bashHash_keep()) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash512, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash512, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash512, evpBash_update) ||
 		!EVP_MD_meth_set_final(EVP_bash512, evpBash_final))
