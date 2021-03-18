@@ -16,6 +16,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <openssl/objects.h>
 #include "ssl_local.h"
 #include "../crypto/evp/evp_local.h"
+#include <openssl/rand.h>
 
 #include "btls.h"
 
@@ -100,6 +101,8 @@ int btls_init()
 		"bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdhe)
+		return 0;
+	if (OBJ_new_nid(1) != NID_kxbdht)
 		return 0;
 	if (OBJ_new_nid(1) != NID_bign128_auth)
 		return 0;
@@ -205,4 +208,113 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 		return 0;
 	// завершить
 	return 1;
+}
+
+int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
+	unsigned char* pms = NULL;
+	size_t pms_len = 48;
+	EVP_PKEY_CTX *pkey_ctx = NULL;
+	X509* peer_cert;
+	unsigned char* msg = NULL;
+	size_t msg_len = 0;
+	int ret = 0;
+
+	pms = OPENSSL_malloc(pms_len);
+	if (!pms) {
+		goto err;
+	}
+	if (!RAND_bytes(pms, pms_len)){
+		goto err;
+	}
+	peer_cert = s->session->peer;
+	if (!peer_cert){
+		goto err;
+	}
+
+	pkey_ctx = EVP_PKEY_CTX_new(X509_get0_pubkey(peer_cert), NULL);
+	if (!EVP_PKEY_encrypt_init(pkey_ctx)){
+		goto err;
+	}
+	if (!EVP_PKEY_encrypt(pkey_ctx, NULL, &msg_len, pms, pms_len)){
+		goto err;
+	}
+	msg = OPENSSL_malloc(msg_len);
+	if (!msg) {
+		goto err;
+	}
+	if (!EVP_PKEY_encrypt(pkey_ctx, msg, &msg_len, pms, pms_len)){
+		goto err;
+	}
+	if (!WPACKET_sub_memcpy_u8(pkt, msg, msg_len)) {
+		goto err;
+	}
+	s->s3->tmp.pms = pms;
+	s->s3->tmp.pmslen = pms_len;
+	pms = NULL;
+	ret = 1;
+ err:
+	if (pms){
+		OPENSSL_free(pms);
+	}
+	if (msg){
+		OPENSSL_free(msg);
+	}
+	if (pkey_ctx){
+		EVP_PKEY_CTX_free(pkey_ctx);
+	}
+	if (ret == 0)
+		SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+			SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE,
+			ERR_R_INTERNAL_ERROR);
+	return ret;
+}
+
+int btls_process_cke_bign_dht(SSL* s, PACKET* pkt){
+	EVP_PKEY* pk = NULL;
+	EVP_PKEY_CTX* pkey_ctx = NULL;
+	unsigned char* pms = NULL;
+	size_t pms_len = 0;
+	size_t msg_len;
+	int ret = 0;
+
+	pk = s->cert->pkeys[SSL_PKEY_BIGN].privatekey;
+	if (pk == NULL) {
+		goto err;
+	}
+	pkey_ctx = EVP_PKEY_CTX_new(pk, NULL);
+	if (pkey_ctx == NULL) {
+		goto err;
+	}
+	if (!EVP_PKEY_decrypt_init(pkey_ctx)){
+		goto err;
+	}
+	unsigned int i;
+	const unsigned char *msg;
+	if (!PACKET_get_1(pkt, &i) || !PACKET_get_bytes(pkt, &msg, i)
+			|| PACKET_remaining(pkt) != 0) {
+		goto err;
+	}
+	if (!EVP_PKEY_decrypt(pkey_ctx, NULL, &pms_len, msg, i)){
+		goto err;
+	}
+	pms = (unsigned char*)OPENSSL_malloc(pms_len);
+	if (!EVP_PKEY_decrypt(pkey_ctx, pms, &pms_len, msg, i)){
+		goto err;
+	}
+	if (!ssl_generate_master_secret(s, pms, pms_len, 0)) {
+		goto err;
+	}
+	ret = 1;
+ err:
+	if (pkey_ctx != NULL){
+		EVP_PKEY_CTX_free(pkey_ctx);
+	}
+	if (pms != NULL){
+		OPENSSL_free(pms);
+	}
+	if (ret == 0)
+		SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+			SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
+			ERR_R_INTERNAL_ERROR);
+	return ret;
 }
