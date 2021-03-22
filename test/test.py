@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2021.02.09
+# \version 2021.03.18
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -475,6 +475,12 @@ def btls_client():
 	cmd = 's_client -cipher {}'.format('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT')
 	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
 
+	cmd = 's_client -cipher {}'.format('DHT-BIGN-WITH-BELT-DWP-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {}'.format('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
+
 def test_btls():
 
 	tmpdirname = tempfile.mkdtemp()
@@ -499,6 +505,14 @@ def test_btls():
 	# DHE-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
 	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
 	test_result('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	# DHT-BIGN-WITH-BELT-DWP-HBELT testing result
+	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHT-BIGN-WITH-BELT-DWP-HBELT', retcode)
+
+	# DHT-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
+	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
+	test_result('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
 
 	shutil.rmtree(tmpdirname)
 

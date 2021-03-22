@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief BTLS ciphersuites
 \created 2021.01.11
-\version 2021.03.03
+\version 2021.03.22
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -16,6 +16,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <openssl/objects.h>
 #include "ssl_local.h"
 #include "../crypto/evp/evp_local.h"
+#include <openssl/rand.h>
 
 #include "btls.h"
 
@@ -101,6 +102,8 @@ int btls_init()
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdhe)
 		return 0;
+	if (OBJ_new_nid(1) != NID_kxbdht)
+		return 0;
 	if (OBJ_new_nid(1) != NID_bign128_auth)
 		return 0;
 	if (!EVP_add_digest(evpMDBeltMac256()))
@@ -135,6 +138,7 @@ int btls_init()
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHE).
 *******************************************************************************
 */
+
 int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt)
 {
 	EVP_PKEY_CTX* ctx = NULL;
@@ -205,4 +209,126 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 		return 0;
 	// завершить
 	return 1;
+}
+
+/*
+*******************************************************************************
+Механизм BIGN_DHT
+
+Протокол:
+ - C -> S: ClientKeyExchange[зашифрованный pre_master_secret]
+
+Ключ pre_master_secret состоит из 48 октетов. Он генерируется клиентом с 
+помощью функции RAND_bytes().
+
+Ключ pre_master_secret зашифровывается на открытом ключе сервера из сертификата 
+сервера. Зашифрование выполняется с помощью алгоритма bign-keytransport. При 
+зашифровании используется нулевой заголовок ключа. В результате зашифрования 
+получается токен ключа. 
+
+Подготовка CKE: btls_construct_cke_bign_dht.
+Обработка CKE: btls_process_сke_bign_dht.
+
+Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
+ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHT).
+
+todo: Клиент должен проверить установку флага keyEncipherment в расширении 
+KeyUsage сертификата сервера.
+
+todo: Можно ли взять под контроль генерацию pre_master_secret клиентом?
+*******************************************************************************
+*/
+
+int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
+	unsigned char* pms = NULL;
+	size_t pms_len = 48;
+	EVP_PKEY_CTX* pkey_ctx = NULL;
+	X509* peer_cert;
+	unsigned char* token = NULL;
+	size_t token_len = 0;
+	int ret = 0;
+	// подготовка pms = pre_master_secret
+	pms = OPENSSL_malloc(pms_len);
+	if (!pms)
+		goto err;
+	if (!RAND_bytes(pms, pms_len))
+		goto err;
+	peer_cert = s->session->peer;
+	if (!peer_cert)
+		goto err;
+	// определить server_pubkey
+	pkey_ctx = EVP_PKEY_CTX_new(X509_get0_pubkey(peer_cert), NULL);
+	// token <- bign_keytransport(pms, server_pubkey)
+	if (!EVP_PKEY_encrypt_init(pkey_ctx))
+		goto err;
+	if (!EVP_PKEY_encrypt(pkey_ctx, NULL, &token_len, pms, pms_len))
+		goto err;
+	token = OPENSSL_malloc(token_len);
+	if (!token)
+		goto err;
+	if (!EVP_PKEY_encrypt(pkey_ctx, token, &token_len, pms, pms_len))
+		goto err;
+	if (!WPACKET_sub_memcpy_u8(pkt, token, token_len))
+		goto err;
+	// сохранить pms
+	s->s3->tmp.pms = pms;
+	s->s3->tmp.pmslen = pms_len;
+	pms = NULL;
+	ret = 1;
+err:
+	if (pms)
+		OPENSSL_free(pms);
+	if (token)
+		OPENSSL_free(token);
+	if (pkey_ctx)
+		EVP_PKEY_CTX_free(pkey_ctx);
+	if (ret == 0)
+		SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+			SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE,
+			ERR_R_INTERNAL_ERROR);
+	return ret;
+}
+
+int btls_process_cke_bign_dht(SSL* s, PACKET* pkt){
+	EVP_PKEY* pk = NULL;
+	EVP_PKEY_CTX* pkey_ctx = NULL;
+	unsigned char* pms = NULL;
+	size_t pms_len = 0;
+	const unsigned char* token;
+	unsigned int token_len;
+	int ret = 0;
+	// подготовить личный ключ
+	pk = s->cert->pkeys[SSL_PKEY_BIGN].privatekey;
+	if (pk == NULL)
+		goto err;
+	pkey_ctx = EVP_PKEY_CTX_new(pk, NULL);
+	if (pkey_ctx == NULL)
+		goto err;
+	if (!EVP_PKEY_decrypt_init(pkey_ctx))
+		goto err;
+	// извлечь токен ключа
+	if (!PACKET_get_1(pkt, &token_len) || 
+		!PACKET_get_bytes(pkt, &token, token_len) || 
+		PACKET_remaining(pkt) != 0)
+		goto err;
+	// снять защиту с токена
+	if (!EVP_PKEY_decrypt(pkey_ctx, NULL, &pms_len, token, token_len) ||
+		pms_len != 48)
+		goto err;
+	pms = (unsigned char*)OPENSSL_malloc(pms_len);
+	if (!EVP_PKEY_decrypt(pkey_ctx, pms, &pms_len, token, token_len))
+		goto err;
+	if (!ssl_generate_master_secret(s, pms, pms_len, 0))
+		goto err;
+	ret = 1;
+err:
+	if (pkey_ctx != NULL)
+		EVP_PKEY_CTX_free(pkey_ctx);
+	if (pms != NULL)
+		OPENSSL_free(pms);
+	if (ret == 0)
+		SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+			SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
+			ERR_R_INTERNAL_ERROR);
+	return ret;
 }

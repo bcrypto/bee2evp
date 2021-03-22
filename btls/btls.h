@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2021.03.03
+\version 2021.03.22
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -38,7 +38,8 @@ extern "C" {
 #define NID_bign_with_hbelt (NUM_NID + 5)
 #define NID_bign_curve256v1 (NUM_NID + 6)
 #define NID_kxbdhe			(NUM_NID + 7)
-#define NID_bign128_auth	(NUM_NID + 8)
+#define NID_kxbdht			(NUM_NID + 8)
+#define NID_bign128_auth	(NUM_NID + 9)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
@@ -66,6 +67,7 @@ extern "C" {
 
 /* ssl.h */
 #define SSL_TXT_kBDHE "kBDHE"
+#define SSL_TXT_kBDHT "kBDHT"
 #define SSL_TXT_aBIGN "aBIGN"
 #define SSL_TXT_BELTCTR "BELTCTR"
 #define SSL_TXT_BELTMAC "BELTMAC"
@@ -83,6 +85,16 @@ extern "C" {
 	"BTLS_DHE_BIGN_WITH_BELT_DWP_HBELT"
 # define BTLS1_TXT_DHE_BIGN_WITH_BELT_DWP_HBELT\
 	"DHE-BIGN-WITH-BELT-DWP-HBELT"
+
+# define BTLS1_RFC_DHT_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"BTLS_DHT_BIGN_WITH_BELT_CTR_MAC_HBELT"
+# define BTLS1_TXT_DHT_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"DHT-BIGN-WITH-BELT-CTR-MAC-HBELT"
+# define BTLS1_RFC_DHT_BIGN_WITH_BELT_DWP_HBELT\
+	"BTLS_DHT_BIGN_WITH_BELT_DWP_HBELT"
+# define BTLS1_TXT_DHT_BIGN_WITH_BELT_DWP_HBELT\
+	"DHT-BIGN-WITH-BELT-DWP-HBELT"
+
 /*
 *******************************************************************************
 Инициализация
@@ -99,6 +111,15 @@ int btls_init();
 
 int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt);
 int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
+
+/*
+*******************************************************************************
+Механизм BIGN_DHT
+*******************************************************************************
+*/
+
+int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt);
+int btls_process_cke_bign_dht(SSL* s, PACKET* pkt);
 
 #ifdef __cplusplus
 } /* extern "C" */
