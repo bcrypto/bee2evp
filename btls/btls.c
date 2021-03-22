@@ -245,7 +245,7 @@ int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
 	EVP_PKEY_CTX* pkey_ctx = NULL;
 	X509* peer_cert;
 	unsigned char* token = NULL;
-	unsigned int token_len = 0;
+	size_t token_len = 0;
 	int ret = 0;
 	// подготовка pms = pre_master_secret
 	pms = OPENSSL_malloc(pms_len);
@@ -268,7 +268,7 @@ int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
 		goto err;
 	if (!EVP_PKEY_encrypt(pkey_ctx, token, &token_len, pms, pms_len))
 		goto err;
-	if (!WPACKET_sub_memcpy_u8(pkt, token, token_len)) {
+	if (!WPACKET_sub_memcpy_u8(pkt, token, token_len))
 		goto err;
 	// сохранить pms
 	s->s3->tmp.pms = pms;
