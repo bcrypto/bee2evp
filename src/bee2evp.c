@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.01.27
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/mt.h>
 #include <bee2/core/rng.h>
 #include <bee2/core/str.h>
+#include <bee2/core/util.h>
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
 
@@ -35,7 +36,18 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 *******************************************************************************
 Интерфейс плагина
 
-\remark Команды не обрабатываются
+\remark Выдержка из https://eprint.iacr.org/2018/354:
+- the bind() method is called by the OpenSSL built-in dynamic ENGINE upon
+  load and is used to set the internal state of the ENGINE object and allocate
+  needed resources, to set its id and name, and the pointers to the init(),
+  finish(), and destroy() functions;
+- the init() function is called to derive a fully initialized functional
+  reference to the ENGINE from a structural reference;
+- the finish() function is called when releasing an ENGINE functional
+  reference, to free up any resource allocated to it;
+- the destroy() function is called upon unloading the ENGINE, when the last
+  structural reference to it is released, to cleanly free any resource
+  allocated upon loading it into memory.
 *******************************************************************************
 */
 
@@ -48,22 +60,22 @@ static int bee2evp_init(ENGINE* e)
 
 static int bee2evp_finish(ENGINE* e)
 { 
+	evpBeltCipher_finish();
+	evpBeltMD_finish();
+	evpBelt_pmeth_finish();
+	evpBelt_ameth_finish();
+	evpBeltPBKDF_finish();
+	evpBeltTLS_finish();
+	evpBign_pmeth_finish();
+	evpBign_ameth_finish();
+	evpBash_finish();
+	rngClose();
 	return 1;
 }
 
 static int bee2evp_destroy(ENGINE* e)
 { 
-	evpBeltCipher_destroy();
-	evpBeltMD_destroy();
-	evpBelt_pmeth_destroy();
-	evpBelt_ameth_destroy();
-	evpBeltPBKDF_destroy();
-	evpBeltTLS_destroy();
-	evpBign_pmeth_destroy();
-	evpBign_ameth_destroy();
-	evpBash_destroy();
-	rngClose(); 
-	return 1;
+		return 1;
 }
 
 static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] = 

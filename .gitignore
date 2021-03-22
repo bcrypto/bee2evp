@@ -61,9 +61,9 @@
 *.opensdf
 
 # Specific files
-clear.cmd
-backup
-bin
+_backup
+_bin
+_support
 build
-support
 win
+clear.cmd

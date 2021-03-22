@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt-based PBKDF
 \created 2015.01.19
-\version 2021.01.12
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -155,6 +155,6 @@ int evpBeltPBKDF_bind(ENGINE* e)
 	return 1;
 }
 
-void evpBeltPBKDF_destroy()
+void evpBeltPBKDF_finish()
 {
 }

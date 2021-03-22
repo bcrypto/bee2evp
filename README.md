@@ -83,13 +83,15 @@ openssl engine -c -t bee2evp
 BTLS
 ----
 
-In [btls](btls), patches for different versions of OpenSSL are provided. These 
-patches support the following ciphersuites defined in STB 34.101.65 (Btls, see 
-[apmi.bsu.by/resources/std.html](http://apmi.bsu.by/resources/std.html)):
+In [this folder](btls), patches for different versions of OpenSSL are provided. 
+These patches support the following ciphersuites defined in STB 34.101.65 
+(Btls, see [apmi.bsu.by/resources/std.html](http://apmi.bsu.by/resources/std.html)):
+- `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT`;
 - `DHE-BIGN-WITH-BELT-DWP-HBELT`;
-- to be continued.
+- `DHT-BIGN-WITH-BELT-CTR-MAC-HBELT`;
+- `DHT-BIGN-WITH-BELT-DWP-HBELT`.
 
-An example of applying a patch can be found in [travis.yml](travis.yml).
+An example of applying a patch can be found in [travis.yml](.travis.yml).
 
 License
 -------

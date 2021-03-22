@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2021.01.28
+\version 2021.02.18
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
 #include "bee2evp/bee2evp.h"
+#include "bee2evp_lcl.h"
 
 /*
 *******************************************************************************
@@ -120,12 +121,48 @@ ASN1-кодирования), алгоритмы режимов CBC и CFB об�
 EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами 
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 
+\remark Обращение к cleanup-функциям почему-то может выполняться два раза.
+Поэтому вызов EVP_CIPHER_CTX_set_blob(ctx, 0) необходим.
+
 \pre Среда проверяет указатели и размерности буферов, передаваемых
 в функции интерфейсов EVP_CIPHER, EVP_MD.
 
 \todo Разобраться с выравниванием на границу блока в режимах ECB, CBC.
 *******************************************************************************
 */
+
+/*
+*******************************************************************************
+Блобы
+
+\remark При копировании блоба из одного контекста в другой проверяется, что
+блоб-источник отличается от блоба-приемника. При совпадении состается
+новый блоб-приемник. При отличии по возможности используется уже существующий
+блоб. Впрочем совпадений скорее всего происходить не будет. И блоб-приемник
+скорее всего будет пустым (нулевой указатель).
+*******************************************************************************
+*/
+
+blob_t EVP_CIPHER_CTX_get_blob(const EVP_CIPHER_CTX* ctx)
+{
+	return (blob_t)EVP_CIPHER_CTX_get_cipher_data(ctx);
+}
+
+int EVP_CIPHER_CTX_set_blob(EVP_CIPHER_CTX* ctx, const blob_t blob)
+{
+	EVP_CIPHER_CTX_set_cipher_data(ctx, blob);
+	return 1;
+}
+
+int EVP_CIPHER_CTX_copy_blob(EVP_CIPHER_CTX* to, const EVP_CIPHER_CTX* from)
+{
+	blob_t blob_from = EVP_CIPHER_CTX_get_blob(from);
+	blob_t blob_to = EVP_CIPHER_CTX_get_blob(to);
+	blob_to = blobCopy(blob_from == blob_to ? 0 : blob_to, blob_from);
+	if (blob_from && !blob_to)
+		return 0;
+	return EVP_CIPHER_CTX_set_blob(to, blob_to);
+}
 
 /*
 *******************************************************************************
@@ -169,7 +206,7 @@ const EVP_CIPHER* evpBeltECB256()
 static int evpBeltECB_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 		beltECBStart(state, key, EVP_CIPHER_CTX_key_length(ctx));
 	return 1;
@@ -178,7 +215,7 @@ static int evpBeltECB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltECB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 		beltECBStepE(out, inlen, state);
@@ -189,8 +226,8 @@ static int evpBeltECB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltECB_cleanup(EVP_CIPHER_CTX *ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -210,25 +247,21 @@ static int evpBeltECB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) = 
-			blobCreate(beltECB_keep()))
+	{
+		blob_t blob = blobCreate(beltECB_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -284,7 +317,7 @@ const EVP_CIPHER* evpBeltCBC256()
 static int evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
 		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx), 
@@ -296,7 +329,7 @@ static int evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 		beltCBCStepE(out, inlen, state);
@@ -307,8 +340,8 @@ static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCBC_cleanup(EVP_CIPHER_CTX *ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -317,25 +350,21 @@ static int evpBeltCBC_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) = 
-			blobCreate(beltCBC_keep()))
+	{
+		blob_t blob = blobCreate(beltCBC_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -391,7 +420,7 @@ const EVP_CIPHER* evpBeltCFB256()
 static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
 		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx), 
@@ -403,7 +432,7 @@ static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltCFB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 		beltCFBStepE(out, inlen, state);
@@ -414,8 +443,8 @@ static int evpBeltCFB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCFB_cleanup(EVP_CIPHER_CTX *ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -424,25 +453,21 @@ static int evpBeltCFB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) = 
-			blobCreate(beltCFB_keep()))
+	{
+		blob_t blob = blobCreate(beltCFB_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -501,7 +526,7 @@ const EVP_CIPHER* evpBeltCTR256()
 static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
@@ -517,7 +542,7 @@ static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltCTR_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 		beltCTRStepE(out, inlen, state);
@@ -528,8 +553,8 @@ static int evpBeltCTR_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltCTR_cleanup(EVP_CIPHER_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -538,25 +563,21 @@ int evpBeltCTR_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) = 
-			blobCreate(beltCTR_keep()))
+	{
+		blob_t blob = blobCreate(beltCTR_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -628,7 +649,7 @@ typedef struct belt_dwp_ctx
 static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	belt_dwp_ctx* state = *(belt_dwp_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
@@ -644,7 +665,7 @@ static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	belt_dwp_ctx* state = *(belt_dwp_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
 	// завершение?
 	if (!in)
@@ -719,8 +740,8 @@ static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltDWP_cleanup(EVP_CIPHER_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -729,25 +750,21 @@ static int evpBeltDWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) =
-			blobCreate(sizeof(belt_dwp_ctx) + beltDWP_keep()))
+	{
+		blob_t blob = blobCreate(sizeof(belt_dwp_ctx) + beltDWP_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
@@ -799,7 +816,6 @@ const EVP_CIPHER* evpBeltKWP256()
 	return EVP_belt_kwp256;
 }
 
-
 typedef struct belt_kwp_ctx
 {
 	octet header[16];		/*< заголовок (после снятия защиты) */
@@ -809,7 +825,7 @@ typedef struct belt_kwp_ctx
 static int evpBeltKWP_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	belt_kwp_ctx* state = *(belt_kwp_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_kwp_ctx* state = (belt_kwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 		beltKWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx));
 	return 1;
@@ -818,7 +834,7 @@ static int evpBeltKWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltKWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
 	size_t inlen)
 {
-	belt_kwp_ctx* state = *(belt_kwp_ctx**)EVP_CIPHER_CTX_get_cipher_data(ctx);
+	belt_kwp_ctx* state = (belt_kwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// завершение, возвратить число дополнительных октетов 
 	if (!in)
 		return 0;
@@ -855,8 +871,8 @@ static int evpBeltKWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 
 static int evpBeltKWP_cleanup(EVP_CIPHER_CTX* ctx)
 {
-	blob_t state = *(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx);
-	blobClose(state);
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
 	return 1;
 }
 
@@ -878,28 +894,25 @@ int evpBeltKWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-		EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
-		if (*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(ctx) = 
-			blobCreate(sizeof(belt_kwp_ctx) + beltKWP_keep()))
+	{
+		blob_t blob = blobCreate(sizeof(belt_kwp_ctx) + beltKWP_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+		{
+			EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 			break;
+		}
+		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
 		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
 		break;
 	case EVP_CTRL_COPY:
-		if (EVP_CIPHER_CTX_get_cipher_data(ctx))
-		{
-			EVP_CIPHER_CTX* dctx = (EVP_CIPHER_CTX*)p2;
-			blob_t dstate = blobCopy(EVP_CIPHER_CTX_get_cipher_data(dctx),
-				EVP_CIPHER_CTX_get_cipher_data(ctx));
-			if (!dstate)
-				return 0;
-			*(blob_t*)EVP_CIPHER_CTX_get_cipher_data(dctx) = dstate;
-		}
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
 		break;
-
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
 		break;
@@ -1015,7 +1028,7 @@ static int evpBeltCipher_enum(ENGINE* e, const EVP_CIPHER** cipher,
 	if (EVP_##name == 0 ||\
 		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||\
 		!EVP_CIPHER_meth_set_flags(EVP_##name, flags) ||\
-		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, sizeof(blob_t)) ||\
+		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, 0) ||\
 		!EVP_CIPHER_meth_set_init(EVP_##name, init) ||\
 		!EVP_CIPHER_meth_set_do_cipher(EVP_##name, cipher) ||\
 		!EVP_CIPHER_meth_set_cleanup(EVP_##name, cleanup) ||\
@@ -1135,7 +1148,7 @@ int evpBeltCipher_bind(ENGINE* e)
 		EVP_add_cipher(EVP_belt_kwp256);
 }
 
-void evpBeltCipher_destroy()
+void evpBeltCipher_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_kwp256);
 	EVP_belt_kwp256 = 0;

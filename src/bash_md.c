@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Bash hashing algorithm (bash)
 \created 2016.09.20
-\version 2021.01.12
+\version 2021.03.02
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -18,6 +18,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <bee2/core/util.h>
 #include <bee2/crypto/bash.h>
 #include "bee2evp/bee2evp.h"
+#include "bee2evp_lcl.h"
 
 /*
 *******************************************************************************
@@ -57,50 +58,28 @@ const EVP_MD* evpBash512()
 
 static int evpBash_init(EVP_MD_CTX* ctx) 
 {
-	size_t md_len;
-	blob_t state;
-	// длина хэш-значения
-	md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
+	void* state = EVP_MD_CTX_md_data(ctx);
+	size_t md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
+	ASSERT(state);
 	ASSERT(md_len == 32 || md_len == 48 || md_len == 64);
-	// состояние
-	state = blobCreate(bashHash_keep());
-	if (!state)
-		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(ctx) = state;
-	// стартовать
 	bashHashStart(state, md_len * 4);
 	return 1;
 }
 
 static int evpBash_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 {
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	void* state = EVP_MD_CTX_md_data(ctx);
+	ASSERT(state);
 	bashHashStepH(data, count, state);
 	return 1;
 }
 
 static int evpBash_final(EVP_MD_CTX* ctx, octet* md)
 {
+	void* state = EVP_MD_CTX_md_data(ctx);
 	size_t md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
+	ASSERT(state);
 	bashHashStepG(md, md_len, state);
-	return 1;
-}
-
-static int evpBash_copy(EVP_MD_CTX* to, const EVP_MD_CTX* from)
-{
-	blob_t state_from = *(blob_t*)EVP_MD_CTX_md_data(from);
-	blob_t state_to = blobCopy(0, state_from);
-	if (state_from && !state_to)
-		return 0;
-	*(blob_t*)EVP_MD_CTX_md_data(to) = state_to;
-	return 1;
-}
-
-static int evpBash_cleanup(EVP_MD_CTX* ctx)
-{
-	blob_t state = *(blob_t*)EVP_MD_CTX_md_data(ctx);
-	blobClose(state);
 	return 1;
 }
 
@@ -187,41 +166,32 @@ int evpBash_bind(ENGINE* e)
 	// создать и настроить описатель bash256
 	EVP_bash256 = EVP_MD_meth_new(NID_bash256, 0);
 	if (EVP_bash256 == 0 ||
-		!EVP_MD_meth_set_flags(EVP_bash256, EVP_MD_CTX_FLAG_REUSE) ||
 		!EVP_MD_meth_set_result_size(EVP_bash256, 32) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash256, 128) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash256, sizeof(blob_t)) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash256, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash256, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash256, evpBash_update) ||
-		!EVP_MD_meth_set_final(EVP_bash256, evpBash_final) ||
-		!EVP_MD_meth_set_copy(EVP_bash256, evpBash_copy) ||
-		!EVP_MD_meth_set_cleanup(EVP_bash256, evpBash_cleanup))
+		!EVP_MD_meth_set_final(EVP_bash256, evpBash_final))
 		return 0;
 	// создать и настроить описатель bash384
 	EVP_bash384 = EVP_MD_meth_new(NID_bash384, 0);
 	if (EVP_bash384 == 0 ||
-		!EVP_MD_meth_set_flags(EVP_bash384, EVP_MD_CTX_FLAG_REUSE) ||
 		!EVP_MD_meth_set_result_size(EVP_bash384, 48) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash384, 96) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash384, sizeof(blob_t)) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash384, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash384, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash384, evpBash_update) ||
-		!EVP_MD_meth_set_final(EVP_bash384, evpBash_final) ||
-		!EVP_MD_meth_set_copy(EVP_bash384, evpBash_copy) ||
-		!EVP_MD_meth_set_cleanup(EVP_bash384, evpBash_cleanup))
+		!EVP_MD_meth_set_final(EVP_bash384, evpBash_final))
 		return 0;
 	// создать и настроить описатель bash512
 	EVP_bash512 = EVP_MD_meth_new(NID_bash512, 0);
 	if (EVP_bash512 == 0 ||
-		!EVP_MD_meth_set_flags(EVP_bash512, EVP_MD_CTX_FLAG_REUSE) ||
 		!EVP_MD_meth_set_result_size(EVP_bash512, 64) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash512, 64) ||
-		!EVP_MD_meth_set_app_datasize(EVP_bash512, sizeof(blob_t)) ||
+		!EVP_MD_meth_set_app_datasize(EVP_bash512, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash512, evpBash_init) ||
 		!EVP_MD_meth_set_update(EVP_bash512, evpBash_update) ||
-		!EVP_MD_meth_set_final(EVP_bash512, evpBash_final) ||
-		!EVP_MD_meth_set_copy(EVP_bash512, evpBash_copy) ||
-		!EVP_MD_meth_set_cleanup(EVP_bash512, evpBash_cleanup))
+		!EVP_MD_meth_set_final(EVP_bash512, evpBash_final))
 		return 0;
 	// задать перечислитель
 	prev_enum = ENGINE_get_digests(e);
@@ -234,7 +204,7 @@ int evpBash_bind(ENGINE* e)
 		EVP_add_digest(EVP_bash512);
 }
 
-void evpBash_destroy()
+void evpBash_finish()
 {
 	EVP_MD_meth_free(EVP_bash512);
 	EVP_bash512 = 0;

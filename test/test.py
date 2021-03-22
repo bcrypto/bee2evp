@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2021.02.05
+# \version 2021.03.18
 # \license This program is released under the GNU General Public License 
 # version 3 with the additional exemption that compiling, linking, 
 # and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -19,6 +19,9 @@ import signal
 import tempfile
 import re
 import threading
+import time
+from os.path import expanduser
+home = expanduser("~")
 
 fail = False
 def test_result(test_name, retcode):
@@ -288,7 +291,7 @@ def test_bign():
 	openssl('pkey -inform DER -in {} -outform PEM -out {}'
 	.format(G1prkey256der,G1prkey256pem))
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
-	out = out.decode()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1][:-1]
+	out = out.decode().strip()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1]
 	res = (out == key)
 	test_result('Generate private key G.1', res)
 
@@ -449,36 +452,69 @@ def btls_gen_privkey(privfile):
 	retcode, block, er__ = openssl(cmd)
 
 def btls_issue_cert(privfile, certfile):
-	cmd = 'req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK" -new -key {} -nodes -out {}'
-		.format(privfile, certfile)
+	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK" -new -key {} -nodes -out {}'
+		.format(privfile, certfile))
 	retcode, block, er__ = openssl(cmd)
 
-def btls_server():
-	tmpdirname = tempfile.mkdtemp()
-
-	priv256 = os.path.join(tmpdirname, 'priv256.key') 
+def btls_server(tmpdirname, log_file):
+	priv256 = os.path.join(tmpdirname, 'priv256.key')
 	btls_gen_privkey(priv256)
 
-	cert = os.path.join(tmpdirname, 'cert.pem') 
+	cert = os.path.join(tmpdirname, 'cert.pem')
 	btls_issue_cert(priv256, cert)
 
-	prefix = 'echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |'
-	cmd = 's_server -key {} -cert {} -tls1_2 -engine bee2evp -cipher {}'
-		.format(priv256, cert, 'DHE-BIGN-WITH-BELT-DWP-HBELT')
-	cmd = '{} {} {}'.format(prefix, '/usr/local/bin/openssl', cmd)
-	server_ = subprocess.Popen(cmd, shell=True)
+	cmd = ('s_server -key {} -cert {} -quiet -tls1_2 -engine bee2evp > {}'
+			.format(priv256, cert, log_file))
+	global server
+	server = openssl(cmd, type_=1)
 
-def btls_client(name):
-	client = subprocess.check_output('openssl s_client', shell=True)
-	print(client.decode())
-	retcode = (client.decode().find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
+def btls_client():
+	cmd = 's_client -cipher {}'.format('DHE-BIGN-WITH-BELT-DWP-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {}'.format('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {}'.format('DHT-BIGN-WITH-BELT-DWP-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {}'.format('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
 
 def test_btls():
-	s = threading.Thread(target=btls_server)
+
+	tmpdirname = tempfile.mkdtemp()
+	log_file = os.path.join(tmpdirname, 'log.txt')
+
+	s = threading.Thread(target=btls_server, args=(tmpdirname, log_file,))
 	s.run()
 	time.sleep(1)
-	x = threading.Thread(target=btls_client,  args=(s,)).run()
+	c = threading.Thread(target=btls_client)
+	c.run()
+
+	# kill openssl s_server
+	os.killpg(os.getpgid(server.pid), signal.SIGTERM)
+
+	with open(log_file, 'r') as f:
+		server_out = f.read()
+
+	# DHE-BIGN-WITH-BELT-DWP-HBELT testing result
+	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
+
+	# DHE-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
+	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
+	test_result('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	# DHT-BIGN-WITH-BELT-DWP-HBELT testing result
+	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHT-BIGN-WITH-BELT-DWP-HBELT', retcode)
+
+	# DHT-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
+	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
+	test_result('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
 	test_version()
