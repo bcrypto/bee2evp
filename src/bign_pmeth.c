@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2021.02.18
+\version 2021.04.26
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -301,13 +301,13 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	if ((obj = OBJ_nid2obj(EVP_MD_type(dctx->md))) == 0)
 		return 0;
 	// построить полный DER-код
-	der_len = derEncode(0, 6, OBJ_get0_data(obj), OBJ_length(obj));
+	der_len = derEnc(0, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	if (der_len == SIZE_MAX)
 		return 0;
 	der = (octet*)blobCreate(der_len);
 	if (!der)
 		return 0;
-	derEncode(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
+	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// подписать
 	if ((key->flags & EVP_BIGN_PKEY_SIG_DETERMINISTIC) || !rngIsValid())
 		ret = bignSign2(sig, key->params, der, der_len, tbs, 
@@ -349,13 +349,13 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	if ((obj = OBJ_nid2obj(EVP_MD_type(dctx->md))) == 0)
 		return 0;
 	// построить полный DER-код
-	der_len = derEncode(0, 6, OBJ_get0_data(obj), OBJ_length(obj));
+	der_len = derEnc(0, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	if (der_len == SIZE_MAX)
 		return 0;
 	der = (octet*)blobCreate(der_len);
 	if (!der)
 		return 0;
-	derEncode(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
+	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// проверить подпись
 	ret = bignVerify(key->params, der, der_len, tbs, sig, 
 		key->pubkey) == ERR_OK;
