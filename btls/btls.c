@@ -104,6 +104,10 @@ int btls_init()
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdht)
 		return 0;
+	if (OBJ_new_nid(1) != NID_kxbdhe_psk)
+		return 0;
+	if (OBJ_new_nid(1) != NID_kxbdht_psk)
+		return 0;
 	if (OBJ_new_nid(1) != NID_bign128_auth)
 		return 0;
 	if (!EVP_add_digest(evpMDBeltMac256()))
@@ -138,6 +142,31 @@ int btls_init()
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHE).
 *******************************************************************************
 */
+
+int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
+{
+	int ret = 1;
+    size_t len = (s->cert->psk_identity_hint == NULL)
+                    ? 0 : strlen(s->cert->psk_identity_hint);
+	if (len > PSK_MAX_IDENTITY_LEN
+            || !WPACKET_sub_memcpy_u16(pkt, s->cert->psk_identity_hint,
+                                       len)) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+                 SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE,
+                 ERR_R_INTERNAL_ERROR);
+        ret = 0;
+		goto err;
+    }
+	int sec_bits = EVP_PKEY_security_bits(
+			s->cert->pkeys[SSL_PKEY_BIGN].privatekey);
+	char* params_id = ((sec_bits == 128) ? "bign-curve256v1\0" :
+			((sec_bits == 192) ? "bign-curve384v1\0" : "bign-curve512v1\0"));
+	//ASN1_OBJECT *o = OBJ_nid2txt();
+	WPACKET_sub_memcpy_u8(pkt, params_id, strlen(params_id)+1);
+	ret = btls_construct_ske_bign_dhe(s, pkt);
+err:
+   	return ret;
+}
 
 int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt)
 {
@@ -207,6 +236,47 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 			PACKET_data(&encoded_pt),
 			PACKET_remaining(&encoded_pt)))
 		return 0;
+	// завершить
+	return 1;
+}
+
+int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
+{
+	PACKET encoded_pt;
+	PACKET params_p;
+    unsigned int length;
+    const unsigned char *data;
+    if (!PACKET_get_1(pkt, &length) ||
+        !PACKET_get_bytes(pkt, &data, (size_t)length)) {
+        return 0;
+    }
+    int nid_curve = OBJ_ln2nid(data);
+	if (s->s3->peer_tmp == 0 && (s->s3->peer_tmp = EVP_PKEY_new()) == 0)
+			return 0;
+	EVP_PKEY* pkey_1 = EVP_PKEY_new();
+	EVP_PKEY_set_type(pkey_1, NID_bign_pubkey);
+
+    EVP_PKEY* pkey_ = EVP_PKEY_new();
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey_1, NULL);
+    EVP_PKEY_paramgen_init(ctx);
+    EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, nid_curve, -1);
+    EVP_PKEY_paramgen(ctx, &pkey_);
+
+    if (!EVP_PKEY_copy_parameters(s->s3->peer_tmp, pkey_))
+    		return 0;
+
+	// загрузить эфемерный открытый ключ сервера
+	if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt)) 
+		return 0;
+	if (!EVP_PKEY_set1_tls_encodedpoint(s->s3->peer_tmp,
+			PACKET_data(&encoded_pt),
+			PACKET_remaining(&encoded_pt)))
+		return 0;
+	//ASN1_OBJECT *o = OBJ_nid2obj(OBJ_txt2nid(data));
+	//ASN1_OBJECT *o1 = OBJ_nid2obj(s->s3->peer_tmp->type);
+	//if (o1 != o) {
+	//	return 0;
+	//}
 	// завершить
 	return 1;
 }

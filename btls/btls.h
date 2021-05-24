@@ -39,11 +39,15 @@ extern "C" {
 #define NID_bign_curve256v1 (NUM_NID + 6)
 #define NID_kxbdhe			(NUM_NID + 7)
 #define NID_kxbdht			(NUM_NID + 8)
-#define NID_bign128_auth	(NUM_NID + 9)
+#define NID_kxbdhe_psk		(NUM_NID + 9)
+#define NID_kxbdht_psk		(NUM_NID + 10)
+#define NID_bign128_auth	(NUM_NID + 11)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
 #define SSL_kBDHT				0x00000400U
+#define SSL_kBDHEPSK			0x00000800U
+#define SSL_kBDHTPSK			0x00001000U
 
 #define SSL_aBIGN               0x00000100U
 
@@ -68,6 +72,8 @@ extern "C" {
 /* ssl.h */
 #define SSL_TXT_kBDHE "kBDHE"
 #define SSL_TXT_kBDHT "kBDHT"
+#define SSL_TXT_kBDHEPSK "kBDHEPSK"
+#define SSL_TXT_kBDHTPSK "kBDHTPSK"
 #define SSL_TXT_aBIGN "aBIGN"
 #define SSL_TXT_BELTCTR "BELTCTR"
 #define SSL_TXT_BELTMAC "BELTMAC"
@@ -77,6 +83,7 @@ extern "C" {
 # define TLSEXT_signature_bign 231
 # define TLSEXT_hash_hbelt     231
 # define TLS_CT_BIGN_SIGN      231
+
 # define BTLS1_RFC_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT\
 	"BTLS_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT"
 # define BTLS1_TXT_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT\
@@ -95,6 +102,23 @@ extern "C" {
 # define BTLS1_TXT_DHT_BIGN_WITH_BELT_DWP_HBELT\
 	"DHT-BIGN-WITH-BELT-DWP-HBELT"
 
+# define BTLS1_RFC_DHE_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"BTLS_DHE_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT"
+# define BTLS1_TXT_DHE_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT"
+# define BTLS1_RFC_DHE_PSK_BIGN_WITH_BELT_DWP_HBELT\
+	"BTLS_DHE_PSK_BIGN_WITH_BELT_DWP_HBELT"
+# define BTLS1_TXT_DHE_PSK_BIGN_WITH_BELT_DWP_HBELT\
+	"DHE-PSK-BIGN-WITH-BELT-DWP-HBELT"
+
+# define BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"BTLS_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT"
+# define BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT\
+	"DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT"
+# define BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT\
+	"BTLS_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT"
+# define BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT\
+	"DHT-PSK-BIGN-WITH-BELT-DWP-HBELT"
 /*
 *******************************************************************************
 Инициализация
@@ -120,6 +144,9 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
 
 int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt);
 int btls_process_cke_bign_dht(SSL* s, PACKET* pkt);
+
+int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt);
+int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
 
 #ifdef __cplusplus
 } /* extern "C" */
