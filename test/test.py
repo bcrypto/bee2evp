@@ -463,7 +463,7 @@ def btls_server(tmpdirname, log_file):
 	cert = os.path.join(tmpdirname, 'cert.pem')
 	btls_issue_cert(priv256, cert)
 
-	cmd = ('s_server -key {} -cert {} -quiet -tls1_2 -engine bee2evp > {}'
+	cmd = ('s_server -key {} -cert {} -quiet -tls1_2 >> {}'
 			.format(priv256, cert, log_file))
 	global server
 	server = openssl(cmd, type_=1)
@@ -481,6 +481,25 @@ def btls_client():
 	cmd = 's_client -cipher {}'.format('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT')
 	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
 
+def btls_server_psk(tmpdirname, log_file):
+	priv256 = os.path.join(tmpdirname, 'priv256.key')
+	btls_gen_privkey(priv256)
+
+	cert = os.path.join(tmpdirname, 'cert.pem')
+	btls_issue_cert(priv256, cert)
+
+	cmd = ('s_server -quiet -tls1_2 -psk 123456 -psk_hint 123  >> {}'
+			.format(log_file))
+	global server_psk
+	server_psk = openssl(cmd, type_=1)
+
+def btls_client_psk():
+	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
+
+	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHE-PSK-BIGN-WITH-BELT-DWP-HBELT')
+	client_out = openssl(cmd, prefix='echo test=DHE-PSK-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+
 def test_btls():
 
 	tmpdirname = tempfile.mkdtemp()
@@ -495,9 +514,17 @@ def test_btls():
 	# kill openssl s_server
 	os.killpg(os.getpgid(server.pid), signal.SIGTERM)
 
+	s_psk = threading.Thread(target=btls_server_psk, args=(tmpdirname, log_file,))
+	s_psk.run()
+	time.sleep(1)
+	c_psk = threading.Thread(target=btls_client_psk)
+	c_psk.run()
+
+	 kill openssl s_server
+	os.killpg(os.getpgid(server_psk.pid), signal.SIGTERM)
+
 	with open(log_file, 'r') as f:
 		server_out = f.read()
-
 	# DHE-BIGN-WITH-BELT-DWP-HBELT testing result
 	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
 	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
@@ -513,6 +540,14 @@ def test_btls():
 	# DHT-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
 	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
 	test_result('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	# DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
+	retcode = (server_out.find("test=DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
+	test_result('DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+
+	# DHE-PSK-BIGN-WITH-BELT-DWP-HBELT testing result
+	retcode = (server_out.find("test=DHE-PSK-BIGN-WITH-BELT-DWP-HBELT") != -1)
+	test_result('DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', retcode)
 
 	shutil.rmtree(tmpdirname)
 

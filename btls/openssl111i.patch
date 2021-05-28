@@ -10,7 +10,7 @@ index bb2f1deb..e15d5cb0 100644
 +        statem/statem.c record/ssl3_record_tls13.c \
 +        btls.c
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..22c9f449 100644
+index 4511b52c..7fb53cc0 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
@@ -128,7 +128,7 @@ index 4511b52c..22c9f449 100644
 +     BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT,
 +     0x0300ff1b,
 +     SSL_kBDHTPSK,
-+     SSL_aPSK,
++     SSL_aBIGN,
 +     SSL_BELTCTR,
 +     SSL_BELTMAC,
 +     TLS1_2_VERSION, TLS1_2_VERSION,
@@ -144,7 +144,7 @@ index 4511b52c..22c9f449 100644
 +     BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT,
 +     0x0300ff1c,
 +     SSL_kBDHTPSK,
-+     SSL_aPSK,
++     SSL_aBIGN,
 +     SSL_BELTDWP,
 +     SSL_AEAD,
 +     TLS1_2_VERSION, TLS1_2_VERSION,
@@ -161,14 +161,14 @@ index 4511b52c..22c9f449 100644
                      && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_512_SIGN);
  #endif
  
-+    if (s->version >= TLS1_VERSION && (alg_k & SSL_kBDHE))
++    if (s->version >= TLS1_VERSION && (alg_k & (SSL_kBDHE | SSL_kBDHTPSK)))
 +            return WPACKET_put_bytes_u8(pkt, TLS_CT_BIGN_SIGN);
 +
      if ((s->version == SSL3_VERSION) && (alg_k & SSL_kDHE)) {
  #ifndef OPENSSL_NO_DH
  # ifndef OPENSSL_NO_RSA
 diff --git a/ssl/ssl_cert_table.h b/ssl/ssl_cert_table.h
-index 0c47241c..114b67d8 100644
+index 0c47241c..76c52283 100644
 --- a/ssl/ssl_cert_table.h
 +++ b/ssl/ssl_cert_table.h
 @@ -10,6 +10,8 @@
@@ -186,7 +186,7 @@ index 0c47241c..114b67d8 100644
      {EVP_PKEY_ED25519, SSL_aECDSA}, /* SSL_PKEY_ED25519 */
 -    {EVP_PKEY_ED448, SSL_aECDSA} /* SSL_PKEY_ED448 */
 +    {EVP_PKEY_ED448, SSL_aECDSA}, /* SSL_PKEY_ED448 */
-+    {NID_bign_pubkey, SSL_aBIGN} /* SSL_PKEY_BIGN */
++    {NID_bign_pubkey, SSL_aBIGN}, /* SSL_PKEY_BIGN */
  };
 diff --git a/ssl/ssl_ciph.c b/ssl/ssl_ciph.c
 index 735a483c..0dab09c0 100644
@@ -385,7 +385,7 @@ index d083d959..d34a8e0c 100644
          return 0;
  
 diff --git a/ssl/ssl_lib.c b/ssl/ssl_lib.c
-index 98057921..171eaf09 100644
+index 98057921..f4286886 100644
 --- a/ssl/ssl_lib.c
 +++ b/ssl/ssl_lib.c
 @@ -22,6 +22,7 @@
@@ -401,14 +401,25 @@ index 98057921..171eaf09 100644
  #endif
  
 +    if (ssl_has_cert(s, SSL_PKEY_BIGN)){
-+        mask_k |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHEPSK | SSL_kBDHTPSK;
++        mask_k |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHTPSK;
 +        mask_a |= SSL_aBIGN;
 +    }
 +
      if (rsa_enc)
          mask_k |= SSL_kRSA;
  
-@@ -3405,6 +3411,10 @@ void ssl_set_masks(SSL *s)
+@@ -3396,6 +3402,10 @@ void ssl_set_masks(SSL *s)
+     mask_k |= SSL_kECDHE;
+ #endif
+ 
++#ifndef OPENSSL_NO_BDHE_PSK
++    mask_k |= SSL_kBDHEPSK;
++#endif
++
+ #ifndef OPENSSL_NO_PSK
+     mask_k |= SSL_kPSK;
+     mask_a |= SSL_aPSK;
+@@ -3405,6 +3415,10 @@ void ssl_set_masks(SSL *s)
          mask_k |= SSL_kDHEPSK;
      if (mask_k & SSL_kECDHE)
          mask_k |= SSL_kECDHEPSK;
@@ -467,6 +478,19 @@ index 8ddbde77..9d390f52 100644
  
  /*-
   * SSL_kRSA <- RSA_ENC
+diff --git a/ssl/statem/extensions_clnt.c b/ssl/statem/extensions_clnt.c
+index bcce0f1d..1ffe8200 100644
+--- a/ssl/statem/extensions_clnt.c
++++ b/ssl/statem/extensions_clnt.c
+@@ -130,7 +130,7 @@ static int use_ecc(SSL *s)
+ 
+         alg_k = c->algorithm_mkey;
+         alg_a = c->algorithm_auth;
+-        if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK))
++        if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHEPSK))
+                 || (alg_a & SSL_aECDSA)
+                 || c->min_tls >= TLS1_3_VERSION) {
+             ret = 1;
 diff --git a/ssl/statem/extensions_srvr.c b/ssl/statem/extensions_srvr.c
 index 3c7395c0..a02a0ba2 100644
 --- a/ssl/statem/extensions_srvr.c
@@ -482,7 +506,7 @@ index 3c7395c0..a02a0ba2 100644
          return EXT_RETURN_NOT_SENT;
      }
 diff --git a/ssl/statem/statem_clnt.c b/ssl/statem/statem_clnt.c
-index 3420ce65..36bfc9ad 100644
+index 3420ce65..65c1eba4 100644
 --- a/ssl/statem/statem_clnt.c
 +++ b/ssl/statem/statem_clnt.c
 @@ -66,7 +66,7 @@ static int key_exchange_expected(SSL *s)
@@ -494,37 +518,29 @@ index 3420ce65..36bfc9ad 100644
          return 1;
      }
  
-@@ -1989,7 +1989,6 @@ static int tls_process_ske_psk_preamble(SSL *s, PACKET *pkt)
+@@ -1989,7 +1989,7 @@ static int tls_process_ske_psk_preamble(SSL *s, PACKET *pkt)
  {
  #ifndef OPENSSL_NO_PSK
      PACKET psk_identity_hint;
 -
++    
      /* PSK ciphersuites are preceded by an identity hint */
  
      if (!PACKET_get_length_prefixed_2(pkt, &psk_identity_hint)) {
-@@ -2020,7 +2019,8 @@ static int tls_process_ske_psk_preamble(SSL *s, PACKET *pkt)
-                  ERR_R_INTERNAL_ERROR);
-         return 0;
+@@ -2277,7 +2277,7 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
      }
--
-+    //int tmp = strlen(s->session->psk_identity_hint);
-+    //PACKET_forward(pkt, strlen(s->session->psk_identity_hint));
-     return 1;
- #else
-     SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS_PROCESS_SKE_PSK_PREAMBLE,
-@@ -2254,6 +2254,7 @@ static int tls_process_ske_ecdhe(SSL *s, PACKET *pkt, EVP_PKEY **pkey)
  
- MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
- {
-+
-     long alg_k;
-     EVP_PKEY *pkey = NULL;
-     EVP_MD_CTX *md_ctx = NULL;
-@@ -2293,6 +2294,16 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
+     /* Nothing else to do for plain PSK or RSAPSK */
+-    if (alg_k & (SSL_kPSK | SSL_kRSAPSK)) {
++    if (alg_k & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK)) {
+     } else if (alg_k & SSL_kSRP) {
+         if (!tls_process_ske_srp(s, pkt, &pkey)) {
+             /* SSLfatal() already called */
+@@ -2293,6 +2293,16 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
              /* SSLfatal() already called */
              goto err;
          }
-+    } else if (alg_k & SSL_kBDHE) {
++    } else if (alg_k & (SSL_kBDHE)) {
 +        if (!btls_process_ske_bign_dhe(s, pkt, &pkey)) {
 +            /* SSLfatal() already called */
 +            goto err;
@@ -537,7 +553,7 @@ index 3420ce65..36bfc9ad 100644
      } else if (alg_k) {
          SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, SSL_F_TLS_PROCESS_KEY_EXCHANGE,
                   SSL_R_UNEXPECTED_MESSAGE);
-@@ -3341,6 +3352,12 @@ int tls_construct_client_key_exchange(SSL *s, WPACKET *pkt)
+@@ -3341,6 +3351,12 @@ int tls_construct_client_key_exchange(SSL *s, WPACKET *pkt)
      } else if (alg_k & SSL_kSRP) {
          if (!tls_construct_cke_srp(s, pkt))
              goto err;
@@ -550,7 +566,7 @@ index 3420ce65..36bfc9ad 100644
      } else if (!(alg_k & SSL_kPSK)) {
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE, ERR_R_INTERNAL_ERROR);
-@@ -3621,7 +3638,11 @@ int ssl3_check_cert_and_algorithm(SSL *s)
+@@ -3621,7 +3637,11 @@ int ssl3_check_cert_and_algorithm(SSL *s)
          return 0;
      }
  #endif
@@ -564,15 +580,21 @@ index 3420ce65..36bfc9ad 100644
  }
  
 diff --git a/ssl/statem/statem_srvr.c b/ssl/statem/statem_srvr.c
-index cf45a40c..f141e6d8 100644
+index cf45a40c..efb97c29 100644
 --- a/ssl/statem/statem_srvr.c
 +++ b/ssl/statem/statem_srvr.c
-@@ -343,12 +343,13 @@ static int send_server_key_exchange(SSL *s)
-         || ((alg_k & (SSL_kPSK | SSL_kRSAPSK))
+@@ -339,16 +339,17 @@ static int send_server_key_exchange(SSL *s)
+          * provided
+          */
+ #ifndef OPENSSL_NO_PSK
+-        /* Only send SKE if we have identity hint for plain PSK */
+-        || ((alg_k & (SSL_kPSK | SSL_kRSAPSK))
++        /* Only send SKE if we have identity hint for plain PSK or BDHTPSK */
++        || ((alg_k & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK))
              && s->cert->psk_identity_hint)
          /* For other PSK always send SKE */
 -        || (alg_k & (SSL_PSK & (SSL_kDHEPSK | SSL_kECDHEPSK)))
-+        || (alg_k & (SSL_PSK & (SSL_kDHEPSK | SSL_kECDHEPSK | SSL_kBDHEPSK | SSL_kBDHTPSK)))
++        || (alg_k & (SSL_PSK & (SSL_kDHEPSK | SSL_kECDHEPSK | SSL_kBDHEPSK)))
  #endif
  #ifndef OPENSSL_NO_SRP
          /* SRP: send ServerKeyExchange */
@@ -582,19 +604,20 @@ index cf45a40c..f141e6d8 100644
          ) {
          return 1;
      }
-@@ -2517,6 +2518,7 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
-     type = s->s3->tmp.new_cipher->algorithm_mkey;
- 
+@@ -2519,7 +2520,7 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
      r[0] = r[1] = r[2] = r[3] = NULL;
-+
  #ifndef OPENSSL_NO_PSK
      /* Plain PSK or RSAPSK nothing to do */
-     if (type & (SSL_kPSK | SSL_kRSAPSK)) {
-@@ -2640,6 +2642,14 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
+-    if (type & (SSL_kPSK | SSL_kRSAPSK)) {
++    if (type & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK)) {
+     } else
+ #endif                          /* !OPENSSL_NO_PSK */
+ #ifndef OPENSSL_NO_DH
+@@ -2640,6 +2641,14 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
          r[3] = NULL;
      } else
  #endif                          /* !OPENSSL_NO_EC */
-+    if (type & SSL_kBDHE) {
++    if (type & (SSL_kBDHE)) {
 +        if(!btls_construct_ske_bign_dhe(s, pkt))
 +            goto err;
 +    } else
@@ -605,34 +628,16 @@ index cf45a40c..f141e6d8 100644
  #ifndef OPENSSL_NO_SRP
      if (type & SSL_kSRP) {
          if ((s->srp_ctx.N == NULL) ||
-@@ -2672,26 +2682,6 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
-         goto err;
+@@ -2673,7 +2682,7 @@ int tls_construct_server_key_exchange(SSL *s, WPACKET *pkt)
      }
  
--#ifndef OPENSSL_NO_PSK
+ #ifndef OPENSSL_NO_PSK
 -    if (type & SSL_PSK) {
--        size_t len = (s->cert->psk_identity_hint == NULL)
--                        ? 0 : strlen(s->cert->psk_identity_hint);
--
--        /*
--         * It should not happen that len > PSK_MAX_IDENTITY_LEN - we already
--         * checked this when we set the identity hint - but just in case
--         */
--        if (len > PSK_MAX_IDENTITY_LEN
--                || !WPACKET_sub_memcpy_u16(pkt, s->cert->psk_identity_hint,
--                                           len)) {
--            SSLfatal(s, SSL_AD_INTERNAL_ERROR,
--                     SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE,
--                     ERR_R_INTERNAL_ERROR);
--            goto err;
--        }
--    }
--#endif
--
-     for (i = 0; i < 4 && r[i] != NULL; i++) {
-         unsigned char *binval;
-         int res;
-@@ -3496,6 +3486,16 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
++    if ((type & SSL_PSK) && (s->s3->tmp.new_cipher->algorithm_mkey != SSL_kBDHEPSK)) {
+         size_t len = (s->cert->psk_identity_hint == NULL)
+                         ? 0 : strlen(s->cert->psk_identity_hint);
+ 
+@@ -3496,6 +3505,16 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
              /* SSLfatal() already called */
              goto err;
          }
@@ -650,10 +655,34 @@ index cf45a40c..f141e6d8 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index 48d46f8a..43e7867d 100644
+index 48d46f8a..aa47f9d2 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
-@@ -674,6 +674,7 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -20,6 +20,7 @@
+ #include "internal/nelem.h"
+ #include "ssl_local.h"
+ #include <openssl/ct.h>
++#include "btls.h"
+ 
+ static const SIGALG_LOOKUP *find_sig_alg(SSL *s, X509 *x, EVP_PKEY *pkey);
+ static int tls12_sigalg_allowed(const SSL *s, int op, const SIGALG_LOOKUP *lu);
+@@ -169,6 +170,7 @@ static const TLS_GROUP_INFO nid_list[] = {
+     {NID_brainpoolP512r1, 256, TLS_CURVE_PRIME}, /* brainpool512r1 (28) */
+     {EVP_PKEY_X25519, 128, TLS_CURVE_CUSTOM}, /* X25519 (29) */
+     {EVP_PKEY_X448, 224, TLS_CURVE_CUSTOM}, /* X448 (30) */
++	{NID_bign_curve256v1, 128, TLS_CURVE_CUSTOM},
+ };
+ 
+ static const unsigned char ecformats_default[] = {
+@@ -179,6 +181,7 @@ static const unsigned char ecformats_default[] = {
+ 
+ /* The default curves */
+ static const uint16_t eccurves_default[] = {
++	31,
+     29,                      /* X25519 (29) */
+     23,                      /* secp256r1 (23) */
+     30,                      /* X448 (30) */
+@@ -674,6 +677,7 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
@@ -661,7 +690,7 @@ index 48d46f8a..43e7867d 100644
  };
  
  #ifndef OPENSSL_NO_EC
-@@ -769,8 +770,12 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -769,8 +773,12 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
@@ -675,7 +704,7 @@ index 48d46f8a..43e7867d 100644
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -2428,6 +2433,7 @@ void tls1_set_cert_validity(SSL *s)
+@@ -2428,6 +2436,7 @@ void tls1_set_cert_validity(SSL *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);

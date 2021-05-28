@@ -145,8 +145,19 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
 int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt);
 int btls_process_cke_bign_dht(SSL* s, PACKET* pkt);
 
+/*
+*******************************************************************************
+Механизм BIGN_DHE_PSK
+*******************************************************************************
+*/
 int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt);
 int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
+
+/*
+*******************************************************************************
+Механизм BIGN_DHt_PSK
+*******************************************************************************
+*/
 
 #ifdef __cplusplus
 } /* extern "C" */
