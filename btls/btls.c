@@ -291,7 +291,7 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 	if (!pctx || 
 		EVP_PKEY_keygen_init(pctx) <= 0 ||
 		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
-			ginf->nid, -1) <= 0 ||
+			ginf->nid, NULL) <= 0 ||
 		EVP_PKEY_keygen(pctx, &pk) <= 0) 
         goto err;
 	// записать эфемерный ключ
@@ -343,7 +343,7 @@ int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 	if (!(pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL)) ||
 		EVP_PKEY_paramgen_init(pctx) <= 0 ||
 		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
-			params_nid, -1) <= 0 ||
+			params_nid, NULL) <= 0 ||
 	    EVP_PKEY_paramgen(pctx, &pk) <= 0 ||
 		!EVP_PKEY_copy_parameters(s->s3->peer_tmp, pk))
 		goto err;
@@ -357,7 +357,7 @@ int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 err:
 	EVP_PKEY_CTX_free(pctx);
 	EVP_PKEY_free(pk);
-	ASN1_OBJ_free(obj);
+	ASN1_OBJECT_free(obj);
     return ret;
 }
 
