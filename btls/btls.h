@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2021.03.22
+\version 2021.05.31
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -37,11 +37,12 @@ extern "C" {
 #define NID_belt_mac256		(NUM_NID + 4)
 #define NID_bign_with_hbelt (NUM_NID + 5)
 #define NID_bign_curve256v1 (NUM_NID + 6)
-#define NID_kxbdhe			(NUM_NID + 7)
-#define NID_kxbdht			(NUM_NID + 8)
-#define NID_kxbdhe_psk		(NUM_NID + 9)
-#define NID_kxbdht_psk		(NUM_NID + 10)
-#define NID_bign128_auth	(NUM_NID + 11)
+#define NID_bign_curve384v1 (NUM_NID + 7)
+#define NID_bign_curve512v1 (NUM_NID + 8)
+#define NID_kxbdhe			(NUM_NID + 9)
+#define NID_kxbdht			(NUM_NID + 10)
+#define NID_kxbdhe_psk		(NUM_NID + 11)
+#define NID_kxbdht_psk		(NUM_NID + 12)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
@@ -152,12 +153,6 @@ int btls_process_cke_bign_dht(SSL* s, PACKET* pkt);
 */
 int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt);
 int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
-
-/*
-*******************************************************************************
-Механизм BIGN_DHt_PSK
-*******************************************************************************
-*/
 
 #ifdef __cplusplus
 } /* extern "C" */
