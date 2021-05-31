@@ -10,7 +10,7 @@ index bb2f1deb..e15d5cb0 100644
 +        statem/statem.c record/ssl3_record_tls13.c \
 +        btls.c
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..7fb53cc0 100644
+index 4511b52c..49190d3a 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
@@ -157,11 +157,13 @@ index 4511b52c..7fb53cc0 100644
  };
  
  /*
-@@ -4342,6 +4472,9 @@ int ssl3_get_req_cert_type(SSL *s, WPACKET *pkt)
+@@ -4342,6 +4472,11 @@ int ssl3_get_req_cert_type(SSL *s, WPACKET *pkt)
                      && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_512_SIGN);
  #endif
  
-+    if (s->version >= TLS1_VERSION && (alg_k & (SSL_kBDHE | SSL_kBDHTPSK)))
++    if (s->version >= TLS1_VERSION && (alg_k & SSL_kBDHE))
++            return WPACKET_put_bytes_u8(pkt, TLS_CT_BIGN_SIGN);
++    if (s->version >= TLS1_VERSION && (alg_k & SSL_kBDHTPSK))
 +            return WPACKET_put_bytes_u8(pkt, TLS_CT_BIGN_SIGN);
 +
      if ((s->version == SSL3_VERSION) && (alg_k & SSL_kDHE)) {
@@ -385,7 +387,7 @@ index d083d959..d34a8e0c 100644
          return 0;
  
 diff --git a/ssl/ssl_lib.c b/ssl/ssl_lib.c
-index 98057921..f4286886 100644
+index 98057921..4ce809a5 100644
 --- a/ssl/ssl_lib.c
 +++ b/ssl/ssl_lib.c
 @@ -22,6 +22,7 @@
@@ -419,17 +421,6 @@ index 98057921..f4286886 100644
  #ifndef OPENSSL_NO_PSK
      mask_k |= SSL_kPSK;
      mask_a |= SSL_aPSK;
-@@ -3405,6 +3415,10 @@ void ssl_set_masks(SSL *s)
-         mask_k |= SSL_kDHEPSK;
-     if (mask_k & SSL_kECDHE)
-         mask_k |= SSL_kECDHEPSK;
-+    if (mask_k & SSL_kBDHE)
-+        mask_k |= SSL_kBDHEPSK;
-+    if (mask_k & SSL_kBDHT)
-+        mask_k |= SSL_kBDHTPSK;
- #endif
- 
-     s->s3->tmp.mask_k = mask_k;
 diff --git a/ssl/ssl_local.h b/ssl/ssl_local.h
 index 8ddbde77..9d390f52 100644
 --- a/ssl/ssl_local.h
