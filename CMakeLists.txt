@@ -3,7 +3,7 @@ project(BEE2EVP C)
 
 set(BEE2EVP_VERSION_MAJOR "1")
 set(BEE2EVP_VERSION_MINOR "0")
-set(BEE2EVP_VERSION_PATCH "7")
+set(BEE2EVP_VERSION_PATCH "8")
 set(BEE2EVP_VERSION "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
@@ -54,31 +54,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   endif(CMAKE_COMPILER_IS_CLANG)
 endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 
-if(NOT LIB_INSTALL_DIR)
-  set(LIB_INSTALL_DIR lib)
-endif()
-
-if(NOT BIN_INSTALL_DIR)
-  set(BIN_INSTALL_DIR bin)
-endif()
-
-find_package(PkgConfig REQUIRED)
-pkg_search_module(OPENSSL openssl>=1.1.0)
-
-if(NOT OPENSSL_FOUND)
-  message(WARNING 
-    "Can't find the OpenSSL package. Suppose that OpenSSL exists...")
-  set(OPENSSL_INCLUDE_DIR 
-    /usr/local/include/
-  )
-  set(OPENSSL_LIBRARY_DIRS 
-    /usr/local/lib/
-  )
-  set(OPENSSL_LIBRARIES
-    /usr/local/lib/libcrypto.so /usr/local/lib/libssl.so
-  )
-endif()
-
+### Bee2
 
 if(NOT BEE2_INCLUDE_DIR)
   set(BEE2_INCLUDE_DIR 
@@ -86,14 +62,50 @@ if(NOT BEE2_INCLUDE_DIR)
   )
 endif()
 
+if(NOT BEE2_LIBRARY_DIR)
+  set(BEE2_LIBRARY_DIR
+    /usr/local/lib/
+  )
+endif()
+
+# bee2_static must be built with -fPIC flag
+message(STATUS BEE2_LIBRARY_DIR=${BEE2_LIBRARY_DIR})
+find_library(BEE2_LIBRARY bee2_static HINTS ${BEE2_LIBRARY_DIR})
+message(STATUS BEE2_LIBRARY=${BEE2_LIBRARY})
+
+### OpenSSL
+
+if (NOT OPENSSL_INCLUDE_DIRS OR NOT OPENSSL_LIBRARY_DIRS)
+  find_package(PkgConfig REQUIRED)
+  pkg_search_module(OPENSSL openssl>=1.1.1)
+  if(NOT OPENSSL_FOUND)
+    message(WARNING 
+      "Can't find the OpenSSL package. Suppose that OpenSSL exists...")
+    set(OPENSSL_INCLUDE_DIRS 
+      /usr/local/include/
+    )
+    set(OPENSSL_LIBRARY_DIRS 
+      /usr/local/lib/
+    )
+  endif()
+else()
+  set(OPENSSL_LIBRARIES
+    ${OPENSSL_LIBRARY_DIRS}/libcrypto.so ${OPENSSL_LIBRARY_DIRS}/libssl.so
+  )
+endif()
+
+### Build
+
 include_directories(
   include/
   src/
   ${BEE2_INCLUDE_DIR}
-  ${OPENSSL_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIRS}
 )
 
-link_directories(${OPENSSL_LIBRARY_DIRS})
+link_directories(${BEE2_LIBRARY_DIR} ${OPENSSL_LIBRARY_DIRS})
+
+set(libs ${BEE2_LIBRARY} ${OPENSSL_LIBRARIES})
 
 add_subdirectory(include)
 
@@ -111,15 +123,20 @@ set(src
   src/bign_pmeth.c
 )
 
-set(libs bee2 ${OPENSSL_LIBRARIES})
+if(NOT LIB_INSTALL_DIR)
+  set(LIB_INSTALL_DIR lib)
+endif()
+
+if(NOT BIN_INSTALL_DIR)
+  set(BIN_INSTALL_DIR bin)
+endif()
 
 add_library(bee2evp SHARED ${src})
 target_link_libraries(bee2evp ${libs})
 
-# uncomment next lines to keep track of bee2evp.so with version numbers
-# set_target_properties(bee2evp PROPERTIES 
-#   VERSION ${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}
-#   SOVERSION 1.0)
+set_target_properties(bee2evp PROPERTIES 
+  VERSION ${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}
+  SOVERSION 1.0)
 
 install(TARGETS bee2evp
   DESTINATION ${LIB_INSTALL_DIR}

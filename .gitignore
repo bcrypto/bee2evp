@@ -64,6 +64,7 @@
 _backup
 _bin
 _support
+openssl
 build
 win
 clear.cmd
