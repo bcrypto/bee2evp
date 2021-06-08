@@ -51,7 +51,7 @@ build_openssl(){
 build_bee2evp(){
   mkdir -p $build_bee2evp && cd $build_bee2evp
   cmake -DCMAKE_BUILD_TYPE=Release \
-    -DBEE2_LIBRARY_DIR=$local/lib -DBEE2_INCLUDE_DIR=$local/include \
+    -DBEE2_LIBRARY_DIRS=$local/lib -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$local/lib -DOPENSSL_INCLUDE_DIRS=$local/include \
     -DLIB_INSTALL_DIR=$local/lib -DCMAKE_INSTALL_PREFIX=$local $bee2evp
   make -j$(nproc) && make install
@@ -66,15 +66,16 @@ attach_bee2evp(){
 test_bee2evp(){
   export LD_LIBRARY_PATH="$local/lib:${LD_LIBRARY_PATH:-}"
   cd $local/bin
-  ./openssl
+  ./openssl version
+  ./openssl engine -c -t bee2evp
 }
 
 #install_prereq
 
-clean
-update_repos
-build_bee2
-build_openssl
+#clean
+#update_repos
+#build_bee2
+#build_openssl
 build_bee2evp
 attach_bee2evp
 test_bee2evp

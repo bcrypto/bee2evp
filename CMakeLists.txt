@@ -56,22 +56,22 @@ endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 
 ### Bee2
 
-if(NOT BEE2_INCLUDE_DIR)
-  set(BEE2_INCLUDE_DIR 
+if(NOT BEE2_INCLUDE_DIRS)
+  set(BEE2_INCLUDE_DIRS 
     /usr/local/share/ 
   )
 endif()
 
-if(NOT BEE2_LIBRARY_DIR)
-  set(BEE2_LIBRARY_DIR
+if(NOT BEE2_LIBRARY_DIRS)
+  set(BEE2_LIBRARY_DIRS
     /usr/local/lib/
   )
 endif()
 
 # bee2_static must be built with -fPIC flag
-message(STATUS BEE2_LIBRARY_DIR=${BEE2_LIBRARY_DIR})
-find_library(BEE2_LIBRARY bee2_static HINTS ${BEE2_LIBRARY_DIR})
-message(STATUS BEE2_LIBRARY=${BEE2_LIBRARY})
+message(STATUS BEE2_LIBRARY_DIRS=${BEE2_LIBRARY_DIRS})
+find_library(BEE2_LIBRARIES bee2_static HINTS ${BEE2_LIBRARY_DIRS})
+message(STATUS BEE2_LIBRARIES=${BEE2_LIBRARIES})
 
 ### OpenSSL
 
@@ -89,23 +89,24 @@ if (NOT OPENSSL_INCLUDE_DIRS OR NOT OPENSSL_LIBRARY_DIRS)
     )
   endif()
 else()
-  set(OPENSSL_LIBRARIES
-    ${OPENSSL_LIBRARY_DIRS}/libcrypto.so ${OPENSSL_LIBRARY_DIRS}/libssl.so
-  )
+  set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY_DIRS}/libcrypto.so)
 endif()
+
+message(STATUS OPENSSL_LIBRARY_DIRS=${OPENSSL_LIBRARY_DIRS})
+message(STATUS OPENSSL_LIBRARIES=${OPENSSL_LIBRARIES})
 
 ### Build
 
 include_directories(
   include/
   src/
-  ${BEE2_INCLUDE_DIR}
+  ${BEE2_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIRS}
 )
 
-link_directories(${BEE2_LIBRARY_DIR} ${OPENSSL_LIBRARY_DIRS})
+link_directories(${BEE2_LIBRARY_DIRS} ${OPENSSL_LIBRARY_DIRS})
 
-set(libs ${BEE2_LIBRARY} ${OPENSSL_LIBRARIES})
+set(libs ${BEE2_LIBRARIES} ${OPENSSL_LIBRARIES})
 
 add_subdirectory(include)
 
