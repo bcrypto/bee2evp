@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief BTLS ciphersuites
 \created 2021.01.11
-\version 2021.05.31
+\version 2021.06.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -136,11 +136,11 @@ int btls_init()
 Отличия BIGN_DHE от ECDHE незначительны, и мы пользуемся этим, минимально 
 отступая от кода OpenSSL.
 
-Подготовка SKE: btls_construct_ske_bign_dhe
-Обработка SKE: btls_process_ske_bign_dhe (на основе tls_process_ske_ecdhe)
+Подготовка SKE: btls_construct_ske_bign_dhe().
+Обработка SKE: btls_process_ske_bign_dhe() [на основе tls_process_ske_ecdhe()]
 
-Подготовка CKE: tls_construct_cke_ecdhe (стандартная функция)
-Обработка CKE: tls_process_cke_ecdhe (стандартная функция)
+Подготовка CKE: tls_construct_cke_ecdhe() [стандартная функция].
+Обработка CKE: tls_process_cke_ecdhe() [стандартная функция].
 
 Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHE).
@@ -232,10 +232,30 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
    * server_public, client_public --- эфемерные ключи ДХ;
    * psk_identity --- идентификатор выбранного psk.
 
-Подготовка SKE: btls_construct_ske_psk_bign_dhe
-Обработка SKE: btls_process_ske_psk_bign_dhe
+Подготовка SKE: btls_construct_ske_psk_bign_dhe().
+Обработка SKE: btls_process_ske_psk_bign_dhe().
 
-\warning В функции btls_construct_ske_psk_bign_dhe вызывается ctrl-функция
+\remark В расширении supported_groups сообщения ClientHello клиент может
+переслать серверу перечень подходящих кривых (см. RFC 8422). Сервер будет
+использовать перечень для выбора рабочей кривой curve. В команде s_client
+за отправку перечня отвечает параметр -curves. Если клиент не пересылает
+перечень, то сервер использует кривую bign_curve256v1.
+
+\warning Параметр -named_curve команды s_server, который позволяет навязать
+серверу использование той или иной кривой, не должен использоваться.
+Кривые Bign не включены в перечень стандартных именованных кривых, и поэтому
+указание кривой Bign в качестве значения параметра приведет к ошибке.
+
+\remark В расширении supported_groups кривые задаются целочисленными
+идентификаторами. В модуле t1_lib.c идентификаторы представляют собой
+индексы элементов массива стандартных кривых TLS_GROUP_INFO nid_list[].
+Кривым bign назначены дополнительные идентификаторы
+- BIGN_CURVE256V1_ID (31),
+- BIGN_CURVE384V1_ID (32),
+- BIGN_CURVE512V1_ID (33)
+из резервного диапазона.
+
+\warning В функции btls_construct_ske_psk_bign_dhe() вызывается ctrl-функция
 ключа Bign с идентификатором EVP_PKEY_ALG_CTRL + 1. Эта функция должна 
 устанавливать долговременные параметры Bign (см. код 
 EVP_BIGN_PEKEY_CTRL_SET_PARAMS в bign_pmeth.c). Другими словами,
@@ -245,8 +265,8 @@ EVP_BIGN_PEKEY_CTRL_SET_PARAMS в bign_pmeth.c). Другими словами,
 \remark Обработка psk_identity_hint выполняется в функции
 tls_process_ske_psk_preamble до вызова btls_process_ske_psk_bign_dhe.
 
-Подготовка CKE: tls_construct_cke_ecdhe (стандартная функция)
-Обработка CKE: tls_process_cke_ecdhe (стандартная функция)
+Подготовка CKE: tls_construct_cke_ecdhe() [стандартная функция].
+Обработка CKE: tls_process_cke_ecdhe() [стандартная функция].
 
 Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHEPSK).
@@ -262,7 +282,7 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 	int curve_id;
 	const TLS_GROUP_INFO* ginf;
 	ASN1_OBJECT* obj;
-	unsigned char* oid;
+	unsigned char* oid = NULL;
 	int oid_len;
 	EVP_PKEY_CTX* pctx = NULL;
     EVP_PKEY* pk = NULL;
@@ -277,9 +297,15 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 	// загружен сертификат сервера?
     if (s->s3->tmp.pkey != NULL) 
         goto err;
-    // определить oid(curve)
-    if (!(curve_id = tls1_shared_group(s, -2)) ||
-		!(ginf = tls1_group_id_lookup(curve_id)) ||
+	// клиент не высылал расширение supported_groups?
+	if (!s->ext.supportedgroups)
+		// ...используем первую кривую bign
+		curve_id = BIGN_CURVE256V1_ID;
+	// ... определяем подходящую кривую по стандартной схеме
+	else if (!(curve_id = tls1_shared_group(s, -2)))
+		goto err;
+	// определить oid(curve)
+    if (!(ginf = tls1_group_id_lookup(curve_id)) ||
 		!(obj = OBJ_nid2obj(ginf->nid)) || 
 		!(oid_len = i2d_ASN1_OBJECT(obj, &oid)))
 		goto err;
@@ -366,7 +392,8 @@ err:
 Механизм BIGN_DHT
 
 Протокол:
- - C -> S: ClientKeyExchange[зашифрованный pre_master_secret]
+ - C -> S: ClientKeyExchange[token]
+   * token = зашифрованный pre_master_secret
 
 Ключ pre_master_secret состоит из 48 октетов. Он генерируется клиентом с 
 помощью функции RAND_bytes().
@@ -376,10 +403,10 @@ err:
 зашифровании используется нулевой заголовок ключа. В результате зашифрования 
 получается токен ключа. 
 
-Подготовка CKE: btls_construct_cke_bign_dht.
-Обработка CKE: btls_process_сke_bign_dht.
+Подготовка CKE: btls_construct_cke_bign_dht().
+Обработка CKE: btls_process_сke_bign_dht().
 
-Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
+Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c,
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHT).
 
 todo: Клиент должен проверить установку флага keyEncipherment в расширении 
@@ -401,7 +428,7 @@ int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
     pms = OPENSSL_malloc(pms_len);
     if (!pms)
         goto err;
-    if (!RAND_bytes(pms, pms_len))
+    if (!RAND_bytes(pms, (int)pms_len))
         goto err;
     peer_cert = s->session->peer;
     if (!peer_cert)
@@ -441,13 +468,13 @@ err:
 
 int btls_process_cke_bign_dht(SSL* s, PACKET* pkt)
 {
-    EVP_PKEY* pk = NULL;
+	int ret = 0;
+	EVP_PKEY* pk = NULL;
     EVP_PKEY_CTX* pkey_ctx = NULL;
     unsigned char* pms = NULL;
     size_t pms_len = 0;
     const unsigned char* token;
     unsigned int token_len;
-    int ret = 0;
     // подготовить личный ключ
     pk = s->cert->pkeys[SSL_PKEY_BIGN].privatekey;
     if (pk == NULL)
@@ -483,3 +510,34 @@ err:
             ERR_R_INTERNAL_ERROR);
     return ret;
 }
+
+/*
+*******************************************************************************
+Механизм BIGN_DHT_PSK
+
+Протокол:
+ - S -> C: ServerKeyExchange[psk_identity_hint]
+ - C -> S: ClientKeyExchange[psk_identity, token]
+   * token = зашифрованный pre_master_secret
+
+Ключ pre_master_secret имеет вид:
+  len(other_secret) + other_secret + len(psk) + psk,
+где other_secret -- секрет из 48 октетов.
+
+Зашифрование pre_master_secret выполняется по правилам механизма BIGN_DHT.
+
+Подготовка SKE: tls_construct_server_key_exchange() [стандартная функция].
+Обработка SKE: tls_process_key_exchange() [стандартная функция].
+
+Подготовка CKE: btls_construct_cke_bign_dht().
+Обработка CKE: btls_process_сke_bign_dht().
+
+Вызовы последних функций встраиваются в модули ssl/statem/statem_srvr.c,
+ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHTPSK).
+
+todo: Клиент должен проверить установку флага keyEncipherment в расширении
+KeyUsage сертификата сервера.
+
+todo: Можно ли взять под контроль генерацию other_secret клиентом?
+*******************************************************************************
+*/

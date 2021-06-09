@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2021.05.31
+\version 2021.06.09
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -120,6 +120,13 @@ extern "C" {
 	"BTLS_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT"
 # define BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT\
 	"DHT-PSK-BIGN-WITH-BELT-DWP-HBELT"
+
+/* t1_lib.c */
+
+#define BIGN_CURVE256V1_ID 31 /* indices in TLS_GROUP_INFO nid_list[] */
+#define BIGN_CURVE384V1_ID 32
+#define BIGN_CURVE512V1_ID 33
+
 /*
 *******************************************************************************
 Инициализация
