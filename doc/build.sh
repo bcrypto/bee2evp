@@ -70,12 +70,12 @@ test_bee2evp(){
   ./openssl engine -c -t bee2evp
 }
 
-#install_prereq
+install_prereq
 
-#clean
-#update_repos
-#build_bee2
-#build_openssl
+clean
+update_repos
+build_bee2
+build_openssl
 build_bee2evp
 attach_bee2evp
 test_bee2evp
