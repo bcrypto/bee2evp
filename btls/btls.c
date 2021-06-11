@@ -85,6 +85,12 @@ int btls_init()
     if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
         "belt-hash", "belt-hash") != NID_belt_hash)
         return 0;
+    if (OBJ_create("1.2.112.0.2.0.34.101.77.12", 
+        "bash384", "bash384") != NID_bash384)
+        return 0;
+    if (OBJ_create("1.2.112.0.2.0.34.101.77.13", 
+        "bash512", "bash512") != NID_bash512)
+        return 0;
     if (OBJ_create("1.2.112.0.2.0.34.101.31.67",
         "belt-dwp-tls", "belt-dwp-tls") != NID_belt_dwpt)
         return 0;
@@ -96,6 +102,12 @@ int btls_init()
         return 0;
     if (OBJ_create("1.2.112.0.2.0.34.101.45.12", 
         "bign-with-hbelt", "bign-with-hbelt") != NID_bign_with_hbelt)
+        return 0;
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.14", 
+        "bign-with-bash384", "bign-with-bash384") != NID_bign_with_bash384)
+        return 0;
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.15", 
+        "bign-with-bash512", "bign-with-bash512") != NID_bign_with_bash512)
         return 0;
     if (OBJ_create("1.2.112.0.2.0.34.101.45.3.1", 
         "bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)

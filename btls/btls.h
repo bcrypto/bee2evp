@@ -30,19 +30,23 @@ extern "C" {
 */
 
 /* obj_mac.h */
-#define NID_bign_pubkey 	(NUM_NID + 0)
-#define NID_belt_hash 		(NUM_NID + 1)
-#define NID_belt_dwpt		(NUM_NID + 2)
-#define NID_belt_ctrt	 	(NUM_NID + 3)
-#define NID_belt_mac256		(NUM_NID + 4)
-#define NID_bign_with_hbelt (NUM_NID + 5)
-#define NID_bign_curve256v1 (NUM_NID + 6)
-#define NID_bign_curve384v1 (NUM_NID + 7)
-#define NID_bign_curve512v1 (NUM_NID + 8)
-#define NID_kxbdhe			(NUM_NID + 9)
-#define NID_kxbdht			(NUM_NID + 10)
-#define NID_kxbdhe_psk		(NUM_NID + 11)
-#define NID_kxbdht_psk		(NUM_NID + 12)
+#define NID_bign_pubkey 		(NUM_NID + 0)
+#define NID_belt_hash 			(NUM_NID + 1)
+#define NID_bash384				(NUM_NID + 2)
+#define NID_bash512				(NUM_NID + 3)
+#define NID_belt_dwpt			(NUM_NID + 4)
+#define NID_belt_ctrt	 		(NUM_NID + 5)
+#define NID_belt_mac256			(NUM_NID + 6)
+#define NID_bign_with_hbelt 	(NUM_NID + 7)
+#define NID_bign_with_bash384	(NUM_NID + 8)
+#define NID_bign_with_bash512	(NUM_NID + 9)
+#define NID_bign_curve256v1 	(NUM_NID + 10)
+#define NID_bign_curve384v1 	(NUM_NID + 11)
+#define NID_bign_curve512v1 	(NUM_NID + 12)
+#define NID_kxbdhe				(NUM_NID + 13)
+#define NID_kxbdht				(NUM_NID + 14)
+#define NID_kxbdhe_psk			(NUM_NID + 15)
+#define NID_kxbdht_psk			(NUM_NID + 16)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
@@ -57,9 +61,13 @@ extern "C" {
 
 #define SSL_BELTMAC             0x00000400U
 #define SSL_HBELT               0x00000800U
+#define SSL_BASH384             0x00001000U
+#define SSL_BASH512             0x00002000U
 
 #define SSL_MD_BELTMAC_IDX 12
 #define SSL_MD_HBELT_IDX 13
+#define SSL_MD_BASH384_IDX 14
+#define SSL_MD_BASH512_IDX 15
 
 #define SSL_HANDSHAKE_MAC_BELTMAC SSL_MD_BELTMAC_IDX
 #define SSL_HANDSHAKE_MAC_HBELT SSL_MD_HBELT_IDX
@@ -68,7 +76,9 @@ extern "C" {
 
 #define SSL_PKEY_BIGN 9
 
-#define TLSEXT_SIGALG_bign_sign_belt_hash 0xe7e7
+#define TLSEXT_SIGALG_bign_sign_128 0xe7e7
+#define TLSEXT_SIGALG_bign_sign_192 0xe8e8
+#define TLSEXT_SIGALG_bign_sign_256 0xe9e9
 
 /* ssl.h */
 #define SSL_TXT_kBDHE "kBDHE"
@@ -81,8 +91,6 @@ extern "C" {
 #define SSL_TXT_BELTDWP "BELTDWP"
 
 /* tls1.h */
-# define TLSEXT_signature_bign 231
-# define TLSEXT_hash_hbelt     231
 # define TLS_CT_BIGN_SIGN      231
 
 # define BTLS1_RFC_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT\

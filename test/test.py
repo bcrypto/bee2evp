@@ -446,9 +446,8 @@ def test_belt_kwp_dwp():
 	test_result('belt-dwp256', retcode)
 
 	shutil.rmtree(tmpdirname)
-
-def btls_gen_privkey(privfile):
-	cmd = 'genpkey -algorithm bign -pkeyopt params:bign-curve256v1 -out {}'.format(privfile)
+def btls_gen_privkey(privfile, curve):
+	cmd = 'genpkey -algorithm bign -pkeyopt params:{} -out {}'.format(curve, privfile)
 	retcode, block, er__ = openssl(cmd)
 
 def btls_issue_cert(privfile, certfile):
@@ -456,143 +455,193 @@ def btls_issue_cert(privfile, certfile):
 		.format(privfile, certfile))
 	retcode, block, er__ = openssl(cmd)
 
-def btls_server(tmpdirname, log_file):
+'''def btls_server256_nopsk(tmpdirname, server_log_file):
 	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256)
+	btls_gen_privkey(priv256, 'bign-curve256v1')
 
 	cert = os.path.join(tmpdirname, 'cert.pem')
 	btls_issue_cert(priv256, cert)
 
 	cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
-			.format(priv256, cert, log_file))
+			.format(priv256, cert, server_log_file))
+	global server_nopsk
+	server_nopsk = openssl(cmd, type_=1)'''
+
+'''def btls_server_dhepsk(tmpdirname, server_log_file):
+	priv256 = os.path.join(tmpdirname, 'priv256.key')
+	btls_gen_privkey(priv256)
+
+	cert = os.path.join(tmpdirname, 'cert.pem')
+	btls_issue_cert(priv256, cert)
+
+	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
+			.format(server_log_file))
+	global server_dhepsk
+	server_dhepsk = openssl(cmd, type_=1)'''
+
+'''def btls_server_dhtpsk(tmpdirname, server_log_file):
+	priv256 = os.path.join(tmpdirname, 'priv256.key')
+	btls_gen_privkey(priv256)
+
+	cert = os.path.join(tmpdirname, 'cert.pem')
+	btls_issue_cert(priv256, cert)
+
+	cmd = ('s_server -tls1_2 -key {} -cert {} -psk 123456 -psk_hint 123  >> {}'
+			.format(priv256, cert, server_log_file))
+	global server_dhtpsk
+	server_dhtpsk = openssl(cmd, type_=1)'''
+
+'''def btls_server(tmpdirname, server_log_file, curves, psk=False, bdhtpsk=False):
+	if bdhtpsk:
+		cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
+				.format(server_log_file))
+	else:
+		priv = os.path.join(tmpdirname, '{}.key'.format(curves))
+		btls_gen_privkey(priv)
+
+		cert = os.path.join(tmpdirname, 'cert.pem')
+		btls_issue_cert(priv, cert)
+
+		if psk:
+			cmd = ('s_server -tls1_2 -key {} -cert {} -psk 123456 -psk_hint 123  >> {}'
+					.format(priv, cert, server_log_file))
+		else:
+			cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
+					.format(priv, cert, server_log_file))
+	
 	global server
-	server = openssl(cmd, type_=1)
+	server = openssl(cmd, type_=1)'''
 
-def btls_client():
-	cmd = 's_client -cipher {} -tls1_2'.format('DHE-BIGN-WITH-BELT-DWP-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
-
-	cmd = 's_client -cipher {} -tls1_2'.format('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
-
-	cmd = 's_client -cipher {} -tls1_2'.format('DHT-BIGN-WITH-BELT-DWP-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
-
-	cmd = 's_client -cipher {} -tls1_2'.format('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
-
-def btls_server_dhe_psk(tmpdirname, log_file):
-	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256)
+def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
+	priv = os.path.join(tmpdirname, '{}.key'.format(curve))
+	btls_gen_privkey(priv, curve)
 
 	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv256, cert)
+	btls_issue_cert(priv, cert)
 
-	cmd = ('s_server -quiet -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
-			.format(log_file))
-	global server_dhe_psk
-	server_dhe_psk = openssl(cmd, type_=1)
+	if psk:
+		cmd = ('s_server -key {} -cert {} -tls1_2 -psk 123456 -psk_hint 123  >> {}'
+				.format(priv, cert, server_log_file))
+	else:
+		cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
+				.format(priv, cert, server_log_file))
 
-def btls_client_dhe_psk():
-	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
+	global server_cert
+	server_cert = openssl(cmd, type_=1)
 
-	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHE-PSK-BIGN-WITH-BELT-DWP-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHE-PSK-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+def btls_client_cert(client_log_file, curve, ciphersuites, psk=False):
+	for ciphersuite in ciphersuites:
+		if psk:
+			cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
+					.format(ciphersuite, client_log_file))
+		else:
+			cmd = ('s_client -cipher {} -tls1_2 2>{}'
+					.format(ciphersuite, client_log_file))
 
-def btls_server_dht_psk(tmpdirname, log_file):
-	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256)
+		openssl(cmd, prefix='echo test_{}={} |'.format(curve, ciphersuite), type_=2)
 
-	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv256, cert)
+def btls_server_nocert(server_log_file):
+	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
+			.format(server_log_file))
 
-	cmd = ('s_server -quiet -tls1_2 -key {} -cert {} -psk 123456 -psk_hint 123  >> {}'
-			.format(priv256, cert, log_file))
-	global server_dht_psk
-	server_dht_psk = openssl(cmd, type_=1)
+	global server_nocert
+	server_nocert = openssl(cmd, type_=1)
 
-def btls_client_dht_psk():
-	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT |', type_=2)
-
-	cmd = 's_client -cipher {} -psk 123456 -tls1_2'.format('DHT-PSK-BIGN-WITH-BELT-DWP-HBELT')
-	client_out = openssl(cmd, prefix='echo test=DHT-PSK-BIGN-WITH-BELT-DWP-HBELT |', type_=2)
+def btls_client_nocert(client_log_file, curves_list, ciphersuites):
+	for ciphersuite in ciphersuites:
+		for curves in curves_list:
+			if curves != 'NULL':
+				cmd = ('s_client -cipher {} -tls1_2 -curves {} -psk 123456 2>{}'
+						.format(ciphersuite, curves, client_log_file))
+			else:
+				cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
+						.format(ciphersuite, client_log_file))
+			openssl(cmd, prefix='echo test_{}={} |'.format(curves, ciphersuite), type_=2)
 
 def test_btls():
-
 	tmpdirname = tempfile.mkdtemp()
-	log_file = os.path.join(tmpdirname, 'log.txt')
+	server_log_file = os.path.join(tmpdirname, 's_log.txt')
+	client_log_file = os.path.join(tmpdirname, 'c_log.txt')
 
-	s = threading.Thread(target=btls_server, args=(tmpdirname, log_file,))
-	s.run()
+	# curves list for test BDHEPSK
+	curves_list_bdhepsk = ['NULL', 'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
+					'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
+					'bign-curve256v1:bign-curve512v1']
+
+	# curves list for test BDHE and BDHTPSK
+	curves_list = ['bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
+
+	noPSK_cipherssuites = ['DHE-BIGN-WITH-BELT-DWP-HBELT', 'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
+						   'DHT-BIGN-WITH-BELT-DWP-HBELT', 'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	bdhePSK_ciphersuites = ['DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', 'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	bdhtPSK_ciphersuites = ['DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	nocert_ciphersuites = bdhePSK_ciphersuites
+	cert_ciphersuites = bdhtPSK_ciphersuites + noPSK_cipherssuites
+
+	# test NO_PSK ciphersuites
+	for curve in curves_list:
+		s_nopsk = threading.Thread(target=btls_server_cert, 
+						args=(tmpdirname, server_log_file, curve))
+		s_nopsk.run()
+		time.sleep(1)
+		c_nopsk = threading.Thread(target=btls_client_cert, 
+						args=(client_log_file, curve, noPSK_cipherssuites))
+		c_nopsk.run()
+
+		# kill openssl s_server
+		os.killpg(os.getpgid(server_cert.pid), signal.SIGTERM)
+	print('End NO_PSK')
+
+	# test BDHTPSK ciphersuites
+	for curve in curves_list:
+		s_dhtpsk = threading.Thread(target=btls_server_cert, 
+						args=(tmpdirname, server_log_file, curve, True))
+		s_dhtpsk.run()
+		time.sleep(1)
+		c_dhtpsk = threading.Thread(target=btls_client_cert, 
+						args=(client_log_file, curve, bdhtPSK_ciphersuites, True))
+		c_dhtpsk.run()
+
+		# kill openssl s_server
+		os.killpg(os.getpgid(server_cert.pid), signal.SIGTERM)
+	print('End BDHTPSK')
+
+	# test BDHEPSK ciphersuites
+	s_dhepsk = threading.Thread(target=btls_server_nocert, 
+					args=(server_log_file,))
+	s_dhepsk.run()
 	time.sleep(1)
-	c = threading.Thread(target=btls_client)
-	c.run()
+	c_dhepsk = threading.Thread(target=btls_client_nocert, 
+					args=(client_log_file, curves_list_bdhepsk, bdhePSK_ciphersuites))
+	c_dhepsk.run()
 
 	# kill openssl s_server
-	os.killpg(os.getpgid(server.pid), signal.SIGTERM)
+	os.killpg(os.getpgid(server_nocert.pid), signal.SIGTERM)
+	print('End BDHEPSK')
 
-	s_dhe_psk = threading.Thread(target=btls_server_dhe_psk, args=(tmpdirname, log_file,))
-	s_dhe_psk.run()
-	time.sleep(1)
-	c_dhe_psk = threading.Thread(target=btls_client_dhe_psk)
-	c_dhe_psk.run()
-
-	# kill openssl s_server
-	os.killpg(os.getpgid(server_dhe_psk.pid), signal.SIGTERM)
-
-	s_dht_psk = threading.Thread(target=btls_server_dht_psk, args=(tmpdirname, log_file,))
-	s_dht_psk.run()
-	time.sleep(1)
-	c_dht_psk = threading.Thread(target=btls_client_dht_psk)
-	c_dht_psk.run()
-
-	# kill openssl s_server
-	os.killpg(os.getpgid(server_dht_psk.pid), signal.SIGTERM)
-
-	with open(log_file, 'r') as f:
+	with open(server_log_file, 'r') as f:
 		server_out = f.read()
-	# DHE-BIGN-WITH-BELT-DWP-HBELT testing result
-	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHE-BIGN-WITH-BELT-DWP-HBELT', retcode)
 
-	# DHE-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
-	retcode = (server_out.find("test=DHE-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
-	test_result('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
+	for ciphersuite in cert_ciphersuites:
+		print(ciphersuite)
+		for curves in curves_list:
+			retcode = (server_out.find('test_{}={}'.format(curves, ciphersuite)) != -1)
+			test_result('	{}'.format(curves), retcode)
 
-	# DHT-BIGN-WITH-BELT-DWP-HBELT testing result
-	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHT-BIGN-WITH-BELT-DWP-HBELT', retcode)
-
-	# DHT-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
-	retcode = (server_out.find("test=DHT-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
-	test_result('DHT-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
-
-	# DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
-	retcode = (server_out.find("test=DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
-	test_result('DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
-
-	# DHE-PSK-BIGN-WITH-BELT-DWP-HBELT testing result
-	retcode = (server_out.find("test=DHE-PSK-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', retcode)
-
-	# DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT testing result
-	retcode = (server_out.find("test=DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT") != -1)
-	test_result('DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT', retcode)
-
-	# DHT-PSK-BIGN-WITH-BELT-DWP-HBELT testing result
-	retcode = (server_out.find("test=DHT-PSK-BIGN-WITH-BELT-DWP-HBELT") != -1)
-	test_result('DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', retcode)
+	for ciphersuite in nocert_ciphersuites:
+		print(ciphersuite)
+		for curves in curves_list_bdhepsk:
+			retcode = (server_out.find('test_{}={}'.format(curves, ciphersuite)) != -1)
+			test_result('	{}'.format(curves), retcode)
 
 	shutil.rmtree(tmpdirname)
 
 if __name__ == '__main__':
 	test_version()
 	test_engine()
-	#test_belt()
-	#test_bign()
-	#test_belt_kwp_dwp()
+	test_belt()
+	test_bign()
+	test_belt_kwp_dwp()
 	test_btls()
 	if (fail == True):
 		sys.exit(1)

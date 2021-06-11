@@ -22,6 +22,7 @@ install:
   - sudo apt-get install -y lcov
 
 before_script:
+  - git submodule update --init --remote
   - cd ..
   - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
   - cd openssl
@@ -35,29 +36,24 @@ before_script:
   - make install > build.log 2>&1 || (cat build.log && exit 1)
   - mv ${PREFIX}/openssl.cnf.dist ${PREFIX}/openssl.cnf
   - sed -i "/\[ new\_oids\ ]/i openssl_conf = openssl_init\n[ openssl_init ]\nengines = engine_section\n[ engine_section ]\nbee2evp = bee2evp_section\n[ bee2evp_section ]\nengine_id = bee2evp\ndynamic_path = ${PREFIX}/lib/libbee2evp.so\ndefault_algorithms = ALL" ${PREFIX}/openssl.cnf
-  - cd ..
-  - cd ..
-  - git clone --depth 1 -b ${BEE2_BRANCH} https://github.com/agievich/bee2.git
-  - cd bee2
+  - cd ../../bee2evp/bee2
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${PREFIX} ..
   - make > build.log 2>&1 || (cat build.log && exit 1)
-  - make install DESTDIR=${HOME} > build.log 2>&1 || (cat build.log && exit 1)
-  - cd ..
-  - cd ..
+  - make install > build.log 2>&1 || (cat build.log && exit 1)
+  - cd ../..
 
 script:
-  - cd bee2evp
-  - sed -i '/find\_package/d' CMakeLists.txt
-  - sed -i '/pkg\_search/d' CMakeLists.txt
-  - sed -i "s|/usr|$HOME/usr|g" CMakeLists.txt
   - export LD_LIBRARY_PATH="${PREFIX}/lib:${LD_LIBRARY_PATH:-}"
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Coverage .. 
+  - cmake -DCMAKE_BUILD_TYPE=Coverage \
+      -DBEE2_LIBRARY_DIRS=${PREFIX}/lib -DBEE2_INCLUDE_DIRS=${PREFIX}/include \
+      -DOPENSSL_LIBRARY_DIRS=${PREFIX}/lib -DOPENSSL_INCLUDE_DIRS=${PREFIX}/include \
+      -DLIB_INSTALL_DIR=${PREFIX}/lib -DCMAKE_INSTALL_PREFIX=${PREFIX} .. 
   - make
-  - make install DESTDIR=${HOME} > build.log 2>&1 || (cat build.log && exit 1)
+  - make install > build.log 2>&1 || (cat build.log && exit 1)
   - cp -a ../test/. .
   - lcov -c -i -d . -o coverage_base.info
   - python test.py
