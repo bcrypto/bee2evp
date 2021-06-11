@@ -191,7 +191,7 @@ index 0c47241c..76c52283 100644
 +    {NID_bign_pubkey, SSL_aBIGN}, /* SSL_PKEY_BIGN */
  };
 diff --git a/ssl/ssl_ciph.c b/ssl/ssl_ciph.c
-index 735a483c..0dab09c0 100644
+index 735a483c..c3272d44 100644
 --- a/ssl/ssl_ciph.c
 +++ b/ssl/ssl_ciph.c
 @@ -20,6 +20,7 @@
@@ -220,23 +220,25 @@ index 735a483c..0dab09c0 100644
  };
  
  static const EVP_CIPHER *ssl_cipher_methods[SSL_ENC_NUM_IDX];
-@@ -110,11 +113,13 @@ static const ssl_cipher_table ssl_cipher_table_mac[SSL_MD_NUM_IDX] = {
+@@ -110,11 +113,15 @@ static const ssl_cipher_table ssl_cipher_table_mac[SSL_MD_NUM_IDX] = {
      {SSL_GOST12_512, NID_id_GostR3411_2012_512}, /* SSL_MD_GOST12_512_IDX 8 */
      {0, NID_md5_sha1},          /* SSL_MD_MD5_SHA1_IDX 9 */
      {0, NID_sha224},            /* SSL_MD_SHA224_IDX 10 */
 -    {0, NID_sha512}             /* SSL_MD_SHA512_IDX 11 */
 +    {0, NID_sha512},             /* SSL_MD_SHA512_IDX 11 */
 +    {SSL_BELTMAC, NID_belt_mac256}, /* SSL_MD_BELTMAC_IDX 12 */
-+    {SSL_HBELT, NID_belt_hash} /* SSL_MD_HBELT_IDX 13 */
++    {SSL_HBELT, NID_belt_hash}, /* SSL_MD_HBELT_IDX 13 */
++    {SSL_BASH384, NID_bash384}, /* SSL_MD_BASH384_IDX 14 */
++	{SSL_BASH512, NID_bash512} /* SSL_MD_BASH512_IDX 15 */
  };
  
  static const EVP_MD *ssl_digest_methods[SSL_MD_NUM_IDX] = {
 -    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
++    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
  };
  
  /* *INDENT-OFF* */
-@@ -128,7 +133,11 @@ static const ssl_cipher_table ssl_cipher_table_kx[] = {
+@@ -128,7 +135,11 @@ static const ssl_cipher_table ssl_cipher_table_kx[] = {
      {SSL_kPSK,      NID_kx_psk},
      {SSL_kSRP,      NID_kx_srp},
      {SSL_kGOST,     NID_kx_gost},
@@ -249,7 +251,7 @@ index 735a483c..0dab09c0 100644
  };
  
  static const ssl_cipher_table ssl_cipher_table_auth[] = {
-@@ -172,7 +181,9 @@ static int ssl_mac_pkey_id[SSL_MD_NUM_IDX] = {
+@@ -172,7 +183,9 @@ static int ssl_mac_pkey_id[SSL_MD_NUM_IDX] = {
      /* GOST2012_512 */
      EVP_PKEY_HMAC,
      /* MD5/SHA1, SHA224, SHA512 */
@@ -260,7 +262,7 @@ index 735a483c..0dab09c0 100644
  };
  
  static size_t ssl_mac_secret_size[SSL_MD_NUM_IDX];
-@@ -228,6 +239,10 @@ static const SSL_CIPHER cipher_aliases[] = {
+@@ -228,6 +241,10 @@ static const SSL_CIPHER cipher_aliases[] = {
      {0, SSL_TXT_kDHEPSK, NULL, 0, SSL_kDHEPSK},
      {0, SSL_TXT_kSRP, NULL, 0, SSL_kSRP},
      {0, SSL_TXT_kGOST, NULL, 0, SSL_kGOST},
@@ -271,7 +273,7 @@ index 735a483c..0dab09c0 100644
  
      /* server authentication aliases */
      {0, SSL_TXT_aRSA, NULL, 0, 0, SSL_aRSA},
-@@ -241,6 +256,7 @@ static const SSL_CIPHER cipher_aliases[] = {
+@@ -241,6 +258,7 @@ static const SSL_CIPHER cipher_aliases[] = {
      {0, SSL_TXT_aGOST12, NULL, 0, 0, SSL_aGOST12},
      {0, SSL_TXT_aGOST, NULL, 0, 0, SSL_aGOST01 | SSL_aGOST12},
      {0, SSL_TXT_aSRP, NULL, 0, 0, SSL_aSRP},
@@ -279,7 +281,7 @@ index 735a483c..0dab09c0 100644
  
      /* aliases combining key exchange and server authentication */
      {0, SSL_TXT_EDH, NULL, 0, SSL_kDHE, ~SSL_aNULL},
-@@ -280,6 +296,8 @@ static const SSL_CIPHER cipher_aliases[] = {
+@@ -280,6 +298,8 @@ static const SSL_CIPHER cipher_aliases[] = {
      {0, SSL_TXT_ARIA_GCM, NULL, 0, 0, 0, SSL_ARIA128GCM | SSL_ARIA256GCM},
      {0, SSL_TXT_ARIA128, NULL, 0, 0, 0, SSL_ARIA128GCM},
      {0, SSL_TXT_ARIA256, NULL, 0, 0, 0, SSL_ARIA256GCM},
@@ -288,7 +290,7 @@ index 735a483c..0dab09c0 100644
  
      /* MAC aliases */
      {0, SSL_TXT_MD5, NULL, 0, 0, 0, 0, SSL_MD5},
-@@ -290,6 +308,7 @@ static const SSL_CIPHER cipher_aliases[] = {
+@@ -290,6 +310,7 @@ static const SSL_CIPHER cipher_aliases[] = {
      {0, SSL_TXT_SHA256, NULL, 0, 0, 0, 0, SSL_SHA256},
      {0, SSL_TXT_SHA384, NULL, 0, 0, 0, 0, SSL_SHA384},
      {0, SSL_TXT_GOST12, NULL, 0, 0, 0, 0, SSL_GOST12_256},
@@ -296,7 +298,7 @@ index 735a483c..0dab09c0 100644
  
      /* protocol version aliases */
      {0, SSL_TXT_SSLV3, NULL, 0, 0, 0, 0, 0, SSL3_VERSION},
-@@ -445,6 +464,15 @@ int ssl_load_ciphers(void)
+@@ -445,6 +466,15 @@ int ssl_load_ciphers(void)
          (SSL_aGOST01 | SSL_aGOST12))
          disabled_mkey_mask |= SSL_kGOST;
  
@@ -312,7 +314,7 @@ index 735a483c..0dab09c0 100644
      return 1;
  }
  
-@@ -1686,6 +1714,18 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+@@ -1686,6 +1716,18 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
      case SSL_kGOST:
          kx = "GOST";
          break;
@@ -331,7 +333,7 @@ index 735a483c..0dab09c0 100644
      case SSL_kANY:
          kx = "any";
          break;
-@@ -1719,6 +1759,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+@@ -1719,6 +1761,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
      case (SSL_aGOST12 | SSL_aGOST01):
          au = "GOST12";
          break;
@@ -341,7 +343,7 @@ index 735a483c..0dab09c0 100644
      case SSL_aANY:
          au = "any";
          break;
-@@ -1792,6 +1835,12 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+@@ -1792,6 +1837,12 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
      case SSL_CHACHA20POLY1305:
          enc = "CHACHA20/POLY1305(256)";
          break;
@@ -354,7 +356,7 @@ index 735a483c..0dab09c0 100644
      default:
          enc = "unknown";
          break;
-@@ -1824,6 +1873,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+@@ -1824,6 +1875,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
      case SSL_GOST12_512:
          mac = "GOST2012";
          break;
@@ -422,7 +424,7 @@ index 98057921..4ce809a5 100644
      mask_k |= SSL_kPSK;
      mask_a |= SSL_aPSK;
 diff --git a/ssl/ssl_local.h b/ssl/ssl_local.h
-index 8ddbde77..9d390f52 100644
+index 8ddbde77..de1152dc 100644
 --- a/ssl/ssl_local.h
 +++ b/ssl/ssl_local.h
 @@ -34,6 +34,7 @@
@@ -456,7 +458,7 @@ index 8ddbde77..9d390f52 100644
  # define SSL_MD_SHA224_IDX 10
  # define SSL_MD_SHA512_IDX 11
 -# define SSL_MAX_DIGEST 12
-+# define SSL_MAX_DIGEST 14
++# define SSL_MAX_DIGEST 16
  
  /* Bits for algorithm2 (handshake digests and other extra flags) */
  
@@ -497,7 +499,7 @@ index 3c7395c0..a02a0ba2 100644
          return EXT_RETURN_NOT_SENT;
      }
 diff --git a/ssl/statem/statem_clnt.c b/ssl/statem/statem_clnt.c
-index 3420ce65..65c1eba4 100644
+index 3420ce65..22a44781 100644
 --- a/ssl/statem/statem_clnt.c
 +++ b/ssl/statem/statem_clnt.c
 @@ -66,7 +66,7 @@ static int key_exchange_expected(SSL *s)
@@ -509,15 +511,6 @@ index 3420ce65..65c1eba4 100644
          return 1;
      }
  
-@@ -1989,7 +1989,7 @@ static int tls_process_ske_psk_preamble(SSL *s, PACKET *pkt)
- {
- #ifndef OPENSSL_NO_PSK
-     PACKET psk_identity_hint;
--
-+
-     /* PSK ciphersuites are preceded by an identity hint */
- 
-     if (!PACKET_get_length_prefixed_2(pkt, &psk_identity_hint)) {
 @@ -2277,7 +2277,7 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
      }
  
@@ -571,7 +564,7 @@ index 3420ce65..65c1eba4 100644
  }
  
 diff --git a/ssl/statem/statem_srvr.c b/ssl/statem/statem_srvr.c
-index cf45a40c..efb97c29 100644
+index cf45a40c..89b1ec42 100644
 --- a/ssl/statem/statem_srvr.c
 +++ b/ssl/statem/statem_srvr.c
 @@ -339,16 +339,17 @@ static int send_server_key_exchange(SSL *s)
@@ -646,7 +639,7 @@ index cf45a40c..efb97c29 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index 48d46f8a..aa47f9d2 100644
+index 48d46f8a..71f861c0 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -20,6 +20,7 @@
@@ -657,45 +650,49 @@ index 48d46f8a..aa47f9d2 100644
  
  static const SIGALG_LOOKUP *find_sig_alg(SSL *s, X509 *x, EVP_PKEY *pkey);
  static int tls12_sigalg_allowed(const SSL *s, int op, const SIGALG_LOOKUP *lu);
-@@ -169,6 +170,7 @@ static const TLS_GROUP_INFO nid_list[] = {
+@@ -169,6 +170,9 @@ static const TLS_GROUP_INFO nid_list[] = {
      {NID_brainpoolP512r1, 256, TLS_CURVE_PRIME}, /* brainpool512r1 (28) */
      {EVP_PKEY_X25519, 128, TLS_CURVE_CUSTOM}, /* X25519 (29) */
      {EVP_PKEY_X448, 224, TLS_CURVE_CUSTOM}, /* X448 (30) */
-+    {NID_bign_curve256v1, 128, TLS_CURVE_CUSTOM},
++    {NID_bign_curve256v1, 128, TLS_CURVE_CUSTOM}, /* BIGN_CURVE256V1_ID (31) */
++    {NID_bign_curve384v1, 192, TLS_CURVE_CUSTOM}, /* BIGN_CURVE384V1_ID (32) */
++    {NID_bign_curve512v1, 256, TLS_CURVE_CUSTOM}, /* BIGN_CURVE512V1_ID (33) */
  };
  
  static const unsigned char ecformats_default[] = {
-@@ -179,6 +181,7 @@ static const unsigned char ecformats_default[] = {
- 
- /* The default curves */
- static const uint16_t eccurves_default[] = {
-+    31,
-     29,                      /* X25519 (29) */
-     23,                      /* secp256r1 (23) */
-     30,                      /* X448 (30) */
-@@ -674,6 +677,7 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -674,6 +678,9 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
-+    TLSEXT_SIGALG_bign_sign_belt_hash,
++    TLSEXT_SIGALG_bign_sign_128,
++    TLSEXT_SIGALG_bign_sign_192,
++    TLSEXT_SIGALG_bign_sign_256
  };
  
  #ifndef OPENSSL_NO_EC
-@@ -769,8 +773,12 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -769,8 +776,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
 -     NID_undef, NID_undef}
 +     NID_undef, NID_undef},
  #endif
-+    {NULL, TLSEXT_SIGALG_bign_sign_belt_hash,
++    {NULL, TLSEXT_SIGALG_bign_sign_128,
 +     NID_belt_hash, SSL_MD_HBELT_IDX,
 +     NID_bign_pubkey, SSL_PKEY_BIGN,
-+     NID_bign_with_hbelt, NID_bign_curve256v1}
++     NID_bign_with_hbelt, NID_bign_curve256v1},
++    {NULL, TLSEXT_SIGALG_bign_sign_192,
++     NID_bash384, SSL_MD_BASH384_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash384, NID_bign_curve384v1},
++    {NULL, TLSEXT_SIGALG_bign_sign_256,
++     NID_bash512, SSL_MD_BASH512_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash512, NID_bign_curve512v1},
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -2428,6 +2436,7 @@ void tls1_set_cert_validity(SSL *s)
+@@ -2428,6 +2447,7 @@ void tls1_set_cert_validity(SSL *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -704,7 +701,7 @@ index 48d46f8a..aa47f9d2 100644
  
  /* User level utility function to check a chain is suitable */
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e2c397b7..80946e3b 100644
+index e2c397b7..08f80f8d 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -443,6 +443,14 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -722,3 +719,13 @@ index e2c397b7..80946e3b 100644
  };
  
  /* Compression methods */
+@@ -572,6 +580,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+     {TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, "gost2012_256"},
+     {TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, "gost2012_512"},
+     {TLSEXT_SIGALG_gostr34102001_gostr3411, "gost2001_gost94"},
++	{TLSEXT_SIGALG_bign_sign_128, "bign_auth128"},
++	{TLSEXT_SIGALG_bign_sign_192, "bign_auth192"},
++	{TLSEXT_SIGALG_bign_sign_256, "bign_auth256"},
+ };
+ 
+ static const ssl_trace_tbl ssl_ctype_tbl[] = {
