@@ -49,6 +49,18 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 - the destroy() function is called upon unloading the ENGINE, when the last
   structural reference to it is released, to cleanly free any resource
   allocated upon loading it into memory.
+
+\todo С помощью функции rngReadOpenssl() можно усилить батарею источников 
+энтропии, заменив в функции bee2evp_init() строчку
+\code
+	if (rngCreate(0, 0) != ERR_OK)
+\endcode
+на строчку
+\code
+	if (rngCreate(rngReadOpenssl, 0) != ERR_OK)
+\endcode
+Однако вызов rngReadOpenssl() в момент инициализации плагина приводит 
+к ошибке в дальнейшей работе OpenSSL. Разобраться.
 *******************************************************************************
 */
 
@@ -65,7 +77,7 @@ static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 
 static int bee2evp_init(ENGINE* e)
 {
-	if (rngCreate(rngReadOpenssl, 0) != ERR_OK)
+	if (rngCreate(0, 0) != ERR_OK)
 		return 0;
 	return 1;
 }
