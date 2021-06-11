@@ -6,6 +6,14 @@ Developement lead
 
 - Sergey Agievich [agievich@{bsu.by|gmail.com}] 
 
+Authors
+-------
+
+- Egor Lawrenov [egor_lawr@tut.by]
+  - btls
+  - continuous integration
+  - tests
+
 Contributors*
 ------------
 
@@ -14,10 +22,6 @@ Contributors*
   - tests
 - Oleg Solovey [solovey@bsu.by] 
   - belt_ameth
-- Egor Lawrenov [egor_lawr@tut.by]
-  - btls
-  - continuous integration
-  - tests
 - Yury Kashcheyeu
   - [RPM packages](https://copr.fedorainfracloud.org/coprs/kashcheyeu/bee2evp/)
 
