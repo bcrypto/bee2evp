@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.02.18
+\version 2021.06.11
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -15,6 +15,7 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 #include <openssl/objects.h>
 #include <openssl/engine.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <bee2/core/mem.h>
 #include <bee2/core/mt.h>
 #include <bee2/core/rng.h>
@@ -51,9 +52,20 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 *******************************************************************************
 */
 
+static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
+{
+	ASSERT(memIsValid(read, O_PER_S));
+	ASSERT(memIsValid(buf, count));
+	if ((size_t)(int)count == count && RAND_priv_bytes(buf, (int)count))
+		*read = count;
+	else
+		*read = 0;
+	return ERR_OK;
+}
+
 static int bee2evp_init(ENGINE* e)
-{ 
-	if (rngCreate(0, 0) != ERR_OK)
+{
+	if (rngCreate(rngReadOpenssl, 0) != ERR_OK)
 		return 0;
 	return 1;
 }
@@ -69,7 +81,7 @@ static int bee2evp_finish(ENGINE* e)
 	evpBign_pmeth_finish();
 	evpBign_ameth_finish();
 	evpBash_finish();
-//	rngClose();
+	rngClose();
 	return 1;
 }
 

@@ -89,7 +89,11 @@ These patches support the following ciphersuites defined in STB 34.101.65
 - `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT`;
 - `DHE-BIGN-WITH-BELT-DWP-HBELT`;
 - `DHT-BIGN-WITH-BELT-CTR-MAC-HBELT`;
-- `DHT-BIGN-WITH-BELT-DWP-HBELT`.
+- `DHT-BIGN-WITH-BELT-DWP-HBELT`;
+- `DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT`;
+- `DHE-PSK-BIGN-WITH-BELT-DWP-HBELT`;
+- `DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT`;
+- `DHT-PSK-BIGN-WITH-BELT-DWP-HBELT`.
 
 An example of applying a patch can be found in [travis.yml](.travis.yml).
 
