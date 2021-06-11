@@ -39,7 +39,7 @@ before_script:
   - cd ../../bee2evp/bee2
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${PREFIX} ..
+  - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_PIC=ON -DCMAKE_INSTALL_PREFIX=${PREFIX} ..
   - make > build.log 2>&1 || (cat build.log && exit 1)
   - make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../..
