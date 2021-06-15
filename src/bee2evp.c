@@ -64,7 +64,7 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
 *******************************************************************************
 */
 
-static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
+/*static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 {
 	ASSERT(memIsValid(read, O_PER_S));
 	ASSERT(memIsValid(buf, count));
@@ -73,7 +73,7 @@ static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 	else
 		*read = 0;
 	return ERR_OK;
-}
+}*/
 
 static int bee2evp_init(ENGINE* e)
 {
