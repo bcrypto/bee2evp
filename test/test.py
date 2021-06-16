@@ -455,63 +455,6 @@ def btls_issue_cert(privfile, certfile):
 		.format(privfile, certfile))
 	retcode, block, er__ = openssl(cmd)
 
-'''def btls_server256_nopsk(tmpdirname, server_log_file):
-	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256, 'bign-curve256v1')
-
-	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv256, cert)
-
-	cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
-			.format(priv256, cert, server_log_file))
-	global server_nopsk
-	server_nopsk = openssl(cmd, type_=1)'''
-
-'''def btls_server_dhepsk(tmpdirname, server_log_file):
-	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256)
-
-	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv256, cert)
-
-	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
-			.format(server_log_file))
-	global server_dhepsk
-	server_dhepsk = openssl(cmd, type_=1)'''
-
-'''def btls_server_dhtpsk(tmpdirname, server_log_file):
-	priv256 = os.path.join(tmpdirname, 'priv256.key')
-	btls_gen_privkey(priv256)
-
-	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv256, cert)
-
-	cmd = ('s_server -tls1_2 -key {} -cert {} -psk 123456 -psk_hint 123  >> {}'
-			.format(priv256, cert, server_log_file))
-	global server_dhtpsk
-	server_dhtpsk = openssl(cmd, type_=1)'''
-
-'''def btls_server(tmpdirname, server_log_file, curves, psk=False, bdhtpsk=False):
-	if bdhtpsk:
-		cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
-				.format(server_log_file))
-	else:
-		priv = os.path.join(tmpdirname, '{}.key'.format(curves))
-		btls_gen_privkey(priv)
-
-		cert = os.path.join(tmpdirname, 'cert.pem')
-		btls_issue_cert(priv, cert)
-
-		if psk:
-			cmd = ('s_server -tls1_2 -key {} -cert {} -psk 123456 -psk_hint 123  >> {}'
-					.format(priv, cert, server_log_file))
-		else:
-			cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
-					.format(priv, cert, server_log_file))
-	
-	global server
-	server = openssl(cmd, type_=1)'''
-
 def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
 	priv = os.path.join(tmpdirname, '{}.key'.format(curve))
 	btls_gen_privkey(priv, curve)
