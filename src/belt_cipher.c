@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2021.02.18
+\version 2021.07.14
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -275,8 +275,6 @@ static int evpBeltECB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 /*
 *******************************************************************************
 Алгоритмы belt_cbc
-
-\todo Убрать закомментированные строчки в evpBeltCBC_init?
 *******************************************************************************
 */
 
@@ -378,8 +376,6 @@ static int evpBeltCBC_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 /*
 *******************************************************************************
 Алгоритмы belt_cfb
-
-\todo Убрать закомментированные строчки в evpBeltCFB_init()?
 *******************************************************************************
 */
 

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.06.11
+\version 2021.06.24
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -50,8 +50,21 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
   structural reference to it is released, to cleanly free any resource
   allocated upon loading it into memory.
 
-\todo С помощью функции rngReadOpenssl() можно усилить батарею источников 
-энтропии, заменив в функции bee2evp_init() строчку
+\todo С помощью функции 
+\code 
+static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
+{
+	ASSERT(memIsValid(read, O_PER_S));
+	ASSERT(memIsValid(buf, count));
+	if ((size_t)(int)count == count && RAND_priv_bytes(buf, (int)count))
+		*read = count;
+	else
+		*read = 0;
+	return ERR_OK;
+}
+\endcode
+можно усилить батарею источников энтропии, заменив в функции bee2evp_init() 
+строчку 
 \code
 	if (rngCreate(0, 0) != ERR_OK)
 \endcode

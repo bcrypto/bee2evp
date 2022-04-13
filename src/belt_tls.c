@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.02.18
+\version 2021.07.08
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -156,23 +156,25 @@ static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 	// запустить шифр
 	beltDWPStart(state->state, state->key, 32, state->iv);
 	// обработать открытые (ассоциированные) данные
-	beltDWPStepA(state->aad, state->aad_len, state->state);
+	beltDWPStepI(state->aad, state->aad_len, state->state);
 	// обработать фрагмент (без имитовставки)
 	len -= 8;
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 	{
 		beltDWPStepE(out, len, state->state);
+		beltDWPStepA(out, len, state->state);
 		beltDWPStepG(out + len, state->state);
 		len += 8 + 8;
 	}
 	else
 	{
-		beltDWPStepD(out, len, state->state);
+		beltDWPStepA(out, len, state->state);
 		if (!beltDWPStepV(out + len, state->state))
 		{
 			memWipe(out, len);
 			return -1;
 		}
+		beltDWPStepD(out, len, state->state);
 		memMove(out - 8, out, len);
 	}
 	// число октетов, записанных в out
