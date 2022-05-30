@@ -18,21 +18,27 @@ help()
 # Process the input options. Add options as needed.        #
 ############################################################
 # Get the options
-while getopts :hvm flag
-do
-    case "${flag}" in
-        h)
-          help
-          exit;;
-        v) openssl_branch=${OPTARG};;
-        m) mode=${OPTARG};;
-        \?) # Invalid option
-          echo "Error: Invalid option"
-          exit;;
-    esac
+while getopts 'hv:m:' flag ; do
+  case "$flag" in
+    h)
+      help
+      exit;;
+    v)
+      openssl_branch=$OPTARG
+      ;;
+    m)
+      mode=$OPTARG;
+      ;;
+    \?) # Invalid option
+      echo "Error: Invalid option"
+      exit;;
+  esac
 done
 
-bee2evp=`pwd`/..
+echo "version=$openssl_branch"
+echo "mode=${mode}"
+
+bee2evp=$(pwd)/..
 build_root=$bee2evp/build_$openssl_branch
 bee2=$bee2evp/bee2
 openssl=$bee2evp/openssl
@@ -54,6 +60,7 @@ clean(){
 }
 
 update_repos(){
+  echo $openssl_branch
   git submodule update --init
   git clone -b $openssl_branch --depth 1 https://github.com/openssl/openssl $openssl
 }
@@ -83,7 +90,7 @@ build_bee2(){
 build_openssl(){
   mkdir -p $build_openssl && mkdir -p $local && cd $build_openssl
   $openssl/config shared -d --prefix=$local --openssldir=$local
-  make -j$(nproc) all 
+  make -j$(nproc) all
   make install > build.log 2>&1 || (cat build.log && exit 1)
   ls -la $local/lib/libcrypto.a
   ls -la $local/lib/libssl.a
@@ -103,21 +110,21 @@ build_bee2evp(){
 
 attach_bee2evp(){
   #cp $bee2evp/doc/bee2evp.cnf $local/openssl.cnf
-  #sed -i "s|#path/to/bee2evp|$local/lib/libbee2evp.so|g" $local/openssl.cnf  
+  #sed -i "s|#path/to/bee2evp|$local/lib/libbee2evp.so|g" $local/openssl.cnf
   mv $local/openssl.cnf.dist $local/openssl.cnf
   sed -i "/\[ new\_oids\ ]/i openssl_conf = openssl_init\n[ openssl_init ]\nengines = engine_section\n[ engine_section ]\nbee2evp = bee2evp_section\n[ bee2evp_section ]\nengine_id = bee2evp\ndynamic_path = $local/lib/libbee2evp.so\ndefault_algorithms = ALL" $local/openssl.cnf
 }
 
 test_bee2evp(){
   export LD_LIBRARY_PATH="$local/lib:${LD_LIBRARY_PATH:-}"
-  cd $local/bin
+  cd $local/bin || exit
   ./openssl version
   ./openssl engine -c -t bee2evp
 }
 
-if [ "$#" -e 0 ];
+if [ "$#" -eq 0 ];
 then
-  help
+  help 
 else
   install_prereq
   clean
