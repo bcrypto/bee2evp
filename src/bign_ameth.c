@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2021.02.18
+\version 2022.06.16
 \license This program is released under the GNU General Public License 
 version 3 with the additional exemption that compiling, linking, 
 and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
@@ -37,8 +37,9 @@ and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
 \warning Не тестировались:
 	evpBign_pkcs7_XXX.
 
-\todo Поддержать методы set_priv_key, get_priv_key, siginf_set,
-sig_print [EVP_PKEY_ASN1_METHOD.pod]?
+\todo Поддержать методы siginf_set, sig_print [EVP_PKEY_ASN1_METHOD.pod]?
+
+\todo Методы set_priv_key, get_priv_key используются в OpenSSL безопасно? 
 *******************************************************************************
 */
 
@@ -979,6 +980,44 @@ static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey,
 }
 
 
+/*
+*******************************************************************************
+Личный ключ как строка октетов
+*******************************************************************************
+*/
+
+static int evpBign_set_privkey(EVP_PKEY *pkey, const octet* privkey,
+	size_t len)
+{
+	bign_key* key;
+	if (evpBign_param_missing(pkey))
+		return 0;
+	key = (bign_key*)EVP_PKEY_get0(pkey);
+	if (len != key->params->l / 4)
+		return 0;
+	if (bignCalcPubkey(key->pubkey, key->params, privkey) != ERR_OK)
+		return 0;
+	memCopy(key->privkey, privkey, len);
+	return 1;
+}
+
+static int evpBign_get_privkey(const EVP_PKEY* pkey, octet* privkey,
+	size_t* len)
+{
+	const bign_key* key;
+	if (evpBign_param_missing(pkey))
+		return 0;
+	key = (const bign_key*)EVP_PKEY_get0(pkey);
+	if (privkey == 0)
+	{
+		*len = key->params->l / 4;
+		return 1;
+	}
+	if (*len < key->params->l / 4)
+		return 0;
+	memCopy(privkey, key->privkey, *len = key->params->l / 4);
+	return 1;
+}
 
 /*
 *******************************************************************************
@@ -1108,6 +1147,10 @@ int evpBign_ameth_bind(ENGINE* e)
 		evpBign_set_pubkey);
 	EVP_PKEY_asn1_set_get_pub_key(EVP_bign_ameth,
 		evpBign_get_pubkey);
+	EVP_PKEY_asn1_set_set_priv_key(EVP_bign_ameth,
+		evpBign_set_privkey);
+	EVP_PKEY_asn1_set_get_priv_key(EVP_bign_ameth,
+		evpBign_get_privkey);
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_asn1_meths(e);
 	if (!ENGINE_set_pkey_asn1_meths(e, evpBign_ameth_enum))
