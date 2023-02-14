@@ -33,7 +33,7 @@ Preparations
 ------------
 
 Before building Bee2evp, it is necessary to build and configure Bee2 and OpenSSL. 
-Bee2evp requires OpenSSL version 1.1.0 or higher.
+Bee2evp requires OpenSSL version 1.1.1 or higher.
 
 ### Building Bee2
 
