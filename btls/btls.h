@@ -5,9 +5,8 @@
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
 \version 2021.06.09
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 

@@ -30,5 +30,3 @@ Contributors*
 ---
 *in chronological order of the first contribution
 
-You are welcome!
-

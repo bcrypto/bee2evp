@@ -100,6 +100,6 @@ An example of applying a patch can be found in [travis.yml](.travis.yml).
 License
 -------
 
-Bee2evp is released under the terms of the GNU General Public License version 3
-(GNU GPLv3) with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See [LICENSE](LICENSE) for more information.
+Bee2 is distributed under the Apache License version 2.0. See 
+[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) or 
+[LICENSE](LICENSE.txt) for details.
