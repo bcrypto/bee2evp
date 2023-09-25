@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2022.06.16
+\version 2023.09.25
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -173,7 +173,7 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 static int evpBign_param_check(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
-	return bignValParams(key->params) == ERR_OK;
+	return bignParamsVal(key->params) == ERR_OK;
 }
 
 /*
@@ -337,7 +337,7 @@ static int evpBign_pub_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 static int evpBign_pub_check(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
-	return bignValPubkey(key->params, key->pubkey) == ERR_OK;
+	return bignPubkeyVal(key->params, key->pubkey) == ERR_OK;
 }
 
 /*
@@ -393,7 +393,7 @@ static int evpBign_priv_decode(EVP_PKEY* pkey, const PKCS8_PRIV_KEY_INFO* p8)
 	// сохранить личный ключ
 	memCopy(key->privkey, privkey, privkey_len);
 	// вычислить открытый ключ
-	if (bignCalcPubkey(key->pubkey, key->params, key->privkey) != ERR_OK)
+	if (bignPubkeyCalc(key->pubkey, key->params, key->privkey) != ERR_OK)
 		goto err;
 	// зафиксировать key
 	EVP_PKEY_assign(pkey, NID_bign_pubkey, key);
@@ -420,7 +420,7 @@ static int evpBign_priv_encode(PKCS8_PRIV_KEY_INFO* p8, const EVP_PKEY* pkey)
 	memCopy(privkey, key->privkey, key->params->l / 4);
 	// кодировать PrivateKeyInfo
 	if (PKCS8_pkey_set0(p8, OBJ_nid2obj(NID_bign_pubkey), 0,
-		params_type, params, privkey, key->params->l / 4))
+		params_type, params, privkey, (int)key->params->l / 4))
 		return 1;
 err:
 	if (params_type == V_ASN1_SEQUENCE)
@@ -446,7 +446,7 @@ static int evpBign_priv_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 static int evpBign_keypair_check(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
-	return bignValKeypair(key->params, key->privkey, key->pubkey) == ERR_OK;
+	return bignKeypairVal(key->params, key->privkey, key->pubkey) == ERR_OK;
 }
 
 /*
@@ -464,13 +464,13 @@ static int evpBign_pkey_size(const EVP_PKEY* pkey)
 static int evpBign_pkey_bits(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
-	return (int)(key->params->l * 2);
+	return (int)key->params->l * 2;
 }
 
 static int evpBign_pkey_security_bits(const EVP_PKEY* pkey)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
-	return (int)(key->params->l);
+	return (int)key->params->l;
 }
 
 /*
@@ -797,7 +797,7 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 		{
 			octet** pt = arg2;
 			if (*pt = OPENSSL_memdup(key->pubkey, key->params->l / 2))
-				return key->params->l / 2;
+				return (int)key->params->l / 2;
 		}
 		return 0;
 
@@ -994,7 +994,7 @@ static int evpBign_set_privkey(EVP_PKEY *pkey, const octet* privkey,
 	key = (bign_key*)EVP_PKEY_get0(pkey);
 	if (len != key->params->l / 4)
 		return 0;
-	if (bignCalcPubkey(key->pubkey, key->params, privkey) != ERR_OK)
+	if (bignPubkeyCalc(key->pubkey, key->params, privkey) != ERR_OK)
 		return 0;
 	memCopy(key->privkey, privkey, len);
 	return 1;

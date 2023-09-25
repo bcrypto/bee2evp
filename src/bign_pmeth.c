@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2021.04.26
+\version 2023.09.25
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -255,7 +255,7 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 		return 0;
 	}
 	// сгенерировать пару ключей
-	return bignGenKeypair(key->privkey, key->pubkey, key->params, 
+	return bignKeypairGen(key->privkey, key->pubkey, key->params, 
 		rngStepR, 0) == ERR_OK;
 }
 
