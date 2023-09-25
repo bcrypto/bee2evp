@@ -66,5 +66,4 @@ _bin
 _support
 openssl
 build
-win
 clear.cmd
