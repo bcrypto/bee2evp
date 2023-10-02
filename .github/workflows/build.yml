@@ -41,7 +41,7 @@ jobs:
     - name: Patch OpenSSL
       working-directory: ${{github.workspace}}/openssl
       run: |
-        git apply ../btls/openssl111i.patch
+        git apply ../btls/patch/${OPENSSL_BRANCH}.patch
         cp ../btls/btls.c ./ssl/
         cp ../btls/btls.h ./ssl/
     - name: Build OpenSSL
