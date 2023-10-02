@@ -1,19 +1,17 @@
-Bee2evp: an OpenSSL engine
-==========================
+# Bee2evp: an OpenSSL engine
 
-[![Build Status](https://travis-ci.com/bcrypto/bee2evp.svg?branch=master)](https://travis-ci.com/bcrypto/bee2evp)
+[![Github Actions Build Status](https://github.com/bcrypto/bee2evp/actions/workflows/build.yml/badge.svg)](https://github.com/bcrypto/bee2evp/actions/workflows/build.yml)
 [![Coverage Analysis](https://codecov.io/gh/bcrypto/bee2evp/coverage.svg?branch=master)](https://codecov.io/gh/bcrypto/bee2evp?branch=master)
 
-What is Bee2evp?
-----------------
+## What is Bee2evp?
 
 Bee2evp is a cryptographic library which encapsulates [Bee2](https://github.com/agievich/bee2)
 into [OpenSSL](openssl.org). Bee2evp provides cryptographic services using the 
 [EVP](https://wiki.openssl.org/index.php/EVP) interface. Bee2evp is organized 
 as an OpenSSL engine.
 
-Build
------
+## Build
+
 ```
 mkdir build
 cd build
@@ -29,8 +27,7 @@ Build types (Release by default):
 *  MemSan, MemSanDbg -- [memory sanitizer](http://code.google.com/p/memory-sanitizer/);
 *  Check -- strict compile rules.
 
-Preparations
-------------
+## Preparations
 
 Before building Bee2evp, it is necessary to build and configure Bee2 and OpenSSL. 
 Bee2evp requires OpenSSL version 1.1.1 or higher.
@@ -80,8 +77,7 @@ in the directory `/usr/local/{include|bin|lib}`.
 openssl engine -c -t bee2evp
 ```
 
-BTLS
-----
+## BTLS
 
 In [this folder](btls), patches for different versions of OpenSSL are provided. 
 These patches support the following ciphersuites defined in STB 34.101.65 
@@ -97,9 +93,20 @@ These patches support the following ciphersuites defined in STB 34.101.65
 
 An example of applying a patch can be found in [travis.yml](.travis.yml).
 
-License
--------
+## License
 
 Bee2 is distributed under the Apache License version 2.0. See 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) or 
 [LICENSE](LICENSE.txt) for details.
+
+## Automated tools
+
+Platforms:
+
+* [Github Actions](https://github.com/bcrypto/bee2evp/actions);
+* [Travis CI](https://app.travis-ci.com/github/agievich/bee2) (archived).
+
+Code coverage:
+
+* [CodeCov](https://app.codecov.io/gh/bcrypto/bee2evp?branch=master).
+
