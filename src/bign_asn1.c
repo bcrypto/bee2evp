@@ -522,7 +522,7 @@ int evpBign_asn1_i2d_params(octet** out, bool_t* specified,
 int evpBign_asn1_o2i_pubkey(bign_key* key, const octet** in, long len)
 {
 	// входной контроль
-	if (!key || !in || len != key->params->l / 2)
+	if (!key || !in || len != (int)key->params->l / 2)
 		return 0;
 	// сохранить ключ
 	memCopy(key->pubkey, *in, len);

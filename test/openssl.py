@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over openssl commmands
 # \created 2019.07.10
-# \version 2021.02.18
+# \version 2023.09.28
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -11,11 +11,9 @@
 import subprocess
 import os
 import signal
-from os.path import expanduser
-home = expanduser("~")
 
-os.environ['OPENSSL_CONF'] = home + '/usr/local/openssl.cnf'
-OPENSSL_EXE_PATH = home + '/usr/local/bin/openssl'
+os.environ['OPENSSL_CONF'] = './openssl.cnf'
+OPENSSL_EXE_PATH = './bin/openssl'
 
 def openssl(cmd, prefix='', echo=False, type_=0):
 	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2023.09.25
+\version 2023.10.02
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -785,7 +785,7 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 	case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
 		key = (bign_key*)EVP_PKEY_get0(pkey);
 		ASSERT(memIsValid(key, sizeof(bign_key)));
-		if (arg1 != key->params->l / 2)
+		if (arg1 != (int)key->params->l / 2)
 			return 0;
 		memCopy(key->pubkey, arg2, arg1);
 		return 1;
