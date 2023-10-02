@@ -3,7 +3,7 @@ rem ===========================================================================
 rem \brief Сборка OpenSSL[bee2evp]
 rem \project bee2evp
 rem \created 2021.06.09
-rem \version 2023.09.25
+rem \version 2023.10.02
 rem \pre Данный файл размещен в папке bee2evp\some_folder
 rem \pre Исходные тексты openssl размещены в папке bee2evp\openssl (..\openssl)
 rem \pre Следует настроить путь VSPATH к средствам разработки Visual Studio
@@ -58,4 +58,4 @@ copy libcrypto*.* %DISTRIB%\%1%
 copy libssl*.* %DISTRIB%\%1%
 copy apps\openssl.exe %DISTRIB%\%1%
 md %DISTRIB%\%1%\openssl
-copy include\openssl\opensslconf.h %DISTRIB%\%1%\openssl
+copy include\openssl\*.h %DISTRIB%\%1%\openssl

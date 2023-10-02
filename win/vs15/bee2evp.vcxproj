@@ -209,7 +209,7 @@
     <ClCompile Include="..\..\src\bign_asn1.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\bee2\win\vs15\libbee2.vcxproj">
+    <ProjectReference Include="..\..\bee2\win\vs15\libbee2.vcxproj">
       <Project>{1b3f88d7-bd23-4398-a331-3db139cf07ef}</Project>
     </ProjectReference>
   </ItemGroup>

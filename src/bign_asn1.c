@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief ASN1-structures for bign
 \created 2013.11.01
-\version 2023.09.25
+\version 2023.10.02
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -134,9 +134,17 @@ ASN1_CHOICE(BIGN_DOMAINPARAMS) =
 	ASN1_SIMPLE(BIGN_DOMAINPARAMS, value.implicit, ASN1_NULL)
 } ASN1_CHOICE_END(BIGN_DOMAINPARAMS)
 
-DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
-DECLARE_ASN1_ENCODE_FUNCTIONS_const(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
-IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+
+#if OPENSSL_VERSION_MAJOR >= 3
+	DECLARE_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+	DECLARE_ASN1_ENCODE_FUNCTIONS_name(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+	IMPLEMENT_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+#else
+	DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+	DECLARE_ASN1_ENCODE_FUNCTIONS_const(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+	IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+#endif
+
 
 /*
 *******************************************************************************

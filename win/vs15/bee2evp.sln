@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bee2evp", "bee2evp.vcxproj", "{E8498EC2-61CB-42C3-B390-9871B5B58937}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbee2", "..\..\..\bee2\win\vs15\libbee2.vcxproj", "{1B3F88D7-BD23-4398-A331-3DB139CF07EF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbee2", "..\..\bee2\win\vs15\libbee2.vcxproj", "{1B3F88D7-BD23-4398-A331-3DB139CF07EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
