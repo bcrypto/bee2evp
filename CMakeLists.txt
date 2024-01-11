@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 project(BEE2EVP C)
 
 set(BEE2EVP_VERSION_MAJOR "1")
@@ -68,22 +68,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 
 ### Bee2
 
-if(NOT BEE2_INCLUDE_DIRS)
-  set(BEE2_INCLUDE_DIRS 
-    /usr/local/share/ 
-  )
-endif()
-
-if(NOT BEE2_LIBRARY_DIRS)
-  set(BEE2_LIBRARY_DIRS
-    /usr/local/lib/
-  )
-endif()
-
-# bee2_static must be built with -fPIC flag
-message(STATUS BEE2_LIBRARY_DIRS=${BEE2_LIBRARY_DIRS})
-find_library(BEE2_LIBRARIES bee2_static HINTS ${BEE2_LIBRARY_DIRS})
-message(STATUS BEE2_LIBRARIES=${BEE2_LIBRARIES})
+add_subdirectory(bee2)
 
 ### OpenSSL
 
@@ -112,13 +97,13 @@ message(STATUS OPENSSL_LIBRARIES=${OPENSSL_LIBRARIES})
 include_directories(
   include/
   src/
-  ${BEE2_INCLUDE_DIRS}
+  bee2/include/
   ${OPENSSL_INCLUDE_DIRS}
 )
 
-link_directories(${BEE2_LIBRARY_DIRS} ${OPENSSL_LIBRARY_DIRS})
+link_directories( ${OPENSSL_LIBRARY_DIRS})
 
-set(libs ${BEE2_LIBRARIES} ${OPENSSL_LIBRARIES})
+set(libs bee2_static ${OPENSSL_LIBRARIES})
 
 add_subdirectory(include)
 
