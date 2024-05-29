@@ -19,6 +19,8 @@ jobs:
     steps:
     - name: Setup Python
       uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
     - name: Install lcov
       run: sudo apt install -y lcov
     - name: Get source
@@ -73,8 +75,7 @@ jobs:
     - name: Attach Bee2evp
       run: |
         mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
-        sed -i "/\[ new\_oids \]/i\
-          \nopenssl_conf = openssl_init\
+        sed -i "/\[ new\_oids \]/i openssl_conf = openssl_init\
           \n[ openssl_init ]\
           \nengines = engine_section\
           \n[ engine_section ]\
@@ -91,8 +92,8 @@ jobs:
         export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
-        python --version
-        python test.py
+        python3 --version
+        python3 test.py
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
