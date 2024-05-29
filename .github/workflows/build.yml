@@ -13,19 +13,9 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     env:
-      local: ${{github.workspace}}/build
       OPENSSL_BRANCH: OpenSSL_1_1_1i
-      OPENSSL_CNF: |-
-        /\[ new\_oids \]/i openssl_conf = openssl_init
-        [openssl_init]
-        engines = engine_section
-        [ engine_section ]
-        bee2evp = bee2evp_section
-        [bee2evp_section]
-        engine_id = bee2evp
-        dynamic_path = ${local}/lib/libbee2evp.so
-        default_algorithms = ALL
       BEE2_BRANCH: master
+      local: ${{github.workspace}}/build
     steps:
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -47,10 +37,10 @@ jobs:
       run: |
         mkdir build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_PIC=ON -DCMAKE_INSTALL_PREFIX=${local} ..
+          -DBUILD_PIC=ON -DCMAKE_INSTALL_PREFIX=${{local}} ..
         make > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la ${local}/lib/libbee2_static.a
+        ls -la ${{local}}/lib/libbee2_static.a
     - name: Patch OpenSSL
       working-directory: ${{github.workspace}}/openssl
       run: |
@@ -61,7 +51,7 @@ jobs:
       working-directory: ${{github.workspace}}/openssl
       run: |
         mkdir build && cd build
-        ../config shared -d --prefix=${local} --openssldir=${local}
+        ../config shared -d --prefix=${{local}} --openssldir=${{local}}
         make -j$(nproc) all > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
         ls -la $local/lib/libcrypto.a
@@ -73,27 +63,36 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: |
         cmake -DCMAKE_BUILD_TYPE=Coverage \
-          -DBEE2_LIBRARY_DIRS=${local}/lib \
-          -DBEE2_INCLUDE_DIRS=${local}/include \
-          -DOPENSSL_LIBRARY_DIRS=${local}/lib \
-          -DOPENSSL_INCLUDE_DIRS=${local}/include \
-          -DLIB_INSTALL_DIR=${local}/lib \
-          -DCMAKE_INSTALL_PREFIX=${local} ..
+          -DBEE2_LIBRARY_DIRS=${{local}}/lib \
+          -DBEE2_INCLUDE_DIRS=${{local}}/include \
+          -DOPENSSL_LIBRARY_DIRS=${{local}}/lib \
+          -DOPENSSL_INCLUDE_DIRS=${{local}}/include \
+          -DLIB_INSTALL_DIR=${{local}}/lib \
+          -DCMAKE_INSTALL_PREFIX=${{local}} ..
         make > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
         ls -la $local/lib/libbee2evp.so
     - name: Attach Bee2evp
       run: |
-        mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
-        cat ${local}/openssl.cnf
+        OPENSSL_CNF="/\[ new\_oids \]/i openssl_conf = openssl_init\n
+        [ openssl_init ]\n
+        engines = engine_section\n
+        [ engine_section ]\n
+        bee2evp = bee2evp_section\n
+        [ bee2evp_section ]\n
+        engine_id = bee2evp\n
+        dynamic_path = ${{local}}/lib/libbee2evp.so\n
+        default_algorithms = ALL"
+
+        mv ${{local}}/openssl.cnf.dist ${{local}}/openssl.cnf
         echo "${OPENSSL_CNF}"
-        sed -i "${OPENSSL_CNF}" ${local}/openssl.cnf
-        cat ${local}/openssl.cnf
+        sed -i "${OPENSSL_CNF}" ${{local}}/openssl.cnf
+        cat ${{local}}/openssl.cnf
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
-        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
+        export LD_LIBRARY_PATH="${{local}}/lib:${LD_LIBRARY_PATH:-}"
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
         python --version
@@ -105,6 +104,7 @@ jobs:
         cat c_log.txt
         lcov -c -d . -o coverage_test.info
         lcov -a coverage_base.info -a coverage_test.info -o coverage.info
-        LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | sed -e "s|${local}/lib:||")
+        export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
+          sed -e "s|${{local}}/lib:||")
         bash <(curl -s https://codecov.io/bash) -f coverage.info
 
