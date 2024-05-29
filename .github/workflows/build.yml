@@ -86,7 +86,8 @@ jobs:
       run: |
         mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
         cat ${local}/openssl.cnf
-        sed -i ${OPENSSL_CNF} ${local}/openssl.cnf
+        echo "${OPENSSL_CNF}"
+        sed -i "${OPENSSL_CNF}" ${local}/openssl.cnf
         cat ${local}/openssl.cnf
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
