@@ -74,19 +74,17 @@ jobs:
         ls -la $local/lib/libbee2evp.so
     - name: Attach Bee2evp
       run: |
-        OPENSSL_CNF="/\[ new\_oids \]/i openssl_conf = openssl_init\n
-        [ openssl_init ]\n
-        engines = engine_section\n
-        [ engine_section ]\n
-        bee2evp = bee2evp_section\n
-        [ bee2evp_section ]\n
-        engine_id = bee2evp\n
-        dynamic_path = ${local}/lib/libbee2evp.so\n
-        default_algorithms = ALL"
-
         mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
-        echo "${OPENSSL_CNF}"
-        sed -i "${OPENSSL_CNF}" ${local}/openssl.cnf
+        sed -i "/\[ new\_oids \]/i\
+          openssl_conf = openssl_init\n\
+          [ openssl_init ]\n\
+          engines = engine_section\n\
+          [ engine_section ]\n\
+          bee2evp = bee2evp_section\n\
+          [ bee2evp_section ]\n\
+          engine_id = bee2evp\n\
+          dynamic_path = ${local}/lib/libbee2evp.so\n\
+          default_algorithms = ALL" ${local}/openssl.cnf
         cat ${local}/openssl.cnf
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
