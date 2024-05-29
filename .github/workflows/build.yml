@@ -75,9 +75,9 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Coverage \
           -DBEE2_LIBRARY_DIRS=${local}/lib \
           -DBEE2_INCLUDE_DIRS=${local}/include \
-          -DOPENSSL_LIBRARY_DIRS=${local}/lib 
+          -DOPENSSL_LIBRARY_DIRS=${local}/lib \
           -DOPENSSL_INCLUDE_DIRS=${local}/include \
-          -DLIB_INSTALL_DIR=${local}/lib 
+          -DLIB_INSTALL_DIR=${local}/lib \
           -DCMAKE_INSTALL_PREFIX=${local} ..
         make > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
