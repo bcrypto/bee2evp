@@ -1,70 +1,85 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 project(BEE2EVP C)
 
 set(BEE2EVP_VERSION_MAJOR "1")
 set(BEE2EVP_VERSION_MINOR "0")
-set(BEE2EVP_VERSION_PATCH "8")
-set(BEE2EVP_VERSION "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
+set(BEE2EVP_VERSION_PATCH "9")
+set(BEE2EVP_VERSION 
+  "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
 option(INSTALL_HEADERS "Install headers." ON)
 
 if(CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
-      CACHE STRING "Choose the type of build: Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
+      CACHE STRING "Choose the type of build: \
+        Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
       FORCE)
 else()
   set(CMAKE_BUILD_TYPE Release
-      CACHE STRING "Choose the type of build: Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
+      CACHE STRING "Choose the type of build: \
+        Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
       FORCE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler: ${CMAKE_C_COMPILER_ID}")
 
-string(COMPARE EQUAL "GNU" CMAKE_COMPILER_IS_GNUCC "${CMAKE_C_COMPILER_ID}")
+string(COMPARE EQUAL "GNU" "${CMAKE_C_COMPILER_ID}" CMAKE_COMPILER_IS_GNUCC)
 string(REGEX MATCH "Clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER_ID}")
-string(COMPARE EQUAL "MSVC" CMAKE_COMPILER_IS_MSVC "${CMAKE_C_COMPILER_ID}")
+string(COMPARE EQUAL "MSVC" "${CMAKE_C_COMPILER_ID}" CMAKE_COMPILER_IS_MSVC)
 
 # Lists of watnings:
 # * https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
 # * https://clang.llvm.org/docs/DiagnosticsReference.html
 
-set(CMAKE_C_WARNINGS
-  "-Wall -Wextra -W -Wdeclaration-after-statement -Wwrite-strings \
-   -Wno-parentheses -Wno-unused-parameter -Wno-strict-aliasing \
-   -Wno-xor-used-as-pow")
+set(CMAKE_C_WARNINGS "-Wall -Wextra -W -Wdeclaration-after-statement \
+  -Wwrite-strings -Wno-parentheses -Wno-unused-parameter -Wno-strict-aliasing \
+  -Wno-xor-used-as-pow")
 
 if(CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_WARNINGS} -Wlogical-op")
-  set(CMAKE_C_FLAGS_RELEASE     "-O2")
-  set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
-  set(CMAKE_C_FLAGS_COVERAGE    "-O0 -g3 --coverage")
-  set(CMAKE_C_FLAGS_ASAN        "-Werror -fsanitize=address -fno-common -O3")
-  set(CMAKE_C_FLAGS_ASANDBG     "-Werror -fsanitize=address -fno-common -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
-  set(CMAKE_C_FLAGS_CHECK       "-Werror -O1 -Wcast-qual")
+  set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-maybe-uninitialized")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_WARNINGS}")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 \
+    -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
+  set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_COVERAGE} -O0 -g3 -coverage")
+  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address \
+    -fno-common -O3 -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address \
+    -fno-common -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  set(CMAKE_C_FLAGS_CHECK "${CMAKE_C_FLAGS_CHECK} -Werror -O1 \
+    -Wcast-qual -fanalyzer")
 endif(CMAKE_COMPILER_IS_GNUCC)
 
 if(CMAKE_COMPILER_IS_CLANG)
-  set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-parentheses-equality -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses")
-  set(CMAKE_C_FLAGS_RELEASE     "-O2")
-  set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
-  set(CMAKE_C_FLAGS_COVERAGE    "-O0 -g3 --coverage")
-  set(CMAKE_C_FLAGS_ASAN        "-Werror -fsanitize=address -fno-common -fsanitize=undefined -fno-sanitize-recover -O3")
-  set(CMAKE_C_FLAGS_ASANDBG     "-Werror -fsanitize=address -fno-common -fsanitize=undefined -fno-sanitize-recover -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-  set(CMAKE_C_FLAGS_MEMSAN      "-Werror -fsanitize=memory -O3")
-  set(CMAKE_C_FLAGS_MEMSANDBG   "-Werror -fsanitize=memory -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2")
-  set(CMAKE_C_FLAGS_CHECK       "-Werror -O1")
+  set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-parentheses-equality \
+    -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_WARNINGS}")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 \
+    -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
+  set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_COVERAGE} -O0 -g3 -coverage")
+  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address \
+    -fno-common -fsanitize=undefined -fno-sanitize-recover -O3 \
+    -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address \
+    -fno-common -fsanitize=undefined -fno-sanitize-recover -O1 -g3 \
+    -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  set(CMAKE_C_FLAGS_MEMSAN "${CMAKE_C_FLAGS_MEMSAN} -fsanitize=memory -O3 \
+    -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_MEMSANDBG "${CMAKE_C_FLAGS_MEMSANDBG} -fsanitize=memory \
+    -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls \
+    -fsanitize-memory-track-origins=2")
+  set(CMAKE_C_FLAGS_CHECK "${CMAKE_C_FLAGS_CHECK} -Werror -O1 -Wcast-qual")
 endif(CMAKE_COMPILER_IS_CLANG)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-  if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
-  endif(CMAKE_COMPILER_IS_GNUCC)
-  if(CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
-  endif(CMAKE_COMPILER_IS_CLANG)
-endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
+      -fprofile-arcs -ftest-coverage")
+  endif()
+endif()
 
 ### Bee2
 
