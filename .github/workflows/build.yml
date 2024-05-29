@@ -18,9 +18,7 @@ jobs:
       local: ${{github.workspace}}/build
     steps:
     - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11' 
+      uses: actions/setup-python@v5
     - name: Install lcov
       run: sudo apt install -y lcov
     - name: Get source
@@ -93,8 +91,8 @@ jobs:
         export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
-        python3 --version
-        python3 test.py
+        python --version
+        python test.py
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
@@ -105,4 +103,3 @@ jobs:
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
           sed -e "s|${local}/lib:||")
         bash <(curl -s https://codecov.io/bash) -f coverage.info
-
