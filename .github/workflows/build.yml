@@ -76,15 +76,15 @@ jobs:
       run: |
         mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
         sed -i "/\[ new\_oids \]/i\
-          openssl_conf = openssl_init\n\
-          [ openssl_init ]\n\
-          engines = engine_section\n\
-          [ engine_section ]\n\
-          bee2evp = bee2evp_section\n\
-          [ bee2evp_section ]\n\
-          engine_id = bee2evp\n\
-          dynamic_path = ${local}/lib/libbee2evp.so\n\
-          default_algorithms = ALL" ${local}/openssl.cnf
+          \nopenssl_conf = openssl_init\
+          \n[ openssl_init ]\
+          \nengines = engine_section\
+          \n[ engine_section ]\
+          \nbee2evp = bee2evp_section\
+          \n[ bee2evp_section ]\
+          \nengine_id = bee2evp\
+          \ndynamic_path = ${local}/lib/libbee2evp.so\
+          \ndefault_algorithms = ALL" ${local}/openssl.cnf
         cat ${local}/openssl.cnf
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
@@ -93,8 +93,8 @@ jobs:
         export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
-        python --version
-        python test.py
+        python3 --version
+        python3 test.py
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
