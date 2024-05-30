@@ -61,7 +61,7 @@ jobs:
         ls -la ${local}/lib/libssl.so
         ls -la ${local}/bin/openssl
     - name: Build Bee2evp
-      working-directory: ${local}
+      working-directory: ${{github.workspace}}/build
       run: |
         cmake -DCMAKE_BUILD_TYPE=Coverage \
           -DBEE2_LIBRARY_DIRS=${local}/lib \
@@ -88,7 +88,7 @@ jobs:
           \n" ${local}/openssl.cnf
         cat ${local}/openssl.cnf
     - name: Test Bee2evp
-      working-directory: ${local}
+      working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
         cp -a ../test/. .
@@ -99,7 +99,7 @@ jobs:
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
           sed -e "s|${local}/lib:||")
     - name: Upload coverage report to Codecov
-      working-directory: ${local}
+      working-directory: ${{github.workspace}}/build
       run: |
         cat s_log.txt
         cat c_log.txt
