@@ -15,6 +15,7 @@ jobs:
     env:
       OPENSSL_BRANCH: OpenSSL_1_1_1i
       BEE2_BRANCH: master
+      CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
       local: ${{github.workspace}}/build
     steps:
     - name: Setup Python
@@ -54,13 +55,13 @@ jobs:
         ../config shared -d --prefix=${local} --openssldir=${local}
         make -j$(nproc) all > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la $local/lib/libcrypto.a
-        ls -la $local/lib/libssl.a
-        ls -la $local/lib/libcrypto.so
-        ls -la $local/lib/libssl.so
-        ls -la $local/bin/openssl
+        ls -la ${local}/lib/libcrypto.a
+        ls -la ${local}/lib/libssl.a
+        ls -la ${local}/lib/libcrypto.so
+        ls -la ${local}/lib/libssl.so
+        ls -la ${local}/bin/openssl
     - name: Build Bee2evp
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${local}
       run: |
         cmake -DCMAKE_BUILD_TYPE=Coverage \
           -DBEE2_LIBRARY_DIRS=${local}/lib \
@@ -71,10 +72,10 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=${local} ..
         make > build.log 2>&1 || (cat build.log && exit 1)
         make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la $local/lib/libbee2evp.so
+        ls -la ${local}/lib/libbee2evp.so
     - name: Attach Bee2evp
       run: |
-        mv ${local}/openssl.cnf.dist ${local}/openssl.cnf
+        cp ${local}/openssl.cnf.dist ${local}/openssl.cnf
         sed -i "/\[ new\_oids \]/i openssl_conf = openssl_init\
           \n[ openssl_init ]\
           \nengines = engine_section\
@@ -83,24 +84,27 @@ jobs:
           \n[ bee2evp_section ]\
           \nengine_id = bee2evp\
           \ndynamic_path = ${local}/lib/libbee2evp.so\
-          \ndefault_algorithms = ALL" ${local}/openssl.cnf
+          \ndefault_algorithms = ALL\
+          \n" ${local}/openssl.cnf
         cat ${local}/openssl.cnf
     - name: Test Bee2evp
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${local}
       continue-on-error: true
       run: |
-        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
+        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
         python --version
         python test.py
+        export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
+          sed -e "s|${local}/lib:||")
     - name: Upload coverage report to Codecov
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${local}
       run: |
         cat s_log.txt
         cat c_log.txt
         lcov -c -d . -o coverage_test.info
         lcov -a coverage_base.info -a coverage_test.info -o coverage.info
-        export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
-          sed -e "s|${local}/lib:||")
-        bash <(curl -s https://codecov.io/bash) -f coverage.info
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov 
+        ./codecov -t ${CODECOV_TOKEN}
