@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Python tests for openssl[bee2evp]
 # \created 2019.07.10
-# \version 2023.10.02
+# \version 2024.05.31
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -321,7 +321,7 @@ def test_bign():
 	G1pubkey256 = os.path.join(tmpdirname, 'G1pubkey256v1.pem')
 	bignPubkeyCalc(G1prkey256pem, G1pubkey256)
 	out = openssl('asn1parse -in {} -offset 28 -dump'.format(G1pubkey256))
-	out = re.sub('[\s\n]', '', out[1].decode())
+	out = re.sub(r'[\s]', '', out[1].decode())
 	matches = re.findall('[0-9A-Fa-f]{4}-[0-9A-Fa-f]+-*[0-9A-Fa-f]+', out)
 	ans = ''
 	for match in matches:
