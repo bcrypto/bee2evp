@@ -10,7 +10,7 @@
 
 import os, signal, shutil, tempfile, time, threading
 from openssl import openssl, openssl2
-from util import test_result
+from util import process_result
 
 def btls_gen_privkey(privfile, curve):
 	cmd = ('genpkey -algorithm bign -pkeyopt params:{} -out {}'
@@ -144,15 +144,15 @@ def btls_test():
 	for ciphersuite in cert_ciphersuites:
 		print(ciphersuite)
 		for curves in curves_list:
-			retcode = (server_out.find('test_{}={}'
+			res = (server_out.find('test_{}={}'
 				.format(curves, ciphersuite)) != -1)
-			test_result('	{}'.format(curves), retcode)
+			process_result('\t{}'.format(curves), res)
 
 	for ciphersuite in nocert_ciphersuites:
 		print(ciphersuite)
 		for curves in curves_list_bdhepsk:
-			retcode = (server_out.find('test_{}={}'
+			res = (server_out.find('test_{}={}'
 				.format(curves, ciphersuite)) != -1)
-			test_result('	{}'.format(curves), retcode)
+			process_result('\t{}'.format(curves), res)
 
 	shutil.rmtree(tmpdirname)

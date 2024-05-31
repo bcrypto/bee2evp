@@ -80,8 +80,8 @@ else:
 
 fail = False
 
-def test_result(test_name, retcode):
-	if retcode == 1:
+def process_result(test_name, result):
+	if result:
 		stdout.write(test_name + ': ')
 		print_colored('success', bcolors.OKGREEN)
 	else:

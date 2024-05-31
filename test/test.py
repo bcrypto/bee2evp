@@ -13,16 +13,16 @@ from belt import belt_test
 from bign import bign_test
 from btls import btls_test
 from openssl import openssl
-from util import fail, test_result
+from util import fail, process_result
 
 def version_test():
 	retcode, out, __ = openssl('version')
-	test_result('version', retcode)
+	process_result('version', retcode == 0)
 	print(out.decode())
 
 def engine_test():
 	retcode, out, er__ = openssl('engine -c -t bee2evp')
-	test_result('engine', retcode)
+	process_result('engine', retcode == 0)
 	print(out.decode())
 
 if __name__ == '__main__':
@@ -32,5 +32,5 @@ if __name__ == '__main__':
 	belt_test()
 	bign_test()
 	btls_test()
-	if (fail == True):
+	if fail:
 		sys.exit(1)

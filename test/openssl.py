@@ -26,10 +26,11 @@ def openssl(cmd, prefix='', echo=False, check=True):
 
 	out, err_out = p.communicate()
 	retcode = p.poll()
-	if retcode and check:
-		raise CalledProcessError(retcode, p.args, output=stdout, stderr=stderr)
+	if retcode != 0 and check:
+		raise subprocess.CalledProcessError(retcode, p.args, output=stdout, 
+			stderr=stderr)
 
-	return retcode ^ 1, out, err_out
+	return retcode, out, err_out
 
 def openssl2(cmd, prefix='', echo=False):
 	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)
