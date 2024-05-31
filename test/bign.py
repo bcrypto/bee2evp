@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.45 (bign) algorithms
 # \created 2019.12.09
-# \version 2023.10.02
+# \version 2024.05.31
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -19,8 +19,8 @@ def bignParamsStd(name, out_filename, specified=False, cofactor=False):
 	if cofactor:
 		options += ' -pkeyopt enc_params:cofactor'
 
-	cmd = 'genpkey -genparam -algorithm bign {} -out {}'.format(
-		options, out_filename)
+	cmd = ('genpkey -genparam -algorithm bign {} -out {}'
+		.format(options, out_filename))
 	retcode, out, er__ = openssl(cmd)
 	return out
 
@@ -38,21 +38,21 @@ def bignSign(prkey, hashname, src , dest):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
 	cmd = 'dgst -{} -sign {} -out {}'.format(hashname, prkey, dest)
-	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
+	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return retcode
 
 def bignSign2(prkey, hashname, src, dest):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'dgst -{} -sign {} -sigopt sig:deterministic -out {}'.format(
-		hashname, prkey, dest)
-	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
+	cmd = ('dgst -{} -sign {} -sigopt sig:deterministic -out {}'
+		.format(hashname, prkey, dest))
+	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return retcode
 
 def bignVerify(prkey, hashname, src, sign_file):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
-	cmd = 'dgst -{} -prverify {} -hex -signature {}'.format(
-		hashname, prkey, sign_file)
-	retcode, out, er__ = openssl(cmd, prefix=prefix, echo=False)
+	cmd = ('dgst -{} -prverify {} -hex -signature {}'
+		.format(hashname, prkey, sign_file))
+	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return out.decode()[:-1].strip()

@@ -8,22 +8,17 @@
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
 
-from openssl import openssl
-import subprocess
+import os, re, shutil, signal, sys, time, tempfile, threading
+from openssl import *
+from settings import *
 from belt import *
 from bash import *
 from bign import *
-from settings import *
-import sys, os, shutil
-import signal
-import tempfile
-import re
-import threading
-import time
 
 fail = False
+
 def test_result(test_name, retcode):
-	if(retcode == 1):
+	if retcode == 1:
 		sys.stdout.write(test_name + ': ')
 		print_colored('success', bcolors.OKGREEN)
 	else:
@@ -284,10 +279,10 @@ def test_bign():
 		f.write(asn1cnf)
 	G1prkey256der = os.path.join(tmpdirname, 'G1prkey256.der')
 	G1prkey256pem = os.path.join(tmpdirname, 'G1prkey256.pem')
-	retcode, out, er__ = openssl(
-		'asn1parse -genconf {} -out {}'.format(asn1_conf_file, G1prkey256der))
+	retcode, out, er__ = openssl('asn1parse -genconf {} -out {}'
+		.format(asn1_conf_file, G1prkey256der))
 	openssl('pkey -inform DER -in {} -outform PEM -out {}'
-	.format(G1prkey256der,G1prkey256pem))
+		.format(G1prkey256der,G1prkey256pem))
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
 	out = out.decode().strip()[out.decode().rfind('[HEX DUMP]:'):].split(':')[1]
 	res = (out == key)
@@ -386,7 +381,7 @@ def test_belt_kwp_dwp():
 	kwp128 = os.path.join(tmpdirname, 'kwp128.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp128 -pass pass:root -out {}'
-		.format(params256, kwp128))
+			.format(params256, kwp128))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(kwp128))
 	out = out.decode()
@@ -396,7 +391,7 @@ def test_belt_kwp_dwp():
 	kwp192 = os.path.join(tmpdirname, 'kwp192.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp192 -pass pass:root -out {}'
-		.format(params256, kwp192))
+			.format(params256, kwp192))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(kwp192))
 	out = out.decode()
@@ -406,7 +401,7 @@ def test_belt_kwp_dwp():
 	kwp256 = os.path.join(tmpdirname, 'kwp256.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp256 -pass pass:root -out {}'
-		.format(params256, kwp256))
+			.format(params256, kwp256))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(kwp256))
 	out = out.decode()
@@ -416,7 +411,7 @@ def test_belt_kwp_dwp():
 	dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-dwp128 -pass pass:root -out {}'
-		.format(params256, dwp128))
+			.format(params256, dwp128))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(dwp128))
 	out = out.decode()
@@ -426,7 +421,7 @@ def test_belt_kwp_dwp():
 	dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-dwp192 -pass pass:root -out {}'
-		.format(params256, dwp192))
+			.format(params256, dwp192))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(dwp192))
 	out = out.decode()
@@ -436,7 +431,7 @@ def test_belt_kwp_dwp():
 	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
-		.format(params256, dwp256))
+			.format(params256, dwp256))
 	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
 		.format(dwp256))
 	out = out.decode()
@@ -444,13 +439,15 @@ def test_belt_kwp_dwp():
 	test_result('belt-dwp256', retcode)
 
 	shutil.rmtree(tmpdirname)
+
 def btls_gen_privkey(privfile, curve):
-	cmd = 'genpkey -algorithm bign -pkeyopt params:{} -out {}'.format(curve, privfile)
+	cmd = ('genpkey -algorithm bign -pkeyopt params:{} -out {}'
+		.format(curve, privfile))
 	retcode, block, er__ = openssl(cmd)
 
 def btls_issue_cert(privfile, certfile):
-	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK" -new -key {} -nodes -out {}'
-		.format(privfile, certfile))
+	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK"\
+		 -new -key {} -nodes -out {}'.format(privfile, certfile))
 	retcode, block, er__ = openssl(cmd)
 
 def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
@@ -461,14 +458,14 @@ def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
 	btls_issue_cert(priv, cert)
 
 	if psk:
-		cmd = ('s_server -key {} -cert {} -tls1_2 -psk 123456 -psk_hint 123  >> {}'
-				.format(priv, cert, server_log_file))
+		cmd = 's_server -key {} -cert {} -tls1_2 -psk 123456 -psk_hint 123 \
+			>> {}'.format(priv, cert, server_log_file)
 	else:
 		cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
 				.format(priv, cert, server_log_file))
 
 	global server_cert
-	server_cert = openssl(cmd, type_=1)
+	server_cert = openssl2(cmd)
 
 def btls_client_cert(client_log_file, curve, ciphersuites, psk=False):
 	for ciphersuite in ciphersuites:
@@ -479,14 +476,14 @@ def btls_client_cert(client_log_file, curve, ciphersuites, psk=False):
 			cmd = ('s_client -cipher {} -tls1_2 2>{}'
 					.format(ciphersuite, client_log_file))
 
-		openssl(cmd, prefix='echo test_{}={} |'.format(curve, ciphersuite), type_=2)
+		openssl(cmd, prefix='echo test_{}={} |'.format(curve, ciphersuite))
 
 def btls_server_nocert(server_log_file):
 	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
 			.format(server_log_file))
 
 	global server_nocert
-	server_nocert = openssl(cmd, type_=1)
+	server_nocert = openssl2(cmd)
 
 def btls_client_nocert(client_log_file, curves_list, ciphersuites):
 	for ciphersuite in ciphersuites:
@@ -497,7 +494,8 @@ def btls_client_nocert(client_log_file, curves_list, ciphersuites):
 			else:
 				cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
 						.format(ciphersuite, client_log_file))
-			openssl(cmd, prefix='echo test_{}={} |'.format(curves, ciphersuite), type_=2)
+			openssl(cmd, prefix='echo test_{}={} |'
+				.format(curves, ciphersuite))
 
 def test_btls():
 	tmpdirname = tempfile.mkdtemp()
@@ -505,17 +503,25 @@ def test_btls():
 	client_log_file = 'c_log.txt'
 
 	# curves list for test BDHEPSK
-	curves_list_bdhepsk = ['NULL', 'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
-					'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
-					'bign-curve256v1:bign-curve512v1']
+	curves_list_bdhepsk = [
+		'NULL', 'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
+		'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
+		'bign-curve256v1:bign-curve512v1']
 
 	# curves list for test BDHE and BDHTPSK
 	curves_list = ['bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
 
-	noPSK_cipherssuites = ['DHE-BIGN-WITH-BELT-DWP-HBELT', 'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
-						   'DHT-BIGN-WITH-BELT-DWP-HBELT', 'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	bdhePSK_ciphersuites = ['DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', 'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	bdhtPSK_ciphersuites = ['DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	noPSK_cipherssuites = [
+		'DHE-BIGN-WITH-BELT-DWP-HBELT', 
+		'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
+		'DHT-BIGN-WITH-BELT-DWP-HBELT', 
+		'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	bdhePSK_ciphersuites = [
+		'DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', 
+		'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
+	bdhtPSK_ciphersuites = [
+		'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 
+		'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
 	nocert_ciphersuites = bdhePSK_ciphersuites
 	cert_ciphersuites = bdhtPSK_ciphersuites + noPSK_cipherssuites
 
@@ -566,13 +572,15 @@ def test_btls():
 	for ciphersuite in cert_ciphersuites:
 		print(ciphersuite)
 		for curves in curves_list:
-			retcode = (server_out.find('test_{}={}'.format(curves, ciphersuite)) != -1)
+			retcode = (server_out.find('test_{}={}'
+				.format(curves, ciphersuite)) != -1)
 			test_result('	{}'.format(curves), retcode)
 
 	for ciphersuite in nocert_ciphersuites:
 		print(ciphersuite)
 		for curves in curves_list_bdhepsk:
-			retcode = (server_out.find('test_{}={}'.format(curves, ciphersuite)) != -1)
+			retcode = (server_out.find('test_{}={}'
+				.format(curves, ciphersuite)) != -1)
 			test_result('	{}'.format(curves), retcode)
 
 	shutil.rmtree(tmpdirname)
