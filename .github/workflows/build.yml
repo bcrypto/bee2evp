@@ -84,7 +84,6 @@ jobs:
           \ndynamic_path = ${local}/lib/libbee2evp.so\
           \ndefault_algorithms = ALL\
           \n" ${local}/openssl.cnf
-        cat ${local}/openssl.cnf
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
       continue-on-error: true
