@@ -8,8 +8,7 @@
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
 
-import subprocess
-import os
+import os, subprocess
 
 os.environ['OPENSSL_CONF'] = './openssl.cnf'
 OPENSSL_EXE_PATH = './bin/openssl'
