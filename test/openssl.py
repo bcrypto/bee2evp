@@ -27,8 +27,7 @@ def openssl(cmd, prefix='', echo=False, check=True):
 	out, err_out = p.communicate()
 	retcode = p.poll()
 	if retcode != 0 and check:
-		raise subprocess.CalledProcessError(retcode, p.args, output=stdout, 
-			stderr=stderr)
+		raise subprocess.CalledProcessError(retcode, p.args)
 
 	return retcode, out, err_out
 

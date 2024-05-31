@@ -1,5 +1,5 @@
 # *****************************************************************************
-# \file bign.py
+# \file btls.py
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.65 (btls) ciphersuites
 # \created 2019.12.09
@@ -34,7 +34,7 @@ def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
 			>> {}'.format(priv, cert, server_log_file)
 	else:
 		cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
-				.format(priv, cert, server_log_file))
+			.format(priv, cert, server_log_file))
 
 	global server_cert
 	server_cert = openssl2(cmd)
@@ -42,17 +42,17 @@ def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
 def btls_client_cert(client_log_file, curve, ciphersuites, psk=False):
 	for ciphersuite in ciphersuites:
 		if psk:
-			cmd = ('s_client -cipher {} -tls1_2 -connect 127.0.0.1:4433\
-				-psk 123456 2>{}'.format(ciphersuite, client_log_file))
+			cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
+				.format(ciphersuite, client_log_file))
 		else:
-			cmd = ('s_client -cipher {} -tls1_2 -connect 127.0.0.1:4433\
-				2>{}'.format(ciphersuite, client_log_file))
+			cmd = ('s_client -cipher {} -tls1_2 2>{}'
+				.format(ciphersuite, client_log_file))
 
 		openssl(cmd, prefix='echo test_{}={} |'.format(curve, ciphersuite))
 
 def btls_server_nocert(server_log_file):
 	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
-			.format(server_log_file))
+		.format(server_log_file))
 
 	global server_nocert
 	server_nocert = openssl2(cmd)
@@ -61,12 +61,11 @@ def btls_client_nocert(client_log_file, curves_list, ciphersuites):
 	for ciphersuite in ciphersuites:
 		for curves in curves_list:
 			if curves != 'NULL':
-				cmd = ('s_client -cipher {} -tls1_2 -curves {} \
-					-connect 127.0.0.1:4433 -psk 123456 2>{}'
-						.format(ciphersuite, curves, client_log_file))
+				cmd = ('s_client -cipher {} -tls1_2 -curves {} -psk 123456 2>{}'
+					.format(ciphersuite, curves, client_log_file))
 			else:
-				cmd = ('s_client -cipher {} -tls1_2 -connect 127.0.0.1:4433\
-					-psk 123456 2>{}'.format(ciphersuite, client_log_file))
+				cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
+					.format(ciphersuite, client_log_file))
 			openssl(cmd, prefix='echo test_{}={} |'
 				.format(curves, ciphersuite))
 
@@ -101,11 +100,11 @@ def btls_test():
 	# test NO_PSK ciphersuites
 	for curve in curves_list:
 		s_nopsk = threading.Thread(target=btls_server_cert, 
-						args=(tmpdirname, server_log_file, curve))
+			args=(tmpdirname, server_log_file, curve))
 		s_nopsk.run()
 		time.sleep(1)
 		c_nopsk = threading.Thread(target=btls_client_cert, 
-						args=(client_log_file, curve, noPSK_cipherssuites))
+			args=(client_log_file, curve, noPSK_cipherssuites))
 		c_nopsk.run()
 
 		# kill openssl s_server
@@ -115,11 +114,11 @@ def btls_test():
 	# test BDHTPSK ciphersuites
 	for curve in curves_list:
 		s_dhtpsk = threading.Thread(target=btls_server_cert, 
-						args=(tmpdirname, server_log_file, curve, True))
+			args=(tmpdirname, server_log_file, curve, True))
 		s_dhtpsk.run()
 		time.sleep(1)
 		c_dhtpsk = threading.Thread(target=btls_client_cert, 
-						args=(client_log_file, curve, bdhtPSK_ciphersuites, True))
+			args=(client_log_file, curve, bdhtPSK_ciphersuites, True))
 		c_dhtpsk.run()
 
 		# kill openssl s_server
@@ -132,7 +131,7 @@ def btls_test():
 	s_dhepsk.run()
 	time.sleep(1)
 	c_dhepsk = threading.Thread(target=btls_client_nocert, 
-					args=(client_log_file, curves_list_bdhepsk, bdhePSK_ciphersuites))
+		args=(client_log_file, curves_list_bdhepsk, bdhePSK_ciphersuites))
 	c_dhepsk.run()
 
 	# kill openssl s_server
