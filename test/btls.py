@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.65 (btls) ciphersuites
 # \created 2019.12.09
-# \version 2024.05.31
+# \version 2024.06.02
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -83,7 +83,7 @@ def btls_test():
 	# curves list for test BDHE and BDHTPSK
 	curves_list = ['bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
 
-	noPSK_cipherssuites = [
+	noPSK_ciphersuites = [
 		'DHE-BIGN-WITH-BELT-DWP-HBELT', 
 		'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
 		'DHT-BIGN-WITH-BELT-DWP-HBELT', 
@@ -95,7 +95,7 @@ def btls_test():
 		'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 
 		'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
 	nocert_ciphersuites = bdhePSK_ciphersuites
-	cert_ciphersuites = bdhtPSK_ciphersuites + noPSK_cipherssuites
+	cert_ciphersuites = bdhtPSK_ciphersuites + noPSK_ciphersuites
 
 	# test NO_PSK ciphersuites
 	for curve in curves_list:
@@ -104,7 +104,7 @@ def btls_test():
 		s_nopsk.run()
 		time.sleep(1)
 		c_nopsk = threading.Thread(target=btls_client_cert, 
-			args=(client_log_file, curve, noPSK_cipherssuites))
+			args=(client_log_file, curve, noPSK_ciphersuites))
 		c_nopsk.run()
 
 		# kill openssl s_server
