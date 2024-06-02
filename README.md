@@ -13,6 +13,7 @@ as an OpenSSL engine.
 ## Build
 
 ```
+[git submodule update --init]
 mkdir build
 cd build
 cmake [-DCMAKE_BUILD_TYPE={Release|Debug|Coverage|ASan|ASanDbg|MemSan|MemSanDbg|Check}] ..
@@ -57,7 +58,7 @@ in the directory `/usr/local/{include|bin|lib}`.
 
 1. Rename `/usr/local/ssl/openssl.cnf.dist` -> `/usr/local/lib/openssl.cnf`.
 2. Open `/usr/local/lib/openssl.cnf`.
-3. Add the following text (before the `[new_oids]` section):
+3. Add the following lines (before the `[new_oids]` section):
    ```
    openssl_conf = openssl_init
    [openssl_init]
@@ -69,7 +70,7 @@ in the directory `/usr/local/{include|bin|lib}`.
    dynamic_path = /usr/local/lib/libbee2evp.so
    default_algorithms = ALL
    ```
-4. Make sure that `LD_LIBRARY_PATH` includes `/usr/local/lib`.
+4. Make sure `LD_LIBRARY_PATH` includes `/usr/local/lib`.
    
 ### Listing the capabilities
 

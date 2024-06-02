@@ -24,19 +24,19 @@
 #define BEE2EVP_NAME			"Bee2evp"
 #define BEE2EVP_VERSION_MAJOR	"1"
 #define BEE2EVP_VERSION_MINOR 	"0"
-#define BEE2EVP_VERSION_PATCH	"8"
+#define BEE2EVP_VERSION_PATCH	"9"
 
 #define BEE2EVP_VERSION\
 		BEE2EVP_VERSION_MAJOR "." BEE2EVP_VERSION_MINOR "." BEE2EVP_VERSION_PATCH
 
 #define BEE2EVP_VERSION_NUM\
-		1, 0, 8
+		1, 0, 9
 
 /*!
 *******************************************************************************
 \mainpage Криптографический плагин Bee2evp для OpenSSL
 
-\version 1.0.8
+\version 1.0.9
 
 \section toc Содержание
 
