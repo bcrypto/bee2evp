@@ -4,7 +4,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Reusable script code
 # \created 2020.07.10
-# \version 2024.05.29
+# \version 2024.06.02
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -97,7 +97,7 @@ test_bee2evp(){
   cd $local || exit
   cp -a ../../test/. .
   export LD_LIBRARY_PATH="$local/lib:${LD_LIBRARY_PATH:-}"
-  python test.py
+  python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
     sed -e "s|$local/lib:||")
 }

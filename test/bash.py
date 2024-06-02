@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.77 (bash) algorithms
 # \created 2019.12.09
-# \version 2024.05.31
+# \version 2024.06.02
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -13,7 +13,7 @@ from util import b64_encoder, hex_encoder, hex_decoder, process_result
 
 def bash256Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
+	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'dgst -bash256'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
@@ -22,7 +22,7 @@ def bash256Hash(src):
 
 def bash384Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
+	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'dgst -bash384'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
@@ -31,7 +31,7 @@ def bash384Hash(src):
 
 def bash512Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python -m base64 -d |'
+	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'dgst -bash512'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
