@@ -23,7 +23,7 @@ openssl_branch=OpenSSL_1_1_1i
 
 install_prereq(){
   sudo apt-get update
-  sudo apt-get install git gcc cmake python3
+  sudo apt-get install git gcc cmake python3 doxygen
 }
 
 clean(){
@@ -69,6 +69,7 @@ build_openssl(){
 build_bee2evp(){
   mkdir -p $build_bee2evp && cd $build_bee2evp
   cmake -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_DOC=ON \
     -DBEE2_LIBRARY_DIRS=$local/lib \
     -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$local/lib \
