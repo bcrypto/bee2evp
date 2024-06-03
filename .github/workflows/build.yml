@@ -19,12 +19,15 @@ jobs:
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
       local: ${{github.workspace}}/build
     steps:
+    - name: Setup packages
+      run: |
+        apt update
+        apt install -y git cmake lcov
+        git config --global --add safe.directory '*' 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: 3.12
-    - name: Install lcov
-      run: apt install -y lcov
     - name: Get source
       uses: actions/checkout@v3
     - name: Get Bee2 and OpenSSL
