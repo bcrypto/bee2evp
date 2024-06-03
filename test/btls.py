@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.65 (btls) ciphersuites
 # \created 2019.12.09
-# \version 2024.06.02
+# \version 2024.06.03
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -12,147 +12,98 @@ import os, signal, shutil, tempfile, time, threading
 from openssl import openssl, openssl2
 from util import process_result
 
-def btls_gen_privkey(privfile, curve):
+def btls_gen_privkey(privkey, curve):
 	cmd = ('genpkey -algorithm bign -pkeyopt params:{} -out {}'
-		.format(curve, privfile))
-	retcode, block, er__ = openssl(cmd)
+		.format(curve, privkey))
+	openssl(cmd)
 
-def btls_issue_cert(privfile, certfile):
-	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY/ST=MINSK"\
-		 -new -key {} -nodes -out {}'.format(privfile, certfile))
-	retcode, block, er__ = openssl(cmd)
+def btls_issue_cert(cert, privkey):
+	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY" \
+		 -new -key {} -nodes -out {}'.format(privkey, cert))
+	openssl(cmd)
 
-def btls_server_cert(tmpdirname, server_log_file, curve, psk=False):
-	priv = os.path.join(tmpdirname, '{}.key'.format(curve))
-	btls_gen_privkey(priv, curve)
-
-	cert = os.path.join(tmpdirname, 'cert.pem')
-	btls_issue_cert(priv, cert)
-
-	if psk:
-		cmd = 's_server -key {} -cert {} -tls1_2 -psk 123456 -psk_hint 123 \
-			>> {}'.format(priv, cert, server_log_file)
+def btls_server(tmpdir, suite, curve, cert, psk):
+	assert cert or psk 
+	# prepare cmd
+	cmd = 's_server -tls1_2 -rev'
+	if cert:
+		privkey = os.path.join(tmpdir, suite + curve + '.sk')
+		cert = os.path.join(tmpdir, suite + curve + '.cert')
+		btls_gen_privkey(privkey, curve)
+		btls_issue_cert(cert, privkey)
+		cmd = cmd + ' -key {} -cert {}'.format(privkey, cert)
 	else:
-		cmd = ('s_server -key {} -cert {} -tls1_2 >> {}'
-			.format(priv, cert, server_log_file))
+		cmd = cmd + ' -nocert'
+	if psk:
+		cmd = cmd + ' -psk 123456 -psk_hint 123'
+	# prepare output
+	output = os.path.join(tmpdir, suite + curve + '.srv')
+	cmd = cmd + ' >{}'.format(output)
+	# start server
+	global g_server
+	g_server = openssl2(cmd)
 
-	global server_cert
-	server_cert = openssl2(cmd)
-
-def btls_client_cert(client_log_file, curve, ciphersuites, psk=False):
-	for ciphersuite in ciphersuites:
-		if psk:
-			cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
-				.format(ciphersuite, client_log_file))
-		else:
-			cmd = ('s_client -cipher {} -tls1_2 2>{}'
-				.format(ciphersuite, client_log_file))
-
-		openssl(cmd, prefix='echo test_{}={} |'.format(curve, ciphersuite))
-
-def btls_server_nocert(server_log_file):
-	cmd = ('s_server -tls1_2 -psk 123456 -psk_hint 123 -nocert >> {}'
-		.format(server_log_file))
-
-	global server_nocert
-	server_nocert = openssl2(cmd)
-
-def btls_client_nocert(client_log_file, curves_list, ciphersuites):
-	for ciphersuite in ciphersuites:
-		for curves in curves_list:
-			if curves != 'NULL':
-				cmd = ('s_client -cipher {} -tls1_2 -curves {} -psk 123456 2>{}'
-					.format(ciphersuite, curves, client_log_file))
-			else:
-				cmd = ('s_client -cipher {} -tls1_2 -psk 123456 2>{}'
-					.format(ciphersuite, client_log_file))
-			openssl(cmd, prefix='echo test_{}={} |'
-				.format(curves, ciphersuite))
+def btls_client(tmpdir, suite, curve, cert, psk):
+	assert cert or psk 
+	# prepare cmd
+	cmd = 's_client -tls1_2 -cipher {}'.format(suite)
+	if psk:
+		cmd = cmd + ' -psk 123456'
+	if not cert and curve != 'NULL':
+		cmd = cmd + ' -curves {}'.format(curve)
+    # prepare output
+	output = os.path.join(tmpdir, suite + curve + '.cli')
+	cmd = cmd + ' >{}'.format(output)
+	# run cmd
+	echo = 'test_{}={}'.format(curve, suite)
+	openssl(cmd, prefix='(echo ' + echo + '; sleep 1) |')
+	# test if server returns the reversed initial string
+	with open(output, 'r') as f:
+		echo2 = f.read()
+	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
 
 def btls_test():
-	tmpdirname = tempfile.mkdtemp()
-	server_log_file = 's_log.txt'
-	client_log_file = 'c_log.txt'
+	tmpdir = tempfile.mkdtemp()
 
-	# curves list for test BDHEPSK
-	curves_list_bdhepsk = [
-		'NULL', 'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
-		'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
-		'bign-curve256v1:bign-curve512v1']
-
-	# curves list for test BDHE and BDHTPSK
-	curves_list = ['bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
-
-	noPSK_ciphersuites = [
+	ciphersuites = [
 		'DHE-BIGN-WITH-BELT-DWP-HBELT', 
 		'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
 		'DHT-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	bdhePSK_ciphersuites = [
+		'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT',
 		'DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	bdhtPSK_ciphersuites = [
+		'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT',
 		'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 
 		'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	nocert_ciphersuites = bdhePSK_ciphersuites
-	cert_ciphersuites = bdhtPSK_ciphersuites + noPSK_ciphersuites
+	curves_shortlist = [
+		'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
+	curves_longlist = [
+		'NULL', 
+		'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
+		'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
+		'bign-curve256v1:bign-curve512v1']
 
-	# test NO_PSK ciphersuites
-	for curve in curves_list:
-		s_nopsk = threading.Thread(target=btls_server_cert, 
-			args=(tmpdirname, server_log_file, curve))
-		s_nopsk.run()
-		time.sleep(1)
-		c_nopsk = threading.Thread(target=btls_client_cert, 
-			args=(client_log_file, curve, noPSK_ciphersuites))
-		c_nopsk.run()
+	for suite in ciphersuites:
+		# psk?
+		psk = suite.find('PSK') != -1
+		# cert?
+		cert = not psk or suite.find('DHT') != -1
+		# determine a list of curves
+		if suite.find('DHE-PSK') != -1:
+			curves = curves_longlist
+		else:
+			curves = curves_shortlist
+		# run over curves
+		for curve in curves:
+			# prepare args
+			args = (tmpdir, suite, curve, cert, psk)
+			# run server
+			server = threading.Thread(target=btls_server, args=args)
+			server.run()
+			# run client
+			time.sleep(1)
+			client = threading.Thread(target=btls_client, args=args)
+			client.run()
+			# kill server
+			os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
 
-		# kill openssl s_server
-		os.killpg(os.getpgid(server_cert.pid), signal.SIGTERM)
-	print('End NO_PSK')
-
-	# test BDHTPSK ciphersuites
-	for curve in curves_list:
-		s_dhtpsk = threading.Thread(target=btls_server_cert, 
-			args=(tmpdirname, server_log_file, curve, True))
-		s_dhtpsk.run()
-		time.sleep(1)
-		c_dhtpsk = threading.Thread(target=btls_client_cert, 
-			args=(client_log_file, curve, bdhtPSK_ciphersuites, True))
-		c_dhtpsk.run()
-
-		# kill openssl s_server
-		os.killpg(os.getpgid(server_cert.pid), signal.SIGTERM)
-	print('End BDHTPSK')
-
-	# test BDHEPSK ciphersuites
-	s_dhepsk = threading.Thread(target=btls_server_nocert, 
-					args=(server_log_file,))
-	s_dhepsk.run()
-	time.sleep(1)
-	c_dhepsk = threading.Thread(target=btls_client_nocert, 
-		args=(client_log_file, curves_list_bdhepsk, bdhePSK_ciphersuites))
-	c_dhepsk.run()
-
-	# kill openssl s_server
-	os.killpg(os.getpgid(server_nocert.pid), signal.SIGTERM)
-	print('End BDHEPSK')
-
-	with open(server_log_file, 'r') as f:
-		server_out = f.read()
-
-	for ciphersuite in cert_ciphersuites:
-		print(ciphersuite)
-		for curves in curves_list:
-			res = (server_out.find('test_{}={}'
-				.format(curves, ciphersuite)) != -1)
-			process_result('\t{}'.format(curves), res)
-
-	for ciphersuite in nocert_ciphersuites:
-		print(ciphersuite)
-		for curves in curves_list_bdhepsk:
-			res = (server_out.find('test_{}={}'
-				.format(curves, ciphersuite)) != -1)
-			process_result('\t{}'.format(curves), res)
-
-	shutil.rmtree(tmpdirname)
+	shutil.rmtree(tmpdir)
