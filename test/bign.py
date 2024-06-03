@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.45 (bign) algorithms
 # \created 2019.12.09
-# \version 2024.06.02
+# \version 2024.06.03
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -118,7 +118,7 @@ def bign_test():
 	out = (out.decode().strip()[out.decode().rfind('[HEX DUMP]:'):]
 		.split(':')[1])
 	res = (out == key)
-	process_result('bign-genkeypair (G.1)', res)
+	process_result('bign-genkeypair[bign-curve256v1](G.1)', res)
 
 	# bign-genkeypair: bign-curve384v1
 	prkey384 = os.path.join(tmpdirname, 'prkey384v1.pem')
@@ -159,7 +159,7 @@ def bign_test():
 					  'f54ce46d0cf11e4ff87bf7a890857fd0'
 					  '7ac6a60361e8c8173491686d461b2826'
 					  '190c2eda5909054a9ab84d2ab9d99a90'))
-	process_result('bign-calcpubkey (G.1)', res)
+	process_result('bign-calcpubkey[bign-curve256v1](G.1)', res)
 
 	# bign-calcpubkey: bign-curve384v1
 	pubkey384 = os.path.join(tmpdirname, 'pubkey384v1.pem')

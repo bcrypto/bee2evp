@@ -12,18 +12,22 @@ jobs:
   build:
     name: Build and test
     runs-on: ubuntu-latest
+    container: ubuntu
     env:
       OPENSSL_BRANCH: OpenSSL_1_1_1i
       BEE2_BRANCH: master
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
       local: ${{github.workspace}}/build
     steps:
+    - name: Setup packages
+      run: |
+        apt update
+        apt install -y git cmake lcov curl
+        git config --global --add safe.directory '*' 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: 3.12
-    - name: Install lcov
-      run: sudo apt install -y lcov
     - name: Get source
       uses: actions/checkout@v3
     - name: Get Bee2 and OpenSSL
@@ -90,16 +94,14 @@ jobs:
       run: |
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
-        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH:-}"
-        python --version
-        python test.py
+        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH}"
+        python3 --version
+        python3 test.py
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
           sed -e "s|${local}/lib:||")
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
-        cat s_log.txt
-        cat c_log.txt
         lcov -c -d . -o coverage_test.info
         lcov -a coverage_base.info -a coverage_test.info -o coverage.info
         curl -Os https://uploader.codecov.io/latest/linux/codecov
