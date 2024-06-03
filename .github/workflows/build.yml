@@ -22,7 +22,7 @@ jobs:
     - name: Setup packages
       run: |
         apt update
-        apt install -y git cmake lcov
+        apt install -y git cmake lcov curl
         git config --global --add safe.directory '*' 
     - name: Setup Python
       uses: actions/setup-python@v5
