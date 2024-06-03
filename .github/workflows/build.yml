@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: 3.12
     - name: Install lcov
-      run: sudo apt install -y lcov
+      run: apt install -y lcov
     - name: Get source
       uses: actions/checkout@v3
     - name: Get Bee2 and OpenSSL
