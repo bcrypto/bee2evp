@@ -12,14 +12,14 @@ option(INSTALL_HEADERS "Install headers." ON)
 
 if(CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
-      CACHE STRING "Choose the type of build: \
-        Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
-      FORCE)
+    CACHE STRING "Choose the type of build: \
+      Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
+    FORCE)
 else()
   set(CMAKE_BUILD_TYPE Release
-      CACHE STRING "Choose the type of build: \
-        Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
-      FORCE)
+    CACHE STRING "Choose the type of build: \
+      Release Debug Coverage ASan ASanDbg MemSan MemSanDbg Check"
+    FORCE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -76,7 +76,7 @@ endif(CMAKE_COMPILER_IS_CLANG)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}
       -fprofile-arcs -ftest-coverage")
   endif()
 endif()
@@ -84,15 +84,11 @@ endif()
 ### Bee2
 
 if(NOT BEE2_INCLUDE_DIRS)
-  set(BEE2_INCLUDE_DIRS 
-    /usr/local/share/ 
-  )
+  set(BEE2_INCLUDE_DIRS /usr/local/share)
 endif()
 
 if(NOT BEE2_LIBRARY_DIRS)
-  set(BEE2_LIBRARY_DIRS
-    /usr/local/lib/
-  )
+  set(BEE2_LIBRARY_DIRS /usr/local/lib)
 endif()
 
 # bee2_static must be built with -fPIC flag
@@ -108,12 +104,8 @@ if (NOT OPENSSL_INCLUDE_DIRS OR NOT OPENSSL_LIBRARY_DIRS)
   if(NOT OPENSSL_FOUND)
     message(WARNING 
       "Can't find the OpenSSL package. Suppose that OpenSSL exists...")
-    set(OPENSSL_INCLUDE_DIRS 
-      /usr/local/include/
-    )
-    set(OPENSSL_LIBRARY_DIRS 
-      /usr/local/lib/
-    )
+    set(OPENSSL_INCLUDE_DIRS /usr/local/include)
+    set(OPENSSL_LIBRARY_DIRS /usr/local/lib)
   endif()
 else()
   set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY_DIRS}/libcrypto.so)
@@ -125,8 +117,8 @@ message(STATUS OPENSSL_LIBRARIES=${OPENSSL_LIBRARIES})
 ### Build
 
 include_directories(
-  include/
-  src/
+  include
+  src
   ${BEE2_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIRS}
 )
@@ -163,12 +155,13 @@ add_library(bee2evp SHARED ${src})
 target_link_libraries(bee2evp ${libs})
 
 set_target_properties(bee2evp PROPERTIES 
-  VERSION ${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}
-  SOVERSION 1.0)
+  VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
 
 install(TARGETS bee2evp
   DESTINATION ${LIB_INSTALL_DIR}
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE 
+    WORLD_READ WORLD_EXECUTE
+) 
 
 if(BUILD_DOC)
   add_subdirectory(doc)
