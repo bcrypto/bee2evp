@@ -17,7 +17,7 @@ openssl=$bee2evp/openssl
 build_bee2evp=$build_root
 build_bee2=$build_root/bee2
 build_openssl=$build_root/openssl
-local=$build_root/local
+local=${BEE2EVP_INSTALL_DIR:-$build_root/local}
 
 openssl_branch=OpenSSL_1_1_1i
 
@@ -96,7 +96,7 @@ attach_bee2evp(){
 
 test_bee2evp(){
   cd $local || exit
-  cp -a ../../test/. .
+  cp -a $bee2evp/test/. .
   export LD_LIBRARY_PATH="$local/lib:${LD_LIBRARY_PATH}"
   python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
