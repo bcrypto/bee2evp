@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2023.10.02
+\version 2024.06.18
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -164,7 +164,8 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 			BIO_printf(bp, "\nyG:   ") <= 0 || 
 			!evpBign_print_hex(bp, key->params->yG, len) ||
 			BIO_printf(bp, "\nseed: ") <= 0 || 
-			!evpBign_print_hex(bp, key->params->seed, 8))
+			!evpBign_print_hex(bp, key->params->seed, 8) ||
+			BIO_printf(bp, "\n") <= 0)
 			return 0;
 	}
 	return 1;
@@ -195,20 +196,20 @@ AlgorithmIdentifier, реализована в bign_asn1.c.
 *******************************************************************************
 */
 
-static int evpBign_pub_encode0(void** params, int* params_type, 
+static int evpBign_pub_encode0(void** params, int* params_type,
 	const bign_key* key)
 {
+	octet* out = 0;
+	int out_len;
 	bool_t specified;
-	// кодировать явные параметры
-	if (specified = key->flags & EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED)
+	// кодировать
+	out_len = evpBign_asn1_i2d_params(&out, &specified, key);
+	if (out_len <= 0)
+		return 0;
+	// явные параметры?
+	if (specified)
 	{
-		octet* out = 0;
-		int out_len;
 		ASN1_STRING* str;
-		// кодировать
-		out_len = evpBign_asn1_i2d_params(&out, &specified, key);
-		if (out_len <= 0 || !specified)
-			return 0;
 		str = ASN1_STRING_new();
 		if (!str)
 		{
@@ -220,10 +221,12 @@ static int evpBign_pub_encode0(void** params, int* params_type,
 		*params = str;
 		*params_type = V_ASN1_SEQUENCE;
 	}
-	// кодировать именованные параметры
+	// именованные параметры?
 	else
 	{
-		ASN1_OBJECT* obj = OBJ_nid2obj(evpBign_params2nid(key->params));
+		ASN1_OBJECT* obj;
+		OPENSSL_free(out);
+		obj = OBJ_nid2obj(evpBign_params2nid(key->params));
 		if (!obj)
 			return 0;
 		*params = obj;

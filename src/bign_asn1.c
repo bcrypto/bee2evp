@@ -2,9 +2,9 @@
 *******************************************************************************
 \file bign_asn1.c
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
-\brief ASN1-structures for bign
+\brief ASN.1-structures for bign
 \created 2013.11.01
-\version 2023.10.02
+\version 2024.06.18
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -198,7 +198,7 @@ int evpBign_nid2params(bign_params* params, int nid)
 
 /*
 *******************************************************************************
-Запись параметров bign_params в структуры ASN1
+Запись параметров bign_params в структуры ASN.1
 *******************************************************************************
 */
 
