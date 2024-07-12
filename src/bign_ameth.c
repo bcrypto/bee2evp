@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2024.06.18
+\version 2024.07.12
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -819,15 +819,29 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 алгоритм хэширования (hnid). Если hnid по snid определить не удалось, 
 то вызывается v(). Если удалось, то инициализируется проверка подписи. 
 
-Функция s() интерфейса EVP_PKEY_ASN1_METHOD::item_sign() вызывается только 
+В функции evpBign_item_verify(), реализующей интерфейс item_verify(),
+по snid определяется hnid, затем проверяются параметры алгоритма подписи
+и наконец инициализируется алгоритм hnid.
+
+В соответствии с СТБ 34.101.45 (Д.2) параметры алгоритма подписи -- это:
+1) OBJECT IDENTIFIER(hnid), если snid = NID_bign_with_hspec;
+2) NULL в остальных случаях.
+
+\warning В соответствии с настройками в bee2evp_bind() функция
+evpBign_item_verify() будет вызываться только со snid = NID_bign_with_hspec.
+Для остальных snid параметры алгоритма подписи проверяться не будут.
+
+\remark Обсуждение item_verify() в контексте предыдущего предупреждения:
+https://github.com/openssl/openssl/issues/20955.
+
+\todo Организовать проверку параметров алгоритма подписи для всех snid.
+
+Функция s() интерфейса EVP_PKEY_ASN1_METHOD::item_sign() вызывается только
 в функции ASN1_item_sign_ctx() (модуль a_sign.c). В последней функции s()
 вызывается безусловно. В s() можно настроить параметры алгоритма ЭЦП. 
 
-В функции evpBign_item_verify(), реализующей интерфейс item_verify(), по snid
-определяется hnid, а затем инициализируется проверка подписи.
-
 В функции evpBign_item_sign(), реализующей интерфейс item_sign(), по hnid
-определяется snid, а затем настраиваются параметры подписи.
+определяется snid, а затем настраиваются параметры алгоритма подписи.
 
 \remark Информация об интерфейсе EVP_PKEY_ASN1_METHOD::item_verify() 
 из модуля a_verify.c:
