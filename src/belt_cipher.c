@@ -4,10 +4,9 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2021.07.14
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\version 2024.06.18
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 
@@ -117,7 +116,7 @@ EVP_CIPH_FLAG_DEFAULT_ASN1, то параметры (гипотетическа�
 	EVP_CIPH_ALWAYS_CALL_INIT.
 Чтобы обеспечить обязательное попадание синхропосылки в 
 EVP_CIPHER_CTX_original_iv(ctx) (с учетом возможного последующего 
-ASN1-кодирования), алгоритмы режимов CBC и CFB объявляются без флага 
+ASN.1-кодирования), алгоритмы режимов CBC и CFB объявляются без флага 
 EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами 
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 

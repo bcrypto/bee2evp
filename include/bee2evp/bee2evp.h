@@ -4,10 +4,9 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2021.03.03
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\version 2023.02.14
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 
@@ -668,7 +667,7 @@ const EVP_PKEY_ASN1_METHOD* evpBign_ameth();
 	При нарушении совместимости возвращается 0.
 */
 int evpBign_pkey_set_params(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключа */
+	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
 	int params_nid				/*!< [in] идентификатор параметров */
 );
 
@@ -678,7 +677,7 @@ int evpBign_pkey_set_params(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_enc_flags(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
 	u8 flags					/*!< [in] флаги */
 );
 
@@ -688,7 +687,7 @@ int evpBign_pkey_set_enc_flags(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_enc_flags(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
 	u8 flags					/*!< [in] флаги */
 );
 
@@ -698,7 +697,7 @@ int evpBign_pkey_clr_enc_flags(
     \return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_sig_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
     u8 flags					/*!< [in] флаги */
 );
 
@@ -708,7 +707,7 @@ int evpBign_pkey_set_sig_flags(
     \return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_sig_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
     u8 flags					/*!< [in] флаги */
 );
 
@@ -718,7 +717,7 @@ int evpBign_pkey_clr_sig_flags(
     \return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
     u8 flags					/*!< [in] флаги */
 );
 
@@ -728,7 +727,7 @@ int evpBign_pkey_set_kdf_flags(
     \return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_kdf_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключей */
+    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
     u8 flags					/*!< [in] флаги */
 );
 
@@ -739,7 +738,7 @@ int evpBign_pkey_clr_kdf_flags(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_ukm(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключа */
+	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
 	void* ukm,					/*!< [in] данные bake-kdf */
 	size_t ukm_len				/*!< [in] длина ukm в октетах */
 );
@@ -751,7 +750,7 @@ int evpBign_pkey_set_kdf_ukm(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_num(
-	EVP_PKEY_CTX* ctx,			/*!< [in/out] контекст ключа */
+	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
 	size_t num					/*!< [in] номер ключа */
 );
 

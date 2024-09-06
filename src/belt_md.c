@@ -5,9 +5,8 @@
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
 \version 2021.03.02
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 
@@ -155,5 +154,5 @@ int evpBeltMD_bind(ENGINE* e)
 void evpBeltMD_finish()
 {
 	EVP_MD_meth_free(EVP_belt_hash);
-    EVP_belt_hash = 0;
+	EVP_belt_hash = 0;
 }

@@ -61,10 +61,7 @@
 *.opensdf
 
 # Specific files
-_backup
-_bin
-_support
+.aux
 openssl
 build
-win
 clear.cmd

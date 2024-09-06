@@ -4,10 +4,9 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2021.06.24
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\version 2024.07.12
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 
@@ -129,11 +128,14 @@ static int bee2evp_ctrl(ENGINE* e, int cmd, long i, void* p, void (*f)(void))
 *******************************************************************************
 Связывание
 
-\remark Алгоритмы NID_bign_with_hspec, NID_bign_with_hbelt, 
-NID_bign_with_bashXXX связываются с неопределенными алгоритмами хэширования. 
-При этом навязывается вызов функций интерфейса 
-EVP_PKEY_ASN1_METHOD::item_verify() и, как следствие, проверка параметров 
-алгоритмов ЭЦП (см. комментарии к функции evpBign_item_verify()).
+\remark В предшествующих редакциях Bee2evp идентификаторы NID_bign_with_hbelt
+и NID_bign_with_bashXXX связывались с неопределенным алгоритмом хэширования 
+(NID_undef). Таким образом навязывался вызов функций интерфейса
+EVP_PKEY_ASN1_METHOD::item_verify() и, как следствие, проверка параметров
+алгоритмов ЭЦП (см. комментарии к функции evpBign_item_verify()). Однако
+обнаружился отрицательный побочный эффект: в x509_sig_info_init() неверно
+определялся уровень стойкости с последующими ошибками при проверке цепочки
+сертификатов TLS-сервера.
 *******************************************************************************
 */
 
@@ -163,10 +165,10 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!evpBash_bind(e))
 		return 0;
 	// связать хэш + ЭЦП
-	if (!OBJ_add_sigid(NID_bign_with_hbelt, NID_undef, NID_bign_pubkey) ||
-		!OBJ_add_sigid(NID_bign_with_bash256, NID_undef, NID_bign_pubkey) ||
-		!OBJ_add_sigid(NID_bign_with_bash384, NID_undef, NID_bign_pubkey) ||
-		!OBJ_add_sigid(NID_bign_with_bash512, NID_undef, NID_bign_pubkey) ||
+	if (!OBJ_add_sigid(NID_bign_with_hbelt, NID_belt_hash, NID_bign_pubkey) ||
+		!OBJ_add_sigid(NID_bign_with_bash256, NID_bash256, NID_bign_pubkey) ||
+		!OBJ_add_sigid(NID_bign_with_bash384, NID_bash384, NID_bign_pubkey) ||
+		!OBJ_add_sigid(NID_bign_with_bash512, NID_bash512, NID_bign_pubkey) ||
 		!OBJ_add_sigid(NID_bign_with_hspec, NID_undef, NID_bign_pubkey))
 		return 0;
 	// связать belt-pbkdf + belt-hmac

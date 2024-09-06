@@ -2,12 +2,11 @@
 *******************************************************************************
 \file bign_asn1.c
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
-\brief ASN1-structures for bign
+\brief ASN.1-structures for bign
 \created 2013.11.01
-\version 2017.09.21
-\license This program is released under the GNU General Public License 
-version 3 with the additional exemption that compiling, linking, 
-and/or using OpenSSL is allowed. See Copyright Notices in bee2evp/info.h.
+\version 2024.06.18
+\copyright The Bee2evp authors
+\license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
 
@@ -135,9 +134,17 @@ ASN1_CHOICE(BIGN_DOMAINPARAMS) =
 	ASN1_SIMPLE(BIGN_DOMAINPARAMS, value.implicit, ASN1_NULL)
 } ASN1_CHOICE_END(BIGN_DOMAINPARAMS)
 
-DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
-DECLARE_ASN1_ENCODE_FUNCTIONS_const(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
-IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+
+#if OPENSSL_VERSION_MAJOR >= 3
+	DECLARE_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+	DECLARE_ASN1_ENCODE_FUNCTIONS_name(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+	IMPLEMENT_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+#else
+	DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+	DECLARE_ASN1_ENCODE_FUNCTIONS_const(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+	IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+#endif
+
 
 /*
 *******************************************************************************
@@ -163,15 +170,15 @@ int evpBign_params2nid(const bign_params* params)
 
 	if (!params)
 		return 0;
-	if (bignStdParams(&std, OID_bign_curve256v1) != ERR_OK)
+	if (bignParamsStd(&std, OID_bign_curve256v1) != ERR_OK)
 		return 0;
 	if (evpBign_eq_params(params, &std))
 		return NID_bign_curve256v1;
-	if (bignStdParams(&std, OID_bign_curve384v1) != ERR_OK)
+	if (bignParamsStd(&std, OID_bign_curve384v1) != ERR_OK)
 		return 0;
 	if (evpBign_eq_params(params, &std))
 		return NID_bign_curve384v1;
-	if (bignStdParams(&std, OID_bign_curve512v1) != ERR_OK)
+	if (bignParamsStd(&std, OID_bign_curve512v1) != ERR_OK)
 		return 0;
 	if (evpBign_eq_params(params, &std))
 		return NID_bign_curve512v1;
@@ -181,17 +188,17 @@ int evpBign_params2nid(const bign_params* params)
 int evpBign_nid2params(bign_params* params, int nid)
 {
 	if (nid == NID_bign_curve256v1)
-		return bignStdParams(params, OID_bign_curve256v1) == ERR_OK;
+		return bignParamsStd(params, OID_bign_curve256v1) == ERR_OK;
 	if (nid == NID_bign_curve384v1)
-		return bignStdParams(params, OID_bign_curve384v1) == ERR_OK;
+		return bignParamsStd(params, OID_bign_curve384v1) == ERR_OK;
 	if (nid == NID_bign_curve512v1)
-		return bignStdParams(params, OID_bign_curve512v1) == ERR_OK;
+		return bignParamsStd(params, OID_bign_curve512v1) == ERR_OK;
 	return 0;
 }
 
 /*
 *******************************************************************************
-Запись параметров bign_params в структуры ASN1
+Запись параметров bign_params в структуры ASN.1
 *******************************************************************************
 */
 
@@ -212,7 +219,7 @@ static int evpBign_asn1_params2fieldid(BIGN_FIELDID* field,
 	// установить prime
 	memCopy(rev, params->p, params->l / 4);
 	memRev(rev, params->l / 4);
-	if (!(p = BN_new()) || !BN_bin2bn(rev, params->l / 4, p))
+	if (!(p = BN_new()) || !BN_bin2bn(rev, (int)params->l / 4, p))
 		goto err;
 	field->prime = BN_to_ASN1_INTEGER(p, field->prime);
 	if (!field->prime)
@@ -232,8 +239,8 @@ static int evpBign_asn1_params2curve(BIGN_CURVE* curve,
 	if (!params || !curve || !curve->a || !curve->b)
 		return 0;
 	// установить a и b
-	if (!ASN1_OCTET_STRING_set(curve->a, params->a, params->l / 4) ||
-		!ASN1_OCTET_STRING_set(curve->b, params->b, params->l / 4))
+	if (!ASN1_OCTET_STRING_set(curve->a, params->a, (int)params->l / 4) ||
+		!ASN1_OCTET_STRING_set(curve->b, params->b, (int)params->l / 4))
 		return 0;
 	// установить seed (optional)
 	if (!curve->seed && !(curve->seed = ASN1_BIT_STRING_new()))
@@ -267,12 +274,12 @@ static BIGN_ECPARAMS* evpBign_asn1_params2ecp(BIGN_ECPARAMS* ecp,
 	if (!evpBign_asn1_params2curve(ret->curve, params))
 		goto err;
 	// установить базовую точку
-	if (!ASN1_OCTET_STRING_set(ret->base, params->yG, params->l / 4))
+	if (!ASN1_OCTET_STRING_set(ret->base, params->yG, (int)params->l / 4))
 		goto err;
 	// установить порядок
 	memCopy(rev, params->q, params->l / 4);
 	memRev(rev, params->l / 4);
-	if (!(order = BN_new()) || !BN_bin2bn(rev, params->l / 4, order))
+	if (!(order = BN_new()) || !BN_bin2bn(rev, (int)params->l / 4, order))
 		goto err;
 	ret->order = BN_to_ASN1_INTEGER(order, ret->order);
 	if (!ret->order)
@@ -515,7 +522,7 @@ int evpBign_asn1_i2d_params(octet** out, bool_t* specified,
 int evpBign_asn1_o2i_pubkey(bign_key* key, const octet** in, long len)
 {
 	// входной контроль
-	if (!key || !in || len != key->params->l / 2)
+	if (!key || !in || len != (int)key->params->l / 2)
 		return 0;
 	// сохранить ключ
 	memCopy(key->pubkey, *in, len);
@@ -530,7 +537,7 @@ int evpBign_asn1_i2o_pubkey(octet** out, const bign_key* key)
 	if (!key)
 		return 0;
 	// длина ключа в октетах
-	ret = key->params->l / 2;
+	ret = (int)key->params->l / 2;
 	if (!out)
 		return ret;
 	// подготовить буфер
