@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions and interfaces
 \created 2013.11.11
-\version 2023.02.14
+\version 2024.11.04
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -515,7 +515,7 @@ const EVP_PKEY_ASN1_METHOD* evpBeltHMAC_ameth();
 стойкости.
 
 Метод bake-kdf -- x-координата ключа Диффи --- Хеллмана, дополнительные 
-открытые данные (сихнропосылка или user key material, UKM) и номер ключа 
+открытые данные (синхропосылка или user key material, UKM) и номер ключа 
 обрабатываются алгоритмом bake-kdf, заданным в СТБ 34.101.66. Максимальная 
 длина ключа алгоритма bake-kdf --- 32 октета. 
 

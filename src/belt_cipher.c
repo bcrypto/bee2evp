@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2024.06.18
+\version 2024.11.04
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -60,7 +60,7 @@ block_size == 8 в режиме DWP и block_size == 16 в режиме KWP.
 
 \remark В режимах ECB, CBC среда отвечает за выравнивание данных на границу
 блока и поэтому "кража блока", предусмотренная в СТБ 34.101.31,
-не cрабатывает.
+не срабатывает.
 
 \remark Флаг EVP_CIPH_CUSTOM_IV указывает, что реализация сама отвечает
 за размещение синхропосылки в контексте. Если флаг установлен и не 

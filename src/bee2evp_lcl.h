@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Internal definitions
 \created 2013.11.11
-\version 2021.02.18
+\version 2024.11.04
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -28,7 +28,7 @@ extern "C" {
 В контексте EVP_CIPHER_CTX состояние алгоритма шифрования размещается в блобе
 (контролируемом фрагменте памяти).
 
-\todo Разобраться с блобами в EVP_MD_CTX. Здесь все намного сложнеe:
+\todo Разобраться с блобами в EVP_MD_CTX. Здесь все намного сложнее:
 1. Закрыт set-доступ к указателю на пользовательские данные (md_data).
 2. OpenSSL не всегда гарантирует выделение памяти под указатель
    EVP_MD_CTX::md_data, который возвращается функцией EVP_MD_CTX_md_data()
