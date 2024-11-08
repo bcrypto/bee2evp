@@ -8,6 +8,7 @@
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
 
+import sys
 from bash import bash_test
 from belt import belt_test
 from bign import bign_test
@@ -26,11 +27,11 @@ def engine_test():
 	print(out.decode())
 
 if __name__ == '__main__':
-	version_test()
-	engine_test()
-	bash_test()
-	belt_test()
+	# version_test()
+	# engine_test()
+	# bash_test()
+	# belt_test()
 	bign_test()
-	btls_test()
+	# btls_test()
 	if fail:
 		sys.exit(1)

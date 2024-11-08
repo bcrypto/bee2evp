@@ -13,19 +13,19 @@ from openssl import openssl, openssl2
 from util import process_result
 
 def btls_gen_privkey(privkey, curve):
-	cmd = ('genpkey -algorithm bign -pkeyopt params:{} -out {}'
+	cmd = ('genpkey -engine bee2evp -algorithm bign -pkeyopt params:{} -out {}'
 		.format(curve, privkey))
 	openssl(cmd)
 
 def btls_issue_cert(cert, privkey):
-	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY" \
+	cmd = ('req -x509 -engine bee2evp -subj "/CN=www.example.org/O=BCrypto/C=BY" \
 		 -new -key {} -nodes -out {}'.format(privkey, cert))
 	openssl(cmd)
 
 def btls_server(tmpdir, suite, curve, cert, psk):
 	assert cert or psk 
 	# prepare cmd
-	cmd = 's_server -tls1_2 -rev'
+	cmd = 's_server -engine bee2evp -tls1_2 -rev'
 	if cert:
 		privkey = os.path.join(tmpdir, suite + curve + '.sk')
 		cert = os.path.join(tmpdir, suite + curve + '.cert')
@@ -46,7 +46,7 @@ def btls_server(tmpdir, suite, curve, cert, psk):
 def btls_client(tmpdir, suite, curve, cert, psk):
 	assert cert or psk 
 	# prepare cmd
-	cmd = 's_client -tls1_2 -cipher {}'.format(suite)
+	cmd = 's_client -engine bee2evp -tls1_2 -cipher {}'.format(suite)
 	if psk:
 		cmd = cmd + ' -psk 123456'
 	if not cert and curve != 'NULL':
