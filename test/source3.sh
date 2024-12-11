@@ -24,7 +24,7 @@ install_prereq(){
   sudo apt-get update
   for package in git gcc cmake python3 doxygen
   do
-    dpkg -s $name &> /dev/null
+    dpkg -s $package &> /dev/null
     if [ $? -ne 0 ]
     then
       echo "$package not installed"  
@@ -57,7 +57,7 @@ patch_openssl(){
 
 build_bee2(){
   mkdir -p $build_bee2 && cd $build_bee2
-  cmake -DCMAKE_BUILD_TYPE=Release \
+  cmake -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
     -DLIB_INSTALL_DIR=$local/lib64 $bee2
@@ -79,8 +79,8 @@ build_openssl(){
 
 build_bee2evp(){
   mkdir -p $build_bee2evp && cd $build_bee2evp
-  cmake -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_DOC=ON \
+  cmake -DCMAKE_BUILD_TYPE=Debug \
+    -DBUILD_DOC=OFF \
     -DBEE2_LIBRARY_DIRS=$local/lib64 \
     -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$local/lib64 \

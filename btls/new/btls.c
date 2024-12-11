@@ -127,8 +127,8 @@ int btls_init()
         return 0;
     if (OBJ_new_nid(1) != NID_kxbdht_psk)
         return 0;
-    // if (!EVP_add_digest(evpMDBeltMac256()))
-    //     return 0;
+    if (!EVP_add_digest(evpMDBeltMac256()))
+        return 0;
     btls_inited++;
     return 1;
 }

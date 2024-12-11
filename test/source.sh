@@ -78,8 +78,8 @@ build_openssl(){
 
 build_bee2evp(){
   mkdir -p $build_bee2evp && cd $build_bee2evp
-  cmake -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_DOC=ON \
+  cmake -DCMAKE_BUILD_TYPE=Debug \
+    -DBUILD_DOC=OFF \
     -DBEE2_LIBRARY_DIRS=$local/lib \
     -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$local/lib \

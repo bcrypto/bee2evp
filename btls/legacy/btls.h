@@ -20,8 +20,7 @@ extern "C" {
 #include <openssl/evp.h>
 #include "../include/crypto/asn1.h"
 #include "../crypto/objects/obj_dat.h"
-#include "../include/internal/packet.h"
-#include "../include/internal/statem.h"
+#include "packet_local.h"
 
 /*
 *******************************************************************************
@@ -49,31 +48,30 @@ extern "C" {
 #define NID_kxbdht_psk			(NUM_NID + 16)
 
 /* ssl_local.h */
-#define SSL_kBDHE               0x00000400U
-#define SSL_kBDHT				0x00000800U
-#define SSL_kBDHEPSK			0x00001000U
-#define SSL_kBDHTPSK			0x00002000U
+#define SSL_kBDHE               0x00000200U
+#define SSL_kBDHT				0x00000400U
+#define SSL_kBDHEPSK			0x00000800U
+#define SSL_kBDHTPSK			0x00001000U
 
 #define SSL_aBIGN               0x00000100U
 
-#define SSL_BELTCTR             0x02000000U
-#define SSL_BELTDWP				0x01000000U
+#define SSL_BELTCTR             0x00400000U
+#define SSL_BELTDWP				0x00800000U
 
-#define SSL_BELTMAC             0x00001000U
-#define SSL_HBELT               0x00002000U
-#define SSL_BASH384             0x00004000U
-#define SSL_BASH512             0x00008000U
+#define SSL_BELTMAC             0x00000400U
+#define SSL_HBELT               0x00000800U
+#define SSL_BASH384             0x00001000U
+#define SSL_BASH512             0x00002000U
 
-#define SSL_MD_BELTMAC_IDX 14
-#define SSL_MD_HBELT_IDX 15
-#define SSL_MD_BASH384_IDX 16
-#define SSL_MD_BASH512_IDX 17
+#define SSL_MD_BELTMAC_IDX 12
+#define SSL_MD_HBELT_IDX 13
+#define SSL_MD_BASH384_IDX 14
+#define SSL_MD_BASH512_IDX 15
 
 #define SSL_HANDSHAKE_MAC_BELTMAC SSL_MD_BELTMAC_IDX
 #define SSL_HANDSHAKE_MAC_HBELT SSL_MD_HBELT_IDX
 
 #define TLS1_PRF_HBELT (SSL_HANDSHAKE_MAC_HBELT << TLS1_PRF_DGST_SHIFT)
-#define TLS1_ALG_2 (TLS1_PRF_HBELT) | SSL_HANDSHAKE_MAC_HBELT
 
 #define SSL_PKEY_BIGN 9
 
@@ -150,8 +148,8 @@ int btls_init();
 *******************************************************************************
 */
 
-int btls_construct_ske_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt);
-int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey);
+int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt);
+int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
 
 /*
 *******************************************************************************
@@ -159,16 +157,16 @@ int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey);
 *******************************************************************************
 */
 
-int btls_construct_cke_bign_dht(SSL_CONNECTION *s, WPACKET *pkt);
-int btls_process_cke_bign_dht(SSL_CONNECTION *s, PACKET *pkt);
+int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt);
+int btls_process_cke_bign_dht(SSL* s, PACKET* pkt);
 
 /*
 *******************************************************************************
 Механизм BIGN_DHE_PSK
 *******************************************************************************
 */
-int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt);
-int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY **pkey);
+int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt);
+int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey);
 
 #ifdef __cplusplus
 } /* extern "C" */

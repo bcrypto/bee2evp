@@ -19,6 +19,9 @@
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
 #include "bee2evp/bee2evp.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 /*
 *******************************************************************************
@@ -146,8 +149,19 @@ static int evpBeltMAC_signctx_init(EVP_PKEY_CTX* ctx, EVP_MD_CTX* mctx)
 static int evpBeltMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	EVP_MD_CTX* mctx)
 {
+	unsigned int tmpsiglen;
+
+    if (!siglen)
+        return 0;
+
+    if (!sig) {
+		*siglen = 8;
+		return 1;
+    }
+
 	beltMACStepG(sig, EVP_PKEY_CTX_get_data(ctx));
 	*siglen = 8;
+
 	return 1;
 }
 
@@ -208,9 +222,10 @@ static int evpBeltMAC256_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2
 		beltMACStart(EVP_PKEY_CTX_get_data(ctx), (const octet*)p2, p1);
 		break;
 	case EVP_PKEY_CTRL_MD:
-		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
+		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx)) {
 			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey), 
 				beltMAC_keep());
+		}
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
 		break;

@@ -503,6 +503,9 @@ int evpBeltTLS_bind(ENGINE* e)
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef)
 		return 0;
+	// зарегистрировать алгоритмы и получить nid'ы
+	if (BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
+		return 0;
 	// создать и настроить описатели
 	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,
 		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup, 
