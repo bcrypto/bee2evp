@@ -395,6 +395,11 @@ static int evpBeltHMAC_signctx_init(EVP_PKEY_CTX* ctx, EVP_MD_CTX* mctx)
 static int evpBeltHMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	EVP_MD_CTX* mctx)
 {
+	if (!sig) {
+		*siglen = 32;
+		return 1;
+    }
+
 	beltHMACStepG(sig, EVP_PKEY_CTX_get_data(ctx));
 	*siglen = 32;
 	return 1;

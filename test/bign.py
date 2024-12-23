@@ -20,32 +20,32 @@ def bignParamsStd(name, out_filename, specified=False, cofactor=False):
 	if cofactor:
 		options += ' -pkeyopt enc_params:cofactor'
 
-	cmd = ('genpkey -genparam -algorithm bign {} -out {}'
+	cmd = ('genpkey -engine bee2evp -genparam -algorithm bign {} -out {}'
 		.format(options, out_filename))
 	retcode, out, er__ = openssl(cmd)
 	return out
 
 def bignKeypairGen(params_file, out_filename):
-	cmd = 'genpkey -paramfile {} -out {}'.format(params_file, out_filename)
+	cmd = 'genpkey -engine bee2evp -paramfile {} -out {}'.format(params_file, out_filename)
 	retcode, out, er__ = openssl(cmd)
 	return out
 
 def bignPubkeyCalc(private_key_file, out_filename):
-	cmd = 'pkey -in {} -pubout -out {}'.format(private_key_file, out_filename)
+	cmd = 'pkey -engine bee2evp -in {} -pubout -out {}'.format(private_key_file, out_filename)
 	retcode, public_key, er__ = openssl(cmd)
 	return public_key
 
 def bignSign(prkey, hashname, src , dest):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -{} -sign {} -out {}'.format(hashname, prkey, dest)
+	cmd = 'dgst -engine bee2evp -{} -sign {} -out {}'.format(hashname, prkey, dest)
 	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return retcode
 
 def bignSign2(prkey, hashname, src, dest):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('dgst -{} -sign {} -sigopt sig:deterministic -out {}'
+	cmd = ('dgst -engine bee2evp -{} -sign {} -sigopt sig:deterministic -out {}'
 		.format(hashname, prkey, dest))
 	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return retcode
@@ -53,7 +53,7 @@ def bignSign2(prkey, hashname, src, dest):
 def bignVerify(prkey, hashname, src, sign_file):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('dgst -{} -prverify {} -hex -signature {}'
+	cmd = ('dgst -engine bee2evp -{} -prverify {} -hex -signature {}'
 		.format(hashname, prkey, sign_file))
 	retcode, out, er__ = openssl(cmd, prefix=prefix)
 	return out.decode()[:-1].strip()
@@ -112,7 +112,7 @@ def bign_test():
 	G1prkey256pem = os.path.join(tmpdirname, 'G1prkey256.pem')
 	retcode, out, er__ = openssl('asn1parse -genconf {} -out {}'
 		.format(asn1_conf_file, G1prkey256der))
-	openssl('pkey -inform DER -in {} -outform PEM -out {}'
+	openssl('pkey -engine bee2evp -inform DER -in {} -outform PEM -out {}'
 		.format(G1prkey256der,G1prkey256pem))
 	retcode, out, er__ = openssl('asn1parse -in {}'.format(G1prkey256pem))
 	out = (out.decode().strip()[out.decode().rfind('[HEX DUMP]:'):]

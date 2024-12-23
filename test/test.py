@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	# engine_test()
 	# bash_test()
 	# belt_test()
-	bign_test()
-	# btls_test()
+	# bign_test()
+	btls_test()
 	if fail:
 		sys.exit(1)

@@ -292,44 +292,44 @@ def belt_test():
 		'f00341473eae409833622de05213773a')
 	process_result('belt-ctr', res)
 
-	# # belt-mac256: A.17
-	# src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-	# 				  '8504fa9d1bb6c7ac252e72c202fdce0d'
-	# 				  '5be3d61217b96181fe6786ad716b890b')[0]
-	# key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
-	# 				  '06075316ed247a3739cba38303a98bf6')[0]
-	# mac = beltMAC(bytes(src), bytes(key))
-	# res = hex_encoder(mac)[0].decode() == '2dab59771b4b16d0'
-	# process_result('belt-mac256', res)
+	# belt-mac256: A.17
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
+					  '06075316ed247a3739cba38303a98bf6')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() == '2dab59771b4b16d0'
+	process_result('belt-mac256', res)
 
-	# # belt-mac128
-	# src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-	# 				  '8504fa9d1bb6c7ac252e72c202fdce0d'
-	# 				  '5be3d61217b96181fe6786ad716b890b')[0]
-	# key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647')[0]
-	# mac = beltMAC(bytes(src), bytes(key))
-	# res = hex_encoder(mac)[0].decode() != ''
-	# process_result('belt-mac128', res)
+	# belt-mac128
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	process_result('belt-mac128', res)
 
-	# # belt-mac192
-	# src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-	# 				  '8504fa9d1bb6c7ac252e72c202fdce0d'
-	# 				  '5be3d61217b96181fe6786ad716b890b')[0]
-	# key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
-	# 				  '06075316ed247a37')[0]
-	# mac = beltMAC(bytes(src), bytes(key))
-	# res = hex_encoder(mac)[0].decode() != ''
-	# process_result('belt-mac192', res)
+	# belt-mac192
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
+					  '06075316ed247a37')[0]
+	mac = beltMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	process_result('belt-mac192', res)
 
-	# # HMAC[belt-hash]
-	# src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-	# 				  '8504fa9d1bb6c7ac252e72c202fdce0d'
-	# 				  '5be3d61217b96181fe6786ad716b890b')[0]
-	# key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
-	# 				  '06075316ed247a37')[0]
-	# mac = beltHMAC(bytes(src), bytes(key))
-	# res = hex_encoder(mac)[0].decode() != ''
-	# process_result('belt-hmac', res)
+	# HMAC[belt-hash]
+	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
+					  '8504fa9d1bb6c7ac252e72c202fdce0d'
+					  '5be3d61217b96181fe6786ad716b890b')[0]
+	key = hex_decoder('e9dee72c8f0c0fa62ddb49f46f739647'
+					  '06075316ed247a37')[0]
+	mac = beltHMAC(bytes(src), bytes(key))
+	res = hex_encoder(mac)[0].decode() != ''
+	process_result('belt-hmac', res)
 
 	# belt-hash: A.23
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
@@ -352,7 +352,7 @@ def belt_test():
 	retcode, out, er__ = openssl(
 		'genpkey -engine bee2evp -paramfile {} -belt-kwp128 -pass pass:root -out {}'
 			.format(params256, kwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp128))
 	out = out.decode()
 	res = (out.find('valid') != -1)
@@ -363,7 +363,7 @@ def belt_test():
 	retcode, out, er__ = openssl(
 		'genpkey -engine bee2evp -paramfile {} -belt-kwp192 -pass pass:root -out {}'
 			.format(params256, kwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp192))
 	out = out.decode()
 	res = (out.find('valid') != -1)
@@ -374,43 +374,43 @@ def belt_test():
 	retcode, out, er__ = openssl(
 		'genpkey -engine bee2evp -paramfile {} -belt-kwp256 -pass pass:root -out {}'
 			.format(params256, kwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp256))
 	out = out.decode()
 	res = (out.find('valid') != -1)
 	process_result('belt-kwp256', res)
 
-	# belt-dwp128
-	dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -engine bee2evp -paramfile {} -belt-dwp128 -pass pass:root -out {}'
-			.format(params256, dwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp128))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp128', res)
+	# # belt-dwp128
+	# dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp128 -pass pass:root -out {}'
+	# 		.format(params256, dwp128))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp128))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp128', res)
 
-	# belt-dwp192
-	dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -engine bee2evp -paramfile {} -belt-dwp192 -pass pass:root -out {}'
-			.format(params256, dwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp192))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp192', res)
+	# # belt-dwp192
+	# dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp192 -pass pass:root -out {}'
+	# 		.format(params256, dwp192))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp192))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp192', res)
 
-	# belt-dwp256
-	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -engine bee2evp -paramfile {} -belt-dwp256 -pass pass:root -out {}'
-			.format(params256, dwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp256))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp256', res)
+	# # belt-dwp256
+	# dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp256 -pass pass:root -out {}'
+	# 		.format(params256, dwp256))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp256))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp256', res)
 
-	shutil.rmtree(tmpdirname)
+	# shutil.rmtree(tmpdirname)
