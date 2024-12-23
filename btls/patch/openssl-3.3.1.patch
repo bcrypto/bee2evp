@@ -690,7 +690,7 @@ index 5ff479a..e3c05b7 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_UNKNOWN_CIPHER_TYPE);
          goto err;
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index e9aa078..ec002e8 100644
+index e9aa078..5d5561e 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -26,6 +26,7 @@
@@ -713,15 +713,6 @@ index e9aa078..ec002e8 100644
  };
  
  static const unsigned char ecformats_default[] = {
-@@ -385,7 +389,7 @@ static int discover_provider_groups(OSSL_PROVIDER *provider, void *vctx)
- }
- 
- int ssl_load_groups(SSL_CTX *ctx)
--{
-+{x`
-     size_t i, j, num_deflt_grps = 0;
-     uint16_t tmp_supp_groups[OSSL_NELEM(supported_groups_default)];
- 
 @@ -1372,6 +1376,9 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,

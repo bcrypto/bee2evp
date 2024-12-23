@@ -10,7 +10,7 @@
 # *****************************************************************************
 
 bee2evp=$(pwd)/..
-build_root=$bee2evp/build
+build_root=/opt/openssl/build
 bee2=$bee2evp/bee2
 openssl=$bee2evp/openssl
 build_bee2evp=$build_root
