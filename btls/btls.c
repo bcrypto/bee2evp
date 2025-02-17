@@ -45,14 +45,14 @@ MD-интерфейс belt-mac256 объявлен, но не реализова
 *******************************************************************************
 */
 
-const EVP_MD* evpMDBeltMac256()
-{
-    static const EVP_MD md_belt_mac256 = 
-    {
-        NID_belt_mac256,
-    };
-    return &md_belt_mac256;
-}
+// const EVP_MD* evpMDBeltMac256()
+// {
+//     static const EVP_MD md_belt_mac256 = 
+//     {
+//         NID_belt_mac256,
+//     };
+//     return &md_belt_mac256;
+// }
 
 /*
 *******************************************************************************
@@ -76,49 +76,10 @@ static int btls_inited = 0;
 
 int btls_init()
 {
-    if (btls_inited)
+    if (btls_inited) {
         return 1;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.2.1", 
-        "bign-pubkey", "bign-pubkey") != NID_bign_pubkey) {
-        printf("in btls init");
-        return 0;
     }
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
-        "belt-hash", "belt-hash") != NID_belt_hash)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.77.12", 
-        "bash384", "bash384") != NID_bash384)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.77.13", 
-        "bash512", "bash512") != NID_bash512)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.67",
-        "belt-dwp-tls", "belt-dwp-tls") != NID_belt_dwpt)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.44", 
-        "belt-ctr-tls", "belt-ctr-tls") != NID_belt_ctrt)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.53", 
-        "belt-mac256", "belt-mac256") != NID_belt_mac256)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.12", 
-        "bign-with-hbelt", "bign-with-hbelt") != NID_bign_with_hbelt)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.14", 
-        "bign-with-bash384", "bign-with-bash384") != NID_bign_with_bash384)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.15", 
-        "bign-with-bash512", "bign-with-bash512") != NID_bign_with_bash512)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.1", 
-        "bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.2", 
-        "bign-curve384v1", "bign-curve384v1") != NID_bign_curve384v1)
-        return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.3", 
-        "bign-curve512v1", "bign-curve512v1") != NID_bign_curve512v1)
-        return 0;
+
     if (OBJ_new_nid(1) != NID_kxbdhe)
         return 0;
     if (OBJ_new_nid(1) != NID_kxbdht)
@@ -127,8 +88,6 @@ int btls_init()
         return 0;
     if (OBJ_new_nid(1) != NID_kxbdht_psk)
         return 0;
-    // if (!EVP_add_digest(evpMDBeltMac256()))
-    //     return 0;
     btls_inited++;
     return 1;
 }

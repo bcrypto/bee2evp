@@ -42,7 +42,6 @@ clean(){
 }
 
 update_repos(){
-  echo $openssl_branch
   git submodule update --init
   git clone -b $openssl_branch --depth 1  https://github.com/openssl/openssl\
     $openssl
@@ -50,6 +49,10 @@ update_repos(){
 
 patch_openssl(){
   cd $openssl
+  cat $bee2evp/btls/objects.txt >> $openssl/crypto/objects/objects.txt
+  perl $openssl/crypto/objects/objects.pl $openssl/crypto/objects/objects.txt $openssl/crypto/objects/obj_mac.num > $openssl/crypto/objects/obj_mac.h
+  perl $openssl/crypto/objects/obj_dat.pl $openssl/crypto/objects/obj_mac.h > $openssl/crypto/objects/obj_dat.h
+  cp $openssl/crypto/objects/obj_mac.h $openssl/include/openssl/obj_mac.h
   cp $bee2evp/btls/btls.c ./ssl/
   cp $bee2evp/btls/btls.h ./ssl/
   git apply $bee2evp/btls/patch/$openssl_branch.patch

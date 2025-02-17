@@ -9,7 +9,6 @@
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
 
-echo $1
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 openssl_branch=$1
@@ -30,7 +29,7 @@ then
   source source3.sh $1
   clean && update_repos && patch_openssl && \
   build_bee2 && build_openssl && build_bee2evp && attach_bee2evp
-  build_bee2evp && attach_bee2evp && test_bee2evp
+  # test_bee2evp
 
 else
   source source.sh $1

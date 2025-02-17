@@ -26,8 +26,10 @@
 */
 
 const char OID_belt_hash[] = "1.2.112.0.2.0.34.101.31.81";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_belt_hash[] = "belt-hash";
 const char LN_belt_hash[] = "belt-hash";
+#endif
 
 EVP_MD* EVP_belt_hash;
 const EVP_MD* evpBeltHash()

@@ -92,8 +92,10 @@ seq_num всякий раз подмешивается к fixed-части си�
 */
 
 const char OID_belt_dwpt[] = "1.2.112.0.2.0.34.101.31.67";
-const char SN_belt_dwpt[] = "belt-dwp-tls";
-const char LN_belt_dwpt[] = "belt-dwp-tls";
+#ifdef BUILD_WITHOUT_TLS
+const char SN_belt_dwpt[] = "belt-dwp";
+const char LN_belt_dwpt[] = "belt-dwp";
+#endif
 
 #define FLAGS_belt_dwpt (EVP_CIPH_FLAG_AEAD_CIPHER |\
 	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |\
@@ -285,8 +287,10 @@ EVP_CTRL_AEAD_SET_MAC_KEY.
 */
 
 const char OID_belt_ctrt[] = "1.2.112.0.2.0.34.101.31.44";
-const char SN_belt_ctrt[] = "belt-ctr-tls";
-const char LN_belt_ctrt[] = "belt-ctr-tls";
+#ifdef BUILD_WITHOUT_TLS
+const char SN_belt_ctrt[] = "belt-ctrt";
+const char LN_belt_ctrt[] = "belt-ctrt";
+#endif
 
 #define FLAGS_belt_ctrt (EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_STREAM_CIPHER |\
 	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT)

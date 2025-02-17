@@ -22,6 +22,7 @@
 #include <bee2/crypto/bign.h>
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
+#include <openssl/obj_mac.h>
 
 /*
 *******************************************************************************
@@ -55,20 +56,26 @@ const char SN_bign_with_hspec[] = "bign-with-hspec";
 const char LN_bign_with_hspec[] = "bign-with-hspec";
 
 const char OID_bign_with_hbelt[] = "1.2.112.0.2.0.34.101.45.12";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_with_hbelt[] = "bign-with-hbelt";
 const char LN_bign_with_hbelt[] = "bign-with-hbelt";
+#endif
 
 const char OID_bign_with_bash256[] = "1.2.112.0.2.0.34.101.45.13";
 const char SN_bign_with_bash256[] = "bign-with-bash256";
 const char LN_bign_with_bash256[] = "bign-with-bash256";
 
 const char OID_bign_with_bash384[] = "1.2.112.0.2.0.34.101.45.14";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_with_bash384[] = "bign-with-bash384";
 const char LN_bign_with_bash384[] = "bign-with-bash384";
+#endif
 
 const char OID_bign_with_bash512[] = "1.2.112.0.2.0.34.101.45.15";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_with_bash512[] = "bign-with-bash512";
 const char LN_bign_with_bash512[] = "bign-with-bash512";
+#endif
 
 const char OID_bign_keytransport[] = "1.2.112.0.2.0.34.101.45.41";
 const char SN_bign_keytransport[] = "bign-keytransport";
@@ -76,23 +83,31 @@ const char LN_bign_keytransport[] = "bign-keytransport";
 
 /* bign-pubkey */
 const char OID_bign_pubkey[] = "1.2.112.0.2.0.34.101.45.2.1";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_pubkey[] = "bign-pubkey";
 const char LN_bign_pubkey[] = "bign-pubkey";
+#endif
 
 /* bign-curve256v1 */
 const char OID_bign_curve256v1[] = "1.2.112.0.2.0.34.101.45.3.1";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_curve256v1[] = "bign-curve256v1";
 const char LN_bign_curve256v1[] = "bign-curve256v1";
+#endif
 
 /* bign-curve384v1 */
 const char OID_bign_curve384v1[] = "1.2.112.0.2.0.34.101.45.3.2";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_curve384v1[] = "bign-curve384v1";
 const char LN_bign_curve384v1[] = "bign-curve384v1";
+#endif
 
 /* bign-curve512v1 */
 const char OID_bign_curve512v1[] = "1.2.112.0.2.0.34.101.45.3.3";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bign_curve512v1[] = "bign-curve512v1";
 const char LN_bign_curve512v1[] = "bign-curve512v1";
+#endif
 
 /* bign-primefield */
 const char OID_bign_primefield[] = "1.2.112.0.2.0.34.101.45.4.1";

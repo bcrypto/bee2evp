@@ -30,12 +30,16 @@ const char SN_bash256[] = "bash256";
 const char LN_bash256[] = "bash256";
 
 const char OID_bash384[] = "1.2.112.0.2.0.34.101.77.12";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bash384[] = "bash384";
 const char LN_bash384[] = "bash384";
+#endif
 
 const char OID_bash512[] = "1.2.112.0.2.0.34.101.77.13";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_bash512[] = "bash512";
 const char LN_bash512[] = "bash512";
+#endif
 
 static EVP_MD* EVP_bash256;
 const EVP_MD* evpBash256()

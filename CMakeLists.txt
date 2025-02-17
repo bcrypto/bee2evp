@@ -154,8 +154,14 @@ endif()
 add_library(bee2evp SHARED ${src})
 target_link_libraries(bee2evp ${libs})
 
-set_target_properties(bee2evp PROPERTIES 
-  VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
+if(BUILD_WITHOUT_TLS)
+  set_target_properties(bee2evp PROPERTIES 
+    VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
+else()
+  set_target_properties(bee2evp PROPERTIES 
+    COMPILE_DEFINITIONS "BUILD_WITH_TLS"
+    VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
+endif()
 
 install(TARGETS bee2evp
   DESTINATION ${LIB_INSTALL_DIR}

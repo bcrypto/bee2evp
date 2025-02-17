@@ -264,8 +264,10 @@ const EVP_CIPHER* evpBeltCTR256();
 
 /* belt-ctrt */
 extern const char OID_belt_ctrt[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_belt_ctrt[];
 extern const char LN_belt_ctrt[];
+#endif
 #define NID_belt_ctrt OBJ_sn2nid(SN_belt_ctrt)
 
 /*!	\brief Описание алгоритмов belt-ctrt
@@ -319,8 +321,10 @@ const EVP_PKEY_ASN1_METHOD* evpBeltMAC192_ameth();
 
 /* belt-mac256 */
 extern const char OID_belt_mac256[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_belt_mac256[];
 extern const char LN_belt_mac256[];
+#endif
 #define NID_belt_mac256 OBJ_sn2nid(SN_belt_mac256)
 
 /*!	\brief Описание методов belt-mac256
@@ -382,8 +386,10 @@ const EVP_CIPHER* evpBeltDWP256();
 
 /* belt-dwpt */
 extern const char OID_belt_dwpt[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_belt_dwpt[];
 extern const char LN_belt_dwpt[];
+#endif
 #define NID_belt_dwpt OBJ_sn2nid(SN_belt_dwpt)
 
 /*!	\brief Описание алгоритмов belt-dwpt
@@ -440,8 +446,10 @@ const EVP_CIPHER* evpBeltKWP256();
 
 /* belt-hash256 */
 extern const char OID_belt_hash[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_belt_hash[];
 extern const char LN_belt_hash[];
+#endif
 #define NID_belt_hash OBJ_sn2nid(SN_belt_hash)
 
 /*!	\brief Описание алгоритма belt-hash
@@ -577,8 +585,10 @@ extern const char LN_bign_with_hspec[];
 
 /* bign-with-hbelt */
 extern const char OID_bign_with_hbelt[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_with_hbelt[];
 extern const char LN_bign_with_hbelt[];
+#endif
 #define NID_bign_with_hbelt OBJ_sn2nid(SN_bign_with_hbelt)
 
 /* bign-with-bash256 */
@@ -589,14 +599,18 @@ extern const char LN_bign_with_bash256[];
 
 /* bign-with-bash384 */
 extern const char OID_bign_with_bash384[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_with_bash384[];
 extern const char LN_bign_with_bash384[];
+#endif
 #define NID_bign_with_bash384 OBJ_sn2nid(SN_bign_with_bash384)
 
 /* bign-with-bash512 */
+#ifdef BUILD_WITHOUT_TLS
 extern const char OID_bign_with_bash512[];
 extern const char SN_bign_with_bash512[];
 extern const char LN_bign_with_bash512[];
+#endif
 #define NID_bign_with_bash512 OBJ_sn2nid(SN_bign_with_bash512)
 
 /* bign-keytransport */
@@ -607,26 +621,34 @@ extern const char LN_bign_keytransport[];
 
 /* bign-pubkey */
 extern const char OID_bign_pubkey[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_pubkey[];
 extern const char LN_bign_pubkey[];
+#endif
 #define NID_bign_pubkey OBJ_sn2nid(SN_bign_pubkey)
 
 /* bign-curve256v1 */
 extern const char OID_bign_curve256v1[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_curve256v1[];
 extern const char LN_bign_curve256v1[];
+#endif
 #define NID_bign_curve256v1 OBJ_sn2nid(SN_bign_curve256v1)
 
 /* bign-curve384v1 */
 extern const char OID_bign_curve384v1[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_curve384v1[];
 extern const char LN_bign_curve384v1[];
+#endif
 #define NID_bign_curve384v1 OBJ_sn2nid(SN_bign_curve384v1)
 
 /* bign-curve512v1 */
 extern const char OID_bign_curve512v1[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bign_curve512v1[];
 extern const char LN_bign_curve512v1[];
+#endif
 #define NID_bign_curve512v1 OBJ_sn2nid(SN_bign_curve512v1)
 
 /* bign-primefield */
@@ -781,8 +803,10 @@ const EVP_MD* evpBash256();
 
 /* bash384 */
 extern const char OID_bash384[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bash384[];
 extern const char LN_bash384[];
+#endif
 #define NID_bash384 OBJ_sn2nid(SN_bash384)
 
 /*!	\brief Описание алгоритма bash384
@@ -794,8 +818,10 @@ const EVP_MD* evpBash384();
 
 /* bash512 */
 extern const char OID_bash512[];
+#ifdef BUILD_WITHOUT_TLS
 extern const char SN_bash512[];
 extern const char LN_bash512[];
+#endif
 #define NID_bash512 OBJ_sn2nid(SN_bash512)
 
 /*!	\brief Описание алгоритма bash512

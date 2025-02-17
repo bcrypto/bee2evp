@@ -12,6 +12,9 @@
 
 #include <openssl/evp.h>
 #include <openssl/engine.h>
+#ifdef BUILD_WITHOUT_TLS
+#include <openssl/obj_mac.h>
+#endif
 #include <bee2/core/blob.h>
 #include <bee2/core/hex.h>
 #include <bee2/core/mem.h>
@@ -330,8 +333,10 @@ const EVP_PKEY_METHOD* evpBeltMAC192_pmeth()
 }
 
 const char OID_belt_mac256[] = "1.2.112.0.2.0.34.101.31.53";
+#ifdef BUILD_WITHOUT_TLS
 const char SN_belt_mac256[] = "belt-mac256";
 const char LN_belt_mac256[] = "belt-mac256";
+#endif
 
 static EVP_PKEY_METHOD* EVP_belt_mac256_pmeth;
 

@@ -27,11 +27,11 @@ def engine_test():
 	print(out.decode())
 
 if __name__ == '__main__':
-	# version_test()
-	# engine_test()
-	# bash_test()
-	# belt_test()
-	# bign_test()
+	version_test()
+	engine_test()
+	bash_test()
+	belt_test()
+	bign_test()
 	btls_test()
 	if fail:
 		sys.exit(1)

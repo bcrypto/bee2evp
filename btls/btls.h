@@ -30,23 +30,11 @@ extern "C" {
 */
 
 /* obj_mac.h */
-#define NID_bign_pubkey 		(NUM_NID + 0)
-#define NID_belt_hash 			(NUM_NID + 1)
-#define NID_bash384				(NUM_NID + 2)
-#define NID_bash512				(NUM_NID + 3)
-#define NID_belt_dwpt			(NUM_NID + 4)
-#define NID_belt_ctrt	 		(NUM_NID + 5)
-#define NID_belt_mac256			(NUM_NID + 6)
-#define NID_bign_with_hbelt 	(NUM_NID + 7)
-#define NID_bign_with_bash384	(NUM_NID + 8)
-#define NID_bign_with_bash512	(NUM_NID + 9)
-#define NID_bign_curve256v1 	(NUM_NID + 10)
-#define NID_bign_curve384v1 	(NUM_NID + 11)
-#define NID_bign_curve512v1 	(NUM_NID + 12)
-#define NID_kxbdhe				(NUM_NID + 13)
-#define NID_kxbdht				(NUM_NID + 14)
-#define NID_kxbdhe_psk			(NUM_NID + 15)
-#define NID_kxbdht_psk			(NUM_NID + 16)
+
+#define NID_kxbdhe				(NUM_NID + 0)
+#define NID_kxbdht				(NUM_NID + 1)
+#define NID_kxbdhe_psk			(NUM_NID + 2)
+#define NID_kxbdht_psk			(NUM_NID + 3)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000400U
