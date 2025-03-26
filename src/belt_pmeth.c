@@ -88,7 +88,7 @@ static int evpBeltMAC_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBeltMAC_pkey_copy(EVP_PKEY_CTX* dest, EVP_PKEY_CTX* src)
+static int evpBeltMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltMAC_pkey_init(dest))
 		return 0;
@@ -339,7 +339,7 @@ static int evpBeltHMAC_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBeltHMAC_pkey_copy(EVP_PKEY_CTX* dest, EVP_PKEY_CTX* src)
+static int evpBeltHMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltHMAC_pkey_init(dest))
 		return 0;

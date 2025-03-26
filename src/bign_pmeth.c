@@ -140,7 +140,7 @@ static int evpBign_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, EVP_PKEY_CTX* src)
+static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, CONST3 EVP_PKEY_CTX* src)
 {
 	bign_pkey_ctx* sctx;
 	bign_pkey_ctx* dctx;

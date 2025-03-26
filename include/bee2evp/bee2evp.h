@@ -20,9 +20,17 @@
 #ifndef __BEE2EVP_H
 
 #include <openssl/evp.h>
+#include <openssl/opensslv.h>
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+// for API const changes in 3.0.0
+#if OPENSSL_VERSION_MAJOR >= 3 
+#define CONST3 const 
+#else
+#define CONST3  
 #endif
 
 /*!

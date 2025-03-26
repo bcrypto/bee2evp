@@ -285,7 +285,7 @@ static int evpBign_pub_decode0(bign_key* key, int params_type,
 	return 0;
 }
 
-static int evpBign_pub_decode(EVP_PKEY* pkey, X509_PUBKEY* pk)
+static int evpBign_pub_decode(EVP_PKEY* pkey, CONST3 X509_PUBKEY* pk)
 {
 	const octet* pubkey;
 	int pubkey_len;
@@ -859,8 +859,8 @@ https://github.com/openssl/openssl/issues/20955.
 *******************************************************************************
 */
 
-int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, void* asn,
-	X509_ALGOR* alg, ASN1_BIT_STRING* sig, EVP_PKEY* pkey)
+int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
+	CONST3 X509_ALGOR* alg, CONST3 ASN1_BIT_STRING* sig, EVP_PKEY* pkey)
 {
 	const ASN1_OBJECT* sobj;
 	int snid;
@@ -913,7 +913,7 @@ int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, void* asn,
 	return 2;
 }
 
-int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, void* asn,
+int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 	X509_ALGOR* alg1, X509_ALGOR* alg2, ASN1_BIT_STRING* sig)
 {
 	int hnid = EVP_MD_type(EVP_MD_CTX_md(ctx));
