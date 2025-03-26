@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for belt-macXXX and belt-hmac (hmac-hbelt) keys
 \created 2014.09.16
-\version 2021.02.18
+\version 2025.03.26
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
