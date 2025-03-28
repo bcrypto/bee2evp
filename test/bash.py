@@ -14,7 +14,7 @@ from util import b64_encoder, hex_encoder, hex_decoder, process_result
 def bash256Hash(src):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -bash256'.format()
+	cmd = 'dgst -engine bee2evp -bash256'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
 	hash_ = hash_.strip()
@@ -23,7 +23,7 @@ def bash256Hash(src):
 def bash384Hash(src):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -bash384'.format()
+	cmd = 'dgst -engine bee2evp -bash384'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
 	hash_ = hash_.strip()
@@ -32,7 +32,7 @@ def bash384Hash(src):
 def bash512Hash(src):
 	plain = b64_encoder(src)[0].decode()
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -bash512'.format()
+	cmd = 'dgst -engine bee2evp -bash512'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
 	hash_ = hash_.strip()

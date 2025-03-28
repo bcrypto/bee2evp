@@ -79,10 +79,8 @@ int btls_init()
     if (btls_inited)
         return 1;
     if (OBJ_create("1.2.112.0.2.0.34.101.45.2.1", 
-        "bign-pubkey", "bign-pubkey") != NID_bign_pubkey) {
-        printf("in btls init");
+        "bign-pubkey", "bign-pubkey") != NID_bign_pubkey)
         return 0;
-    }
     if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
         "belt-hash", "belt-hash") != NID_belt_hash)
         return 0;
@@ -127,8 +125,8 @@ int btls_init()
         return 0;
     if (OBJ_new_nid(1) != NID_kxbdht_psk)
         return 0;
-    // if (!EVP_add_digest(evpMDBeltMac256()))
-    //     return 0;
+    if (!EVP_add_digest(evpMDBeltMac256()))
+        return 0;
     btls_inited++;
     return 1;
 }
@@ -160,7 +158,7 @@ ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHE).
 *******************************************************************************
 */
 
-int btls_construct_ske_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
+int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt)
 {
     EVP_PKEY_CTX* ctx = NULL;
     EVP_PKEY* pk = NULL;
@@ -175,7 +173,7 @@ int btls_construct_ske_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
         goto err;
     }
     // сгенерировать ключ ДХ
-    if (s->s3.tmp.pkey != NULL ||
+    if (s->s3->tmp.pkey != NULL ||
         (ctx = EVP_PKEY_CTX_new(pkey, NULL)) == NULL ||
         !EVP_PKEY_keygen_init(ctx) || 
         !EVP_PKEY_keygen(ctx, &pk))
@@ -193,7 +191,7 @@ int btls_construct_ske_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
         goto err;
     }
     // запомнить ключ ДХ
-    s->s3.tmp.pkey = pk;
+    s->s3->tmp.pkey = pk;
     pk = NULL;
 err:
         EVP_PKEY_CTX_free(ctx);
@@ -205,25 +203,26 @@ err:
      }
      if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE);
+            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE,
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
-int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey)
+int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 {
     PACKET encoded_pt;
     // определить статический открытый ключ сервера
     if ((*pkey = X509_get0_pubkey(s->session->peer)) == 0)
         return 0;
     // загрузить параметры открытого ключа сервера
-    if (s->s3.peer_tmp == 0 && (s->s3.peer_tmp = EVP_PKEY_new()) == 0)
+    if (s->s3->peer_tmp == 0 && (s->s3->peer_tmp = EVP_PKEY_new()) == 0)
             return 0;
-    if (!EVP_PKEY_copy_parameters(s->s3.peer_tmp, *pkey))
+    if (!EVP_PKEY_copy_parameters(s->s3->peer_tmp, *pkey))
         return 0;
     // загрузить эфемерный открытый ключ сервера
     if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt)) 
         return 0;
-    if (!EVP_PKEY_set1_tls_encodedpoint(s->s3.peer_tmp,
+    if (!EVP_PKEY_set1_tls_encodedpoint(s->s3->peer_tmp,
             PACKET_data(&encoded_pt),
             PACKET_remaining(&encoded_pt)))
         return 0;
@@ -287,7 +286,7 @@ ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHEPSK).
 *******************************************************************************
 */
 
-int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
+int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 {
     int ret = 0;
 	size_t len;
@@ -307,7 +306,7 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
 		!WPACKET_sub_memcpy_u16(pkt, s->cert->psk_identity_hint, len)) 
         goto err;
 	// загружен сертификат сервера?
-    if (s->s3.tmp.pkey != NULL) 
+    if (s->s3->tmp.pkey != NULL) 
         goto err;
 	// клиент не высылал расширение supported_groups?
 	if (!s->ext.supportedgroups)
@@ -317,9 +316,8 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
 	else if (!(curve_id = tls1_shared_group(s, -2)))
 		goto err;
 	// определить oid(curve)
-    SSL_CTX *CTX=s->session_ctx;
-    if (!(ginf = tls1_group_id_lookup(CTX, curve_id)) ||
-		!(obj = OBJ_nid2obj(tls1_group_id2nid(ginf->group_id,0))) || 
+    if (!(ginf = tls1_group_id_lookup(curve_id)) ||
+		!(obj = OBJ_nid2obj(ginf->nid)) || 
 		!(oid_len = i2d_ASN1_OBJECT(obj, &oid)))
 		goto err;
 	// записать oid(curve)
@@ -330,7 +328,7 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
 	if (!pctx || 
 		EVP_PKEY_keygen_init(pctx) <= 0 ||
 		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
-			tls1_group_id2nid(ginf->group_id,0), NULL) <= 0 ||
+			ginf->nid, NULL) <= 0 ||
 		EVP_PKEY_keygen(pctx, &pk) <= 0) 
         goto err;
 	// записать эфемерный ключ
@@ -340,7 +338,7 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
         !WPACKET_sub_memcpy_u8(pkt, pk_val, pk_len))
         goto err;
 	// сохранить эфемерный ключ в состоянии
-    s->s3.tmp.pkey = pk;
+    s->s3->tmp.pkey = pk;
     pk = NULL;
 	ret = 1;
 err:
@@ -354,11 +352,12 @@ err:
 	OPENSSL_free(oid);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE);
+            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE,
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
-int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY **pkey)
+int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 {
 	int ret = 0;
     unsigned int oid_len;
@@ -375,19 +374,19 @@ int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY **pke
 		(params_nid = OBJ_obj2nid(obj)) == NID_undef)
 		goto err;
 	// подготовиться к загрузке эфемерного открытого ключа сервера
-    if (s->s3.peer_tmp == 0 && 
-		(s->s3.peer_tmp = EVP_PKEY_new()) == 0)
+    if (s->s3->peer_tmp == 0 && 
+		(s->s3->peer_tmp = EVP_PKEY_new()) == 0)
 		goto err;
 	if (!(pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL)) ||
 		EVP_PKEY_paramgen_init(pctx) <= 0 ||
 		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
 			params_nid, NULL) <= 0 ||
 	    EVP_PKEY_paramgen(pctx, &pk) <= 0 ||
-		!EVP_PKEY_copy_parameters(s->s3.peer_tmp, pk))
+		!EVP_PKEY_copy_parameters(s->s3->peer_tmp, pk))
 		goto err;
     // загрузить эфемерный открытый ключ сервера
     if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt) || 
-		!EVP_PKEY_set1_tls_encodedpoint(s->s3.peer_tmp,
+		!EVP_PKEY_set1_tls_encodedpoint(s->s3->peer_tmp,
 			PACKET_data(&encoded_pt), 
 			PACKET_remaining(&encoded_pt)))
 		goto err;
@@ -428,7 +427,7 @@ todo: Можно ли взять под контроль генерацию pre_
 *******************************************************************************
 */
 
-int btls_construct_cke_bign_dht(SSL_CONNECTION *s, WPACKET *pkt){
+int btls_construct_cke_bign_dht(SSL* s, WPACKET* pkt){
     unsigned char* pms = NULL;
     size_t pms_len = 48;
     EVP_PKEY_CTX* pkey_ctx = NULL;
@@ -460,8 +459,8 @@ int btls_construct_cke_bign_dht(SSL_CONNECTION *s, WPACKET *pkt){
     if (!WPACKET_sub_memcpy_u8(pkt, token, token_len))
         goto err;
     // сохранить pms
-    s->s3.tmp.pms = pms;
-    s->s3.tmp.pmslen = pms_len;
+    s->s3->tmp.pms = pms;
+    s->s3->tmp.pmslen = pms_len;
     pms = NULL;
     ret = 1;
 err:
@@ -473,11 +472,12 @@ err:
         EVP_PKEY_CTX_free(pkey_ctx);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE);
+            SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE,
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
-int btls_process_cke_bign_dht(SSL_CONNECTION *s, PACKET *pkt)
+int btls_process_cke_bign_dht(SSL* s, PACKET* pkt)
 {
 	int ret = 0;
 	EVP_PKEY* pk = NULL;
@@ -517,7 +517,8 @@ err:
         OPENSSL_free(pms);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE);
+            SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 

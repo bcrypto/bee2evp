@@ -10,8 +10,8 @@
 
 import os, subprocess
 
-os.environ['OPENSSL_CONF'] = './openssl.cnf'
-OPENSSL_EXE_PATH = './bin/openssl'
+os.environ['OPENSSL_CONF'] = '../build/local/openssl.cnf'
+OPENSSL_EXE_PATH = '../build/local/bin/openssl'
 
 def openssl(cmd, prefix='', echo=False, check=True):
 	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)

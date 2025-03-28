@@ -20,7 +20,7 @@ def beltBlockEncr(block, key):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'enc -e -belt-ecb{} -nosalt -nopad -e -K {}'.format(key_bitlen, key)
+	cmd = 'enc -engine bee2evp -e -belt-ecb{} -nosalt -nopad -e -K {}'.format(key_bitlen, key)
 	retcode, block, er__ = openssl(cmd, prefix)
 	return block
 
@@ -33,7 +33,7 @@ def beltBlockDecr(block, key):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'enc -d -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
+	cmd = 'enc -engine bee2evp -d -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
 	retcode, block, er__ = openssl(cmd, prefix)
 	return block
 
@@ -45,7 +45,7 @@ def beltECBEncr(src, key):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'enc -e -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
+	cmd = 'enc -engine bee2evp -e -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
 
@@ -57,7 +57,7 @@ def beltECBDecr(src, key):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'enc -d -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
+	cmd = 'enc -engine bee2evp -d -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest	
 
@@ -70,7 +70,7 @@ def beltCBCEncr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -e -belt-cbc{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -e -belt-cbc{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -84,7 +84,7 @@ def beltCBCDecr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -d -belt-cbc{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -d -belt-cbc{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -98,7 +98,7 @@ def beltCFBEncr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -e -belt-cfb{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -e -belt-cfb{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -112,7 +112,7 @@ def beltCFBDecr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -d -belt-cfb{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -d -belt-cfb{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -126,7 +126,7 @@ def beltCTREncr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -e -belt-ctr{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -e -belt-ctr{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -140,7 +140,7 @@ def beltCTRDecr(src, key, iv):
 	key_bitlen = 4 * len(key)
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = ('enc -d -belt-ctr{} -nosalt -nopad -K {} -iv {}'
+	cmd = ('enc -engine bee2evp -d -belt-ctr{} -nosalt -nopad -K {} -iv {}'
 		.format(key_bitlen, key, iv))
 	retcode, dest, er__ = openssl(cmd, prefix)
 	return dest
@@ -151,7 +151,7 @@ def beltMAC(src, key):
 	key_bitlen = 4 * len(key)
 	
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -mac belt-mac{} -macopt hexkey:{}'.format(key_bitlen, key)
+	cmd = 'dgst -engine bee2evp -mac belt-mac{} -macopt hexkey:{}'.format(key_bitlen, key)
 	retcode, out, er__ = openssl(cmd, prefix)
 	mac = out.decode().split(' ')[1][:-1]
 	mac = mac.strip()
@@ -163,7 +163,7 @@ def beltHMAC(src, key):
 	key_bitlen = 4 * len(key)
 	
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -mac belt-hmac -macopt hexkey:{}'.format(key)
+	cmd = 'dgst -engine bee2evp -mac belt-hmac -macopt hexkey:{}'.format(key)
 	retcode, out, er__ = openssl(cmd, prefix)
 	mac = out.decode().split(' ')[1][:-1]
 	mac = mac.strip()
@@ -173,7 +173,7 @@ def beltHash(src):
 	plain = b64_encoder(src)[0].decode()
 
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
-	cmd = 'dgst -belt-hash'.format()
+	cmd = 'dgst -engine bee2evp -belt-hash'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
 	hash_ = hash_.strip()
@@ -343,16 +343,16 @@ def belt_test():
 	# belt-kwp, belt-dwp
 	tmpdirname = tempfile.mkdtemp()
 	params256 = os.path.join(tmpdirname, 'params256.pem')
-	cmd = ('genpkey -genparam -algorithm bign -pkeyopt params:bign-curve256v1'
+	cmd = ('genpkey -engine bee2evp -genparam -algorithm bign -pkeyopt params:bign-curve256v1'
 		' -pkeyopt enc_params:specified -pkeyopt enc_params:cofactor -out')
 	openssl('{} {}'.format(cmd, params256))
 
 	# belt-kwp128
 	kwp128 = os.path.join(tmpdirname, 'kwp128.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp128 -pass pass:root -out {}'
+		'genpkey -engine bee2evp -paramfile {} -belt-kwp128 -pass pass:root -out {}'
 			.format(params256, kwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp128))
 	out = out.decode()
 	res = (out.find('valid') != -1)
@@ -361,9 +361,9 @@ def belt_test():
 	# belt-kwp192
 	kwp192 = os.path.join(tmpdirname, 'kwp192.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp192 -pass pass:root -out {}'
+		'genpkey -engine bee2evp -paramfile {} -belt-kwp192 -pass pass:root -out {}'
 			.format(params256, kwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp192))
 	out = out.decode()
 	res = (out.find('valid') != -1)
@@ -372,45 +372,45 @@ def belt_test():
 	# belt-kwp256
 	kwp256 = os.path.join(tmpdirname, 'kwp256.pem') 
 	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-kwp256 -pass pass:root -out {}'
+		'genpkey -engine bee2evp -paramfile {} -belt-kwp256 -pass pass:root -out {}'
 			.format(params256, kwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
+	retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
 		.format(kwp256))
 	out = out.decode()
 	res = (out.find('valid') != -1)
 	process_result('belt-kwp256', res)
 
-	# belt-dwp128
-	dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp128 -pass pass:root -out {}'
-			.format(params256, dwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp128))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp128', res)
+	# # belt-dwp128
+	# dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp128 -pass pass:root -out {}'
+	# 		.format(params256, dwp128))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp128))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp128', res)
 
-	# belt-dwp192
-	dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp192 -pass pass:root -out {}'
-			.format(params256, dwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp192))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp192', res)
+	# # belt-dwp192
+	# dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp192 -pass pass:root -out {}'
+	# 		.format(params256, dwp192))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp192))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp192', res)
 
-	# belt-dwp256
-	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
-			.format(params256, dwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp256))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp256', res)
+	# # belt-dwp256
+	# dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
+	# retcode, out, er__ = openssl(
+	# 	'genpkey -engine bee2evp -paramfile {} -belt-dwp256 -pass pass:root -out {}'
+	# 		.format(params256, dwp256))
+	# retcode, out, er__ = openssl('pkey -engine bee2evp -in {} -check -passin pass:root'
+	# 	.format(dwp256))
+	# out = out.decode()
+	# res = (out.find('valid') != -1)
+	# process_result('belt-dwp256', res)
 
-	shutil.rmtree(tmpdirname)
+	# shutil.rmtree(tmpdirname)

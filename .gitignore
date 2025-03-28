@@ -60,6 +60,9 @@
 *.ipch
 *.opensdf
 
+# VS Code settings
+*.vscode
+
 # Specific files
 .aux
 openssl

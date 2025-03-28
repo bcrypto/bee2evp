@@ -94,7 +94,9 @@ static int bee2evp_finish(ENGINE* e)
 	evpBign_pmeth_finish();
 	evpBign_ameth_finish();
 	evpBash_finish();
-	rngClose();
+	if (rngIsValid()) {
+		rngClose();
+	}
 	return 1;
 }
 
