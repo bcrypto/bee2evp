@@ -21,6 +21,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/opensslv.h>
+#include "bee2/defs.h"
 
 #ifdef __cplusplus
 extern "C" {
