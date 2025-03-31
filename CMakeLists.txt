@@ -35,7 +35,7 @@ string(COMPARE EQUAL "MSVC" "${CMAKE_C_COMPILER_ID}" CMAKE_COMPILER_IS_MSVC)
 
 set(CMAKE_C_WARNINGS "-Wall -Wextra -W -Wdeclaration-after-statement \
   -Wwrite-strings -Wno-parentheses -Wno-unused-parameter -Wno-strict-aliasing \
-  -Wno-xor-used-as-pow")
+  -Wno-xor-used-as-pow -Wno-deprecated-declarations")
 
 if(CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-maybe-uninitialized")
