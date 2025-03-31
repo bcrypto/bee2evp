@@ -82,8 +82,18 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 endif()
 
 ### Bee2
+# bee2_static must be built with -fPIC flag
 
-add_subdirectory(bee2)
+if(NOT BEE2_LIBRARY_DIRS)
+  add_subdirectory(bee2)
+  set(BEE2_INCLUDE_DIRS bee2/include)
+  set(BEE2_LIBRARIES bee2_static)
+else()
+  message(STATUS BEE2_INCLUDE_DIRS=${BEE2_INCLUDE_DIRS})
+  message(STATUS BEE2_LIBRARY_DIRS=${BEE2_LIBRARY_DIRS})
+  find_library(BEE2_LIBRARIES bee2_static HINTS ${BEE2_LIBRARY_DIRS})
+  message(STATUS BEE2_LIBRARIES=${BEE2_LIBRARIES})
+endif()
 
 ### OpenSSL
 
@@ -108,13 +118,13 @@ message(STATUS OPENSSL_LIBRARIES=${OPENSSL_LIBRARIES})
 include_directories(
   include
   src
-  bee2/include
+  ${BEE2_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIRS}
 )
 
-link_directories( ${OPENSSL_LIBRARY_DIRS})
+link_directories(${BEE2_LIBRARY_DIRS} ${OPENSSL_LIBRARY_DIRS})
 
-set(libs bee2_static ${OPENSSL_LIBRARIES})
+set(libs ${BEE2_LIBRARIES} ${OPENSSL_LIBRARIES})
 
 add_subdirectory(include)
 
