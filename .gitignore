@@ -60,7 +60,12 @@
 *.ipch
 *.opensdf
 
+# IDE settings
+.vscode
+.idea
+
 # Specific files
+.DS_Store
 .aux
 openssl
 build
