@@ -94,6 +94,23 @@ These patches support the following ciphersuites defined in STB 34.101.65
 
 An example of applying a patch can be found in [travis.yml](.travis.yml).
 
+## Build in Docker
+```
+# OpenSSL 1.1.1 + Bee2evp engine
+docker build --progress="plain" -f dockerfiles/focal.Dockerfile \
+   -t bcrypto/bee2evp:1.1.1 .
+# OpenSSL 1.1.1 + Bee2evp engine + BTLS
+docker build --progress="plain" -f dockerfiles/focal-btls.Dockerfile \
+   -t bcrypto/bee2evp:1.1.1-btls .
+# OpenSSL 3.0 + Bee2evp provider
+docker build --progress="plain" -f dockerfiles/noble.Dockerfile \
+   -t bcrypto/bee2evp:3.0 .  
+```
+Run bash on prepared docker image:
+```
+docker run --rm -it -v .:/usr/src  bcrypto/bee2evp:1.1.1 bash
+```
+
 ## License
 
 Bee2 is distributed under the Apache License version 2.0. See 
