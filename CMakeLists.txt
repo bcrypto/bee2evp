@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.31)
 project(BEE2EVP C)
 
 set(BEE2EVP_VERSION_MAJOR "1")
