@@ -4,7 +4,7 @@
 \project bee2evp [Plugin for bee2 usage in OpenSSL]
 \brief The Belt hashing algorithm (belt-hash) for Bee2evp provider
 \created 2025.04.08
-\version 2025.04.08
+\version 2025.07.01
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -102,6 +102,12 @@ static void provBeltHash_free(void *vctx)
     blobClose(blob);
 }
 
+static void *provBeltHash_dupctx(void *vctx) 
+{
+	blob_t blob = blobCopy(0, vctx);
+    return (void*)blob;
+}
+
 static int provBeltHash_get_params(OSSL_PARAM params[]) 
 {
 	return md_get_params(params, 32, 32, EVP_MD_FLAG_DIGALGID_NULL);
@@ -119,6 +125,7 @@ const OSSL_DISPATCH provBeltHash_functions[] =
     { OSSL_FUNC_DIGEST_UPDATE, (void (*)(void))provBeltHash_update },
     { OSSL_FUNC_DIGEST_FINAL, (void (*)(void))provBeltHash_final },
     { OSSL_FUNC_DIGEST_FREECTX, (void (*)(void))provBeltHash_free },
+    { OSSL_FUNC_DIGEST_DUPCTX, (void (*)(void))provBeltHash_dupctx },
     { OSSL_FUNC_DIGEST_GETTABLE_PARAMS, (void (*)(void))md_gettable_params },
     { OSSL_FUNC_DIGEST_GET_PARAMS, (void (*)(void))provBeltHash_get_params },
     { 0, NULL }

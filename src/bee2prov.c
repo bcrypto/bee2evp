@@ -114,6 +114,13 @@ static const OSSL_ALGORITHM bee2_provider_digests[] =
     { NULL, NULL, NULL, NULL }
 };
 
+/* Алгоритм belt-pbkdf */
+static const OSSL_ALGORITHM bee2_provider_kdfs[] = {
+    { "belt-pbkdf:1.2.112.0.2.0.34.101.31.111", "provider=bee2pro", 
+        provBeltPBKDF_functions, "Belt-pbkdf password-based kdf" },
+    { NULL, NULL, NULL, NULL }
+};
+
 /* Функция запроса реализованных в провайдере алгоритмов */
 static const OSSL_ALGORITHM *bee2_provider_query_operation(
     void *provctx, int operation_id, int *no_cache
@@ -123,7 +130,10 @@ static const OSSL_ALGORITHM *bee2_provider_query_operation(
     switch (operation_id) {
         case OSSL_OP_DIGEST:
             /* Хэширование */
-            return bee2_provider_digests; 
+            return bee2_provider_digests;
+        case OSSL_OP_KDF:
+            /* Алгоритм belt-pbkdf */
+            return bee2_provider_kdfs; 
         case OSSL_OP_CIPHER:
             /* Симметричное шифрование */
             return NULL; 

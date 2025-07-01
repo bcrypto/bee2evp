@@ -78,6 +78,7 @@ extern const OSSL_DISPATCH provBeltHash_functions[];
 extern const OSSL_DISPATCH provBash256_functions[];
 extern const OSSL_DISPATCH provBash384_functions[];
 extern const OSSL_DISPATCH provBash512_functions[];
+extern const OSSL_DISPATCH provBeltPBKDF_functions[];
 
 #endif // OPENSSL_VERSION_MAJOR >= 3
 

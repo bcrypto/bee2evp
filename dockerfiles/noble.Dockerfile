@@ -43,6 +43,12 @@ RUN openssl list -providers
 
 RUN echo -n "hello world" | openssl dgst -provider bee2pro -belt-hash
 
+RUN openssl kdf -keylen 32 -kdfopt digest:belt-hash -kdfopt pass:password \
+    -kdfopt salt:00112233445566778899AABBCCDDEEFF -kdfopt iter:10000 PBKDF2
+
+RUN openssl kdf -keylen 32 -kdfopt iter:2 -kdfopt pass:password\
+    -kdfopt salt:00112233445566778899AABBCCDDEEFF -provider bee2pro belt-pbkdf
+
 WORKDIR '/usr/src/test'
 RUN python3 test.py
 
