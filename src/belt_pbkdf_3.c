@@ -4,7 +4,7 @@
 \project bee2evp [Plugin for bee2 usage in OpenSSL]
 \brief The Belt-based PBKDF for Bee2evp provider
 \created 2025.07.01
-\version 2025.07.01
+\version 2025.07.02
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -112,7 +112,8 @@ static const OSSL_PARAM *provBeltPBKDF_gettable_ctx_params(
     return params;
 }
 
-static int provBeltPBKDF_get_ctx_params(void *vctx, OSSL_PARAM *params) {
+static int provBeltPBKDF_get_ctx_params(void *vctx, OSSL_PARAM *params) 
+{
     BELT_PBKDF_CTX *ctx = (BELT_PBKDF_CTX *)vctx;
     OSSL_PARAM *p;
 
@@ -125,7 +126,8 @@ static int provBeltPBKDF_get_ctx_params(void *vctx, OSSL_PARAM *params) {
     return 1;
 }
 
-static int provBeltPBKDF_set_ctx_params(void *vctx, const OSSL_PARAM params[]) {
+static int provBeltPBKDF_set_ctx_params(void *vctx, const OSSL_PARAM params[]) 
+{
     BELT_PBKDF_CTX *ctx = (BELT_PBKDF_CTX *)vctx;
     const OSSL_PARAM *p;
 
@@ -135,7 +137,7 @@ static int provBeltPBKDF_set_ctx_params(void *vctx, const OSSL_PARAM params[]) {
         ctx->salt = blobCreate(p->data_size);
         if (ctx->salt == NULL) 
             return 0;
-        memcpy(ctx->salt, p->data, p->data_size);
+        memCopy(ctx->salt, p->data, p->data_size);
         ctx->saltlen = p->data_size;
     }
 
@@ -153,7 +155,7 @@ static int provBeltPBKDF_set_ctx_params(void *vctx, const OSSL_PARAM params[]) {
         ctx->password = blobCreate(p->data_size);
         if (ctx->password == NULL) 
             return 0;
-        memcpy(ctx->password, p->data, p->data_size);
+        memCopy(ctx->password, p->data, p->data_size);
         ctx->passlen = p->data_size;
     }
     return 1;
@@ -223,7 +225,8 @@ static int provBeltPBKDF_derive(
 Таблица функций алгоритма belt_pbkdf
 *******************************************************************************
 */
-const OSSL_DISPATCH provBeltPBKDF_functions[] = {
+const OSSL_DISPATCH provBeltPBKDF_functions[] = 
+{
     { OSSL_FUNC_KDF_NEWCTX, (void (*)(void))provBeltPBKDF_newctx },
     { OSSL_FUNC_KDF_DUPCTX, (void(*)(void))provBeltPBKDF_dupctx },
     { OSSL_FUNC_KDF_FREECTX, (void (*)(void))provBeltPBKDF_freectx },
@@ -231,9 +234,12 @@ const OSSL_DISPATCH provBeltPBKDF_functions[] = {
     { OSSL_FUNC_KDF_DERIVE, (void (*)(void))provBeltPBKDF_derive },
     { OSSL_FUNC_KDF_SETTABLE_CTX_PARAMS,
         (void(*)(void))provBeltPBKDF_settable_ctx_params },
-    { OSSL_FUNC_KDF_SET_CTX_PARAMS, (void (*)(void))provBeltPBKDF_set_ctx_params },
-    { OSSL_FUNC_KDF_GETTABLE_CTX_PARAMS, (void (*)(void))provBeltPBKDF_gettable_ctx_params },
-    { OSSL_FUNC_KDF_GET_CTX_PARAMS, (void (*)(void))provBeltPBKDF_get_ctx_params },
+    { OSSL_FUNC_KDF_SET_CTX_PARAMS, 
+        (void (*)(void))provBeltPBKDF_set_ctx_params },
+    { OSSL_FUNC_KDF_GETTABLE_CTX_PARAMS, 
+        (void (*)(void))provBeltPBKDF_gettable_ctx_params },
+    { OSSL_FUNC_KDF_GET_CTX_PARAMS, 
+        (void (*)(void))provBeltPBKDF_get_ctx_params },
     { 0, NULL }
 };
 
