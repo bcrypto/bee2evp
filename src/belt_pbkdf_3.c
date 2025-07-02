@@ -14,6 +14,7 @@
 
 #if OPENSSL_VERSION_MAJOR >= 3
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <openssl/params.h>
 #include "bee2/core/blob.h"
 #include <bee2/core/mem.h>
@@ -187,9 +188,16 @@ static int provBeltPBKDF_derive(
     if (ctx->keylen > 32 || outlen != ctx->keylen) 
         return 0;
     // настроить синхропосылку
-    // todo: generate salt 8 bytes min
-    if (ctx->saltlen < 8)
-        return 0; 
+    if (ctx->saltlen < 8) {
+        ctx->saltlen = 8;
+        if (ctx->salt)
+            blobClose(ctx->salt);
+        ctx->salt = blobCreate(ctx->saltlen);
+        if (ctx->salt == NULL)
+            return 0;
+        if (RAND_bytes(ctx->salt, ctx->saltlen) < 0)
+			return 0;
+    }
     // настроить число итераций
     if (ctx->iter < 10000) 
         ctx->iter = 10000;
