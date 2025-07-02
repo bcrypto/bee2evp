@@ -92,8 +92,6 @@ These patches support the following ciphersuites defined in STB 34.101.65
 - `DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT`;
 - `DHT-PSK-BIGN-WITH-BELT-DWP-HBELT`.
 
-An example of applying a patch can be found in [travis.yml](.travis.yml).
-
 ## Build in Docker
 ```
 # OpenSSL 1.1.1 + Bee2evp engine
@@ -113,7 +111,7 @@ docker run --rm -it -v .:/usr/src  bcrypto/bee2evp:1.1.1 bash
 
 ## License
 
-Bee2 is distributed under the Apache License version 2.0. See 
+Bee2evp is distributed under the Apache License version 2.0. See 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) or 
 [LICENSE](LICENSE.txt) for details.
 
