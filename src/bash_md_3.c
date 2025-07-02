@@ -4,7 +4,7 @@
 \project bee2evp [Plugin for bee2 usage in OpenSSL]
 \brief The Bash hashing algorithm (bash) for Bee2evp provider
 \created 2025.04.08
-\version 2025.04.08
+\version 2025.07.02
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -78,6 +78,12 @@ static void provBash_free(void *vctx)
     blobClose(blob);
 }
 
+static void *provBash_dupctx(void *vctx) 
+{
+	blob_t blob = blobCopy(0, vctx);
+    return (void*)blob;
+}
+
 /*
 *******************************************************************************
 Алгоритм bash256
@@ -135,6 +141,7 @@ const OSSL_DISPATCH provBash256_functions[] =
     { OSSL_FUNC_DIGEST_UPDATE, (void (*)(void))provBash_update },
     { OSSL_FUNC_DIGEST_FINAL, (void (*)(void))provBash_final },
     { OSSL_FUNC_DIGEST_FREECTX, (void (*)(void))provBash_free },
+    { OSSL_FUNC_DIGEST_DUPCTX, (void (*)(void))provBash_dupctx },
     { OSSL_FUNC_DIGEST_GETTABLE_PARAMS, (void (*)(void))md_gettable_params },
     { OSSL_FUNC_DIGEST_GET_PARAMS, (void (*)(void))provBash256_get_params },
     { 0, NULL }
@@ -147,6 +154,7 @@ const OSSL_DISPATCH provBash384_functions[] =
     { OSSL_FUNC_DIGEST_UPDATE, (void (*)(void))provBash_update },
     { OSSL_FUNC_DIGEST_FINAL, (void (*)(void))provBash_final },
     { OSSL_FUNC_DIGEST_FREECTX, (void (*)(void))provBash_free },
+    { OSSL_FUNC_DIGEST_DUPCTX, (void (*)(void))provBash_dupctx },
     { OSSL_FUNC_DIGEST_GETTABLE_PARAMS, (void (*)(void))md_gettable_params },
     { OSSL_FUNC_DIGEST_GET_PARAMS, (void (*)(void))provBash384_get_params },
     { 0, NULL }
@@ -159,6 +167,7 @@ const OSSL_DISPATCH provBash512_functions[] =
     { OSSL_FUNC_DIGEST_UPDATE, (void (*)(void))provBash_update },
     { OSSL_FUNC_DIGEST_FINAL, (void (*)(void))provBash_final },
     { OSSL_FUNC_DIGEST_FREECTX, (void (*)(void))provBash_free },
+    { OSSL_FUNC_DIGEST_DUPCTX, (void (*)(void))provBash_dupctx },
     { OSSL_FUNC_DIGEST_GETTABLE_PARAMS, (void (*)(void))md_gettable_params },
     { OSSL_FUNC_DIGEST_GET_PARAMS, (void (*)(void))provBash512_get_params },
     { 0, NULL }
