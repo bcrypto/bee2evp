@@ -24,7 +24,7 @@
 *******************************************************************************
 Реализация протокола TLS/Record в BTLS (СТБ 34.101.65)
 
-1. Данные в TLS/Record разбиваются на фрагменты. Каждому фрагменту предшествует 
+1. Данные в TLS/Record разбиваются на фрагменты. Каждому фрагменту предшествует
 заголовок из полей [1]тип + [2]версия + [2]длина. Фрагменты нумеруются
 последовательно от 0. Номер фрагмента [8]seq_num учитывается при его обработке.
 
@@ -37,11 +37,11 @@
 и зашифровывается вместе с ним.
 
 4. При обработке данных (открытых и критических) с помощью belt-dwp
-используется синхропосылка 
+используется синхропосылка
   [fixed_iv_len = 8]fixed + [record_iv_len = 8]explicit.
 Первая ее часть генерируется по завершению Handshake (это либо client_write_IV,
-либо server_write_IV), вторая --- выбирается отправителем произвольно (без 
-повторов) и передается в начале каждого фрагмента. В качестве второй части 
+либо server_write_IV), вторая --- выбирается отправителем произвольно (без
+повторов) и передается в начале каждого фрагмента. В качестве второй части
 может использоваться номер seq_num, но это не обязательно.
 
 5. При шифровании с помощью belt-ctr используется синхропосылка
@@ -61,7 +61,7 @@
 длина синхропосылки которого объявляется равной 8. Дополнительные 8 октетов
 синхропосылки доопределяются в процессе обработки данных (в качестве
 дополнительных октетов используется seq_num). Ключ belt-dwp-tls всегда
-состоит из 32 октетов. 
+состоит из 32 октетов.
 
 \remark Для сравнения. В AES-GCM: fixed_iv_len = 4, record_iv_len = 8 [RFC5228].
 Поддержка fixed_iv_len != iv_len для режимов GCM и CCM встроена в OpenSSL
@@ -92,8 +92,8 @@ seq_num всякий раз подмешивается к fixed-части си�
 */
 
 const char OID_belt_dwpt[] = "1.2.112.0.2.0.34.101.31.67";
-const char SN_belt_dwpt[] = "belt-dwp-tls";
-const char LN_belt_dwpt[] = "belt-dwp-tls";
+const char SN_belt_dwpt[] = "belt-dwpt";
+const char LN_belt_dwpt[] = "belt-dwpt";
 
 #define FLAGS_belt_dwpt (EVP_CIPH_FLAG_AEAD_CIPHER |\
 	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |\
@@ -115,7 +115,7 @@ typedef struct belt_dwpt_ctx
 	octet state[];			/*< состояние beltDWP */
 } belt_dwpt_ctx;
 
-static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	const octet* iv, int enc)
 {
 	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
@@ -275,7 +275,7 @@ EVP_CTRL_AEAD_TLS1_AAD.
 3. Алгоритм belt-ctr-tls дополнительно выполняет имитозащиту (перед
 зашифрованием). Используется алгоритм belt-mac. Длина ключа имитозащиты --
 32 октета. Ключ передается с помощью управляющей команды
-EVP_CTRL_AEAD_SET_MAC_KEY. 
+EVP_CTRL_AEAD_SET_MAC_KEY.
 
 4. Алгоритму belt-ctr-tls назначен нестандартный (технический) идентификатор
 "1.2.112.0.2.0.34.101.31.44". Он может быть пересмотрен.
@@ -439,7 +439,7 @@ static int belt_tls_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher, 
+static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
@@ -453,7 +453,7 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 				return 0;
 			if (belt_tls_count + nid >= (int)COUNT_OF(belt_tls_nids))
 				return 0;
-			memCopy(belt_tls_nids + belt_tls_count, *nids, 
+			memCopy(belt_tls_nids + belt_tls_count, *nids,
 				nid * sizeof(int));
 			*nids = belt_tls_nids;
 			return belt_tls_count + nid;
@@ -501,11 +501,12 @@ int evpBeltTLS_bind(ENGINE* e)
 {
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
-	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef)
+	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef ||
+		BELT_PMETH_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
 	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,
-		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup, 
+		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup,
 		0, 0, evpBeltDWPT_ctrl);
 	BELT_TLS_DESCR(belt_ctrt, 1, 32, 0, FLAGS_belt_ctrt,
 		evpBeltCTRT_init, evpBeltCTRT_cipher, evpBeltCTRT_cleanup,
