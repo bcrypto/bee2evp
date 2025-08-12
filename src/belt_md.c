@@ -26,7 +26,7 @@
 */
 
 const char OID_belt_hash[] = "1.2.112.0.2.0.34.101.31.81";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_belt_hash[] = "belt-hash";
 const char LN_belt_hash[] = "belt-hash";
 #endif

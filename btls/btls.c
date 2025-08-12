@@ -71,14 +71,6 @@ int btls_init()
         return 1;
     }
 
-    if (OBJ_new_nid(1) != NID_kxbdhe)
-        return 0;
-    if (OBJ_new_nid(1) != NID_kxbdht)
-        return 0;
-    if (OBJ_new_nid(1) != NID_kxbdhe_psk)
-        return 0;
-    if (OBJ_new_nid(1) != NID_kxbdht_psk)
-        return 0;
     btls_inited++;
     return 1;
 }

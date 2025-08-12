@@ -92,8 +92,10 @@ seq_num всякий раз подмешивается к fixed-части си�
 */
 
 const char OID_belt_dwpt[] = "1.2.112.0.2.0.34.101.31.67";
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_belt_dwpt[] = "belt-dwpt";
 const char LN_belt_dwpt[] = "belt-dwpt";
+#endif
 
 #define FLAGS_belt_dwpt (EVP_CIPH_FLAG_AEAD_CIPHER |\
 	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |\
@@ -285,8 +287,10 @@ EVP_CTRL_AEAD_SET_MAC_KEY.
 */
 
 const char OID_belt_ctrt[] = "1.2.112.0.2.0.34.101.31.44";
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_belt_ctrt[] = "belt-ctr-tls";
 const char LN_belt_ctrt[] = "belt-ctr-tls";
+#endif
 
 #define FLAGS_belt_ctrt (EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_STREAM_CIPHER |\
 	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT)
@@ -502,7 +506,7 @@ int evpBeltTLS_bind(ENGINE* e)
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef ||
-		BELT_PMETH_REG(belt_ctrt, tmp) == NID_undef)
+		BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
 	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,

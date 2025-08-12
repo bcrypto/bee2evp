@@ -12,7 +12,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/engine.h>
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 #include <openssl/obj_mac.h>
 #endif
 #include <bee2/core/blob.h>
@@ -328,7 +328,7 @@ const EVP_PKEY_METHOD* evpBeltMAC192_pmeth()
 }
 
 const char OID_belt_mac256[] = "1.2.112.0.2.0.34.101.31.53";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_belt_mac256[] = "belt-mac256";
 const char LN_belt_mac256[] = "belt-mac256";
 #endif

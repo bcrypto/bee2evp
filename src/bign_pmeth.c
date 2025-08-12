@@ -56,7 +56,7 @@ const char SN_bign_with_hspec[] = "bign-with-hspec";
 const char LN_bign_with_hspec[] = "bign-with-hspec";
 
 const char OID_bign_with_hbelt[] = "1.2.112.0.2.0.34.101.45.12";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_with_hbelt[] = "bign-with-hbelt";
 const char LN_bign_with_hbelt[] = "bign-with-hbelt";
 #endif
@@ -66,13 +66,13 @@ const char SN_bign_with_bash256[] = "bign-with-bash256";
 const char LN_bign_with_bash256[] = "bign-with-bash256";
 
 const char OID_bign_with_bash384[] = "1.2.112.0.2.0.34.101.45.14";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_with_bash384[] = "bign-with-bash384";
 const char LN_bign_with_bash384[] = "bign-with-bash384";
 #endif
 
 const char OID_bign_with_bash512[] = "1.2.112.0.2.0.34.101.45.15";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_with_bash512[] = "bign-with-bash512";
 const char LN_bign_with_bash512[] = "bign-with-bash512";
 #endif
@@ -83,28 +83,28 @@ const char LN_bign_keytransport[] = "bign-keytransport";
 
 /* bign-pubkey */
 const char OID_bign_pubkey[] = "1.2.112.0.2.0.34.101.45.2.1";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_pubkey[] = "bign-pubkey";
 const char LN_bign_pubkey[] = "bign-pubkey";
 #endif
 
 /* bign-curve256v1 */
 const char OID_bign_curve256v1[] = "1.2.112.0.2.0.34.101.45.3.1";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_curve256v1[] = "bign-curve256v1";
 const char LN_bign_curve256v1[] = "bign-curve256v1";
 #endif
 
 /* bign-curve384v1 */
 const char OID_bign_curve384v1[] = "1.2.112.0.2.0.34.101.45.3.2";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_curve384v1[] = "bign-curve384v1";
 const char LN_bign_curve384v1[] = "bign-curve384v1";
 #endif
 
 /* bign-curve512v1 */
 const char OID_bign_curve512v1[] = "1.2.112.0.2.0.34.101.45.3.3";
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_MAJOR < 3
 const char SN_bign_curve512v1[] = "bign-curve512v1";
 const char LN_bign_curve512v1[] = "bign-curve512v1";
 #endif
