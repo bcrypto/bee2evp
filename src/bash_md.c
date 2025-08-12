@@ -30,12 +30,16 @@ const char SN_bash256[] = "bash256";
 const char LN_bash256[] = "bash256";
 
 const char OID_bash384[] = "1.2.112.0.2.0.34.101.77.12";
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 const char SN_bash384[] = "bash384";
 const char LN_bash384[] = "bash384";
+#endif
 
 const char OID_bash512[] = "1.2.112.0.2.0.34.101.77.13";
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 const char SN_bash512[] = "bash512";
 const char LN_bash512[] = "bash512";
+#endif
 
 static EVP_MD* EVP_bash256;
 const EVP_MD* evpBash256()
@@ -55,7 +59,7 @@ const EVP_MD* evpBash512()
 	return EVP_bash512;
 }
 
-static int evpBash_init(EVP_MD_CTX* ctx) 
+static int evpBash_init(EVP_MD_CTX* ctx)
 {
 	void* state = EVP_MD_CTX_md_data(ctx);
 	size_t md_len = (size_t)EVP_MD_meth_get_result_size(EVP_MD_CTX_md(ctx));
@@ -105,7 +109,7 @@ static int bash_md_count;
 
 static ENGINE_DIGESTS_PTR prev_enum;
 
-static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids, 
+static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 	int nid)
 {
 	// возвратить таблицу идентификаторов?
@@ -119,7 +123,7 @@ static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 				return 0;
 			if (bash_md_count + nid >= (int)COUNT_OF(bash_md_nids))
 				return 0;
-			memCopy(bash_md_nids + bash_md_count, *nids, 
+			memCopy(bash_md_nids + bash_md_count, *nids,
 				nid * sizeof(int));
 			*nids = bash_md_nids;
 			return bash_md_count + nid;
@@ -147,7 +151,7 @@ static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 *******************************************************************************
 Подключение / закрытие
 
-\warning EVP_MD::block_size используется при построении HMAC. Но HMAC 
+\warning EVP_MD::block_size используется при построении HMAC. Но HMAC
 над sponge-конструкциями, вообще говоря, не определен.
 \todo Разобраться с ctrl-функцией (EVP_MD_meth_set_ctrl).
 \todo Разобраться с EVP_MD::pkey_type (второй параметр EVP_MD_meth_new).
@@ -194,7 +198,7 @@ int evpBash_bind(ENGINE* e)
 		return 0;
 	// задать перечислитель
 	prev_enum = ENGINE_get_digests(e);
-	if (!ENGINE_set_digests(e, evpBash_enum)) 
+	if (!ENGINE_set_digests(e, evpBash_enum))
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_digests(e) &&
