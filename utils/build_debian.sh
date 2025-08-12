@@ -217,6 +217,8 @@ test_bee2evp(){
   green echo "[-] test bee2evp"
   cd $local || exit
   cp -a $bee2evp/test/. .
+  export PATH=$local/bin:$PATH
+  export OPENSSL_CONF=$local/openssl.cnf
   export LD_LIBRARY_PATH="$lib_path:${LD_LIBRARY_PATH}"
   python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
@@ -247,5 +249,5 @@ is_openssl_3
 if $just_build; then
   build
 else
-  setup && build
+  setup && build && test_bee2evp
 fi
