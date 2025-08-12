@@ -49,8 +49,8 @@ const char LN_bee2evp[] = "Bee2evp Engine [belt + bign + bash]";
   structural reference to it is released, to cleanly free any resource
   allocated upon loading it into memory.
 
-\todo С помощью функции 
-\code 
+\todo С помощью функции
+\code
 static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 {
 	ASSERT(memIsValid(read, O_PER_S));
@@ -62,8 +62,8 @@ static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 	return ERR_OK;
 }
 \endcode
-можно усилить батарею источников энтропии, заменив в функции bee2evp_init() 
-строчку 
+можно усилить батарею источников энтропии, заменив в функции bee2evp_init()
+строчку
 \code
 	if (rngCreate(0, 0) != ERR_OK)
 \endcode
@@ -71,7 +71,7 @@ static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 \code
 	if (rngCreate(rngReadOpenssl, 0) != ERR_OK)
 \endcode
-Однако вызов rngReadOpenssl() в момент инициализации плагина приводит 
+Однако вызов rngReadOpenssl() в момент инициализации плагина приводит
 к ошибке в дальнейшей работе OpenSSL. Разобраться.
 *******************************************************************************
 */
@@ -84,7 +84,7 @@ static int bee2evp_init(ENGINE* e)
 }
 
 static int bee2evp_finish(ENGINE* e)
-{ 
+{
 	evpBeltCipher_finish();
 	evpBeltMD_finish();
 	evpBelt_pmeth_finish();
@@ -94,16 +94,18 @@ static int bee2evp_finish(ENGINE* e)
 	evpBign_pmeth_finish();
 	evpBign_ameth_finish();
 	evpBash_finish();
-	rngClose();
+	if (rngIsValid()) {
+		rngClose();
+	}
 	return 1;
 }
 
 static int bee2evp_destroy(ENGINE* e)
-{ 
+{
 		return 1;
 }
 
-static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] = 
+static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] =
 {
 	{0, 0, 0, 0},
 };
@@ -118,7 +120,7 @@ static int bee2evp_ctrl(ENGINE* e, int cmd, long i, void* p, void (*f)(void))
 Связывание
 
 \remark В предшествующих редакциях Bee2evp идентификаторы NID_bign_with_hbelt
-и NID_bign_with_bashXXX связывались с неопределенным алгоритмом хэширования 
+и NID_bign_with_bashXXX связывались с неопределенным алгоритмом хэширования
 (NID_undef). Таким образом навязывался вызов функций интерфейса
 EVP_PKEY_ASN1_METHOD::item_verify() и, как следствие, проверка параметров
 алгоритмов ЭЦП (см. комментарии к функции evpBign_item_verify()). Однако
@@ -161,7 +163,7 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!OBJ_add_sigid(NID_bign_with_hspec, NID_undef, NID_bign_pubkey))
 		return 0;
 	// связать belt-pbkdf + belt-hmac
-	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, NID_belt_hmac, -1, 
+	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, NID_belt_hmac, -1,
 		NID_belt_hash, evpBeltPBKDF_keyivgen))
 		return 0;
 	// все нормально

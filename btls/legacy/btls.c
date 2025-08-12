@@ -23,21 +23,21 @@
 *******************************************************************************
 Алгоритм belt-mac256 для TLS
 
-Для представления алгоритма belt-mac256 в связке BELT_CTR_MAC криптонаборов 
-BTLS алгоритм belt-mac56 позиционируется ка алгоритм хэширования (MD). 
-Это вынужденная мера, потому что альтернативный вариант -- AEAD -- будет 
-означать, что при генерации ключевого материала ключи имитозащиты связки 
-BELT_CTR_MAC не будут выделены как отдельные (см. функцию 
+Для представления алгоритма belt-mac256 в связке BELT_CTR_MAC криптонаборов
+BTLS алгоритм belt-mac56 позиционируется ка алгоритм хэширования (MD).
+Это вынужденная мера, потому что альтернативный вариант -- AEAD -- будет
+означать, что при генерации ключевого материала ключи имитозащиты связки
+BELT_CTR_MAC не будут выделены как отдельные (см. функцию
 tls1_change_cipher_state() модуля t1_enc.c).
 
-MD-интерфейс belt-mac256 объявлен, но не реализован. Функционал belt-mac256 
-встроен в алгоритм belt-ctr-tls (TLS-версия belt-ctr). Это алгоритм объявлен 
-с флагом AEAD и поэтому обращения к MD-интерфейсу belt-mac256 не используются 
+MD-интерфейс belt-mac256 объявлен, но не реализован. Функционал belt-mac256
+встроен в алгоритм belt-ctr-tls (TLS-версия belt-ctr). Это алгоритм объявлен
+с флагом AEAD и поэтому обращения к MD-интерфейсу belt-mac256 не используются
 (см. обработку флага EVP_CIPH_FLAG_AEAD_CIPHER в модуле t1_enc.c).
 
 Регистрация belt-mac256 выполняется в модуле ssl_ciph.c и состоит в следующем:
 - идентификатор NID_belt_mac256 добавляется в таблицу ssl_cipher_table_mac
-  и связывается с флагом SSL_BELTMAC. Флаг SSL_BELTMAC устанавливается в слове 
+  и связывается с флагом SSL_BELTMAC. Флаг SSL_BELTMAC устанавливается в слове
   описания криптонабора для указания на использование belt-mac256;
 - в таблице ssl_mac_pkey_id устанавливается ссылка на методы belt-mac256;
 - в таблице ssl_mac_secret_size устанавливается длина ключа belt-mac256
@@ -47,7 +47,7 @@ MD-интерфейс belt-mac256 объявлен, но не реализова
 
 const EVP_MD* evpMDBeltMac256()
 {
-    static const EVP_MD md_belt_mac256 = 
+    static const EVP_MD md_belt_mac256 =
     {
         NID_belt_mac256,
     };
@@ -58,11 +58,11 @@ const EVP_MD* evpMDBeltMac256()
 *******************************************************************************
 Инициализация
 
-\remark Для регистрации в статических массивах OpenSSL задействованные nid'ы 
-должны быть статическими. Но OpenSSL не позволяет назначать nid'ы при 
-регистрации oid'ов. С другой стороны, логика назначения вполне прозрачна: 
-nid'ы назначаются последовательно, начиная с номера NUM_NID, указанного в 
-crypto/objects/obj_dat.h. Мы учитываем эту логику, фактически предугадывая 
+\remark Для регистрации в статических массивах OpenSSL задействованные nid'ы
+должны быть статическими. Но OpenSSL не позволяет назначать nid'ы при
+регистрации oid'ов. С другой стороны, логика назначения вполне прозрачна:
+nid'ы назначаются последовательно, начиная с номера NUM_NID, указанного в
+crypto/objects/obj_dat.h. Мы учитываем эту логику, фактически предугадывая
 nid'ы.
 
 \warning Регистрация nid'ов в btls_init() должна выполняться в том же порядке,
@@ -78,43 +78,43 @@ int btls_init()
 {
     if (btls_inited)
         return 1;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.2.1", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.2.1",
         "bign-pubkey", "bign-pubkey") != NID_bign_pubkey)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.81", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.31.81",
         "belt-hash", "belt-hash") != NID_belt_hash)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.77.12", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.77.12",
         "bash384", "bash384") != NID_bash384)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.77.13", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.77.13",
         "bash512", "bash512") != NID_bash512)
         return 0;
     if (OBJ_create("1.2.112.0.2.0.34.101.31.67",
         "belt-dwp-tls", "belt-dwp-tls") != NID_belt_dwpt)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.44", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.31.44",
         "belt-ctr-tls", "belt-ctr-tls") != NID_belt_ctrt)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.31.53", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.31.53",
         "belt-mac256", "belt-mac256") != NID_belt_mac256)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.12", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.12",
         "bign-with-hbelt", "bign-with-hbelt") != NID_bign_with_hbelt)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.14", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.14",
         "bign-with-bash384", "bign-with-bash384") != NID_bign_with_bash384)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.15", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.15",
         "bign-with-bash512", "bign-with-bash512") != NID_bign_with_bash512)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.1", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.1",
         "bign-curve256v1", "bign-curve256v1") != NID_bign_curve256v1)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.2", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.2",
         "bign-curve384v1", "bign-curve384v1") != NID_bign_curve384v1)
         return 0;
-    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.3", 
+    if (OBJ_create("1.2.112.0.2.0.34.101.45.3.3",
         "bign-curve512v1", "bign-curve512v1") != NID_bign_curve512v1)
         return 0;
     if (OBJ_new_nid(1) != NID_kxbdhe)
@@ -141,10 +141,10 @@ int btls_init()
 
 \remark ДХ = "Диффи -- Хеллмана".
 
-Ключи ДХ лежат на той же эллиптической кривой, что и открытый ключ сертификата 
-сервера. Для сравнения, в механизме ECDHE используется кривая, не обязательно 
-связанная с сертификатом. Номер кривой передается в ServerKeyExchange. 
-Отличия BIGN_DHE от ECDHE незначительны, и мы пользуемся этим, минимально 
+Ключи ДХ лежат на той же эллиптической кривой, что и открытый ключ сертификата
+сервера. Для сравнения, в механизме ECDHE используется кривая, не обязательно
+связанная с сертификатом. Номер кривой передается в ServerKeyExchange.
+Отличия BIGN_DHE от ECDHE незначительны, и мы пользуемся этим, минимально
 отступая от кода OpenSSL.
 
 Подготовка SKE: btls_construct_ske_bign_dhe().
@@ -153,7 +153,7 @@ int btls_init()
 Подготовка CKE: tls_construct_cke_ecdhe() [стандартная функция].
 Обработка CKE: tls_process_cke_ecdhe() [стандартная функция].
 
-Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
+Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c,
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHE).
 *******************************************************************************
 */
@@ -175,7 +175,7 @@ int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt)
     // сгенерировать ключ ДХ
     if (s->s3->tmp.pkey != NULL ||
         (ctx = EVP_PKEY_CTX_new(pkey, NULL)) == NULL ||
-        !EVP_PKEY_keygen_init(ctx) || 
+        !EVP_PKEY_keygen_init(ctx) ||
         !EVP_PKEY_keygen(ctx, &pk))
     {
         ret = 0;
@@ -196,7 +196,7 @@ int btls_construct_ske_bign_dhe(SSL* s, WPACKET* pkt)
 err:
         EVP_PKEY_CTX_free(ctx);
         EVP_PKEY_free(pk);
-     if (pk_val) 
+     if (pk_val)
      {
          OPENSSL_cleanse(pk_val, pk_len);
          OPENSSL_free(pk_val);
@@ -220,7 +220,7 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
     if (!EVP_PKEY_copy_parameters(s->s3->peer_tmp, *pkey))
         return 0;
     // загрузить эфемерный открытый ключ сервера
-    if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt)) 
+    if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt))
         return 0;
     if (!EVP_PKEY_set1_tls_encodedpoint(s->s3->peer_tmp,
             PACKET_data(&encoded_pt),
@@ -238,7 +238,7 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
  - S -> C: ServerKeyExchange[psk_identity_hint, oid(curve), server_public]
  - S <- C: ClientKeyExchange[psk_identity, client_public]
    * psk_identity_hint --- подсказка по выбору psk;
-   * oid(curve) --- идентификатор кривой, на которой будет выполняться 
+   * oid(curve) --- идентификатор кривой, на которой будет выполняться
      протокол ДХ;
    * server_public, client_public --- эфемерные ключи ДХ;
    * psk_identity --- идентификатор выбранного psk.
@@ -267,10 +267,10 @@ int btls_process_ske_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 из резервного диапазона.
 
 \warning В функции btls_construct_ske_psk_bign_dhe() вызывается ctrl-функция
-ключа Bign с идентификатором EVP_PKEY_ALG_CTRL + 1. Эта функция должна 
-устанавливать долговременные параметры Bign (см. код 
+ключа Bign с идентификатором EVP_PKEY_ALG_CTRL + 1. Эта функция должна
+устанавливать долговременные параметры Bign (см. код
 EVP_BIGN_PEKEY_CTRL_SET_PARAMS в bign_pmeth.c). Другими словами,
-считается, что 
+считается, что
 	EVP_BIGN_PEKEY_CTRL_SET_PARAMS = EVP_PKEY_ALG_CTRL + 1.
 
 \remark Обработка psk_identity_hint выполняется в функции
@@ -279,7 +279,7 @@ tls_process_ske_psk_preamble до вызова btls_process_ske_psk_bign_dhe.
 Подготовка CKE: tls_construct_cke_ecdhe() [стандартная функция].
 Обработка CKE: tls_process_cke_ecdhe() [стандартная функция].
 
-Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c, 
+Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c,
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHEPSK).
 
 \todo Является ли загрузка сертификата сервера ошибкой?
@@ -300,13 +300,13 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 	unsigned char* pk_val = NULL;
     size_t pk_len;
 	// записать psk_identity_hint
-    len = (s->cert->psk_identity_hint == NULL) ? 
+    len = (s->cert->psk_identity_hint == NULL) ?
 		0 : strlen(s->cert->psk_identity_hint);
-    if (len > PSK_MAX_IDENTITY_LEN || 
-		!WPACKET_sub_memcpy_u16(pkt, s->cert->psk_identity_hint, len)) 
+    if (len > PSK_MAX_IDENTITY_LEN ||
+		!WPACKET_sub_memcpy_u16(pkt, s->cert->psk_identity_hint, len))
         goto err;
 	// загружен сертификат сервера?
-    if (s->s3->tmp.pkey != NULL) 
+    if (s->s3->tmp.pkey != NULL)
         goto err;
 	// клиент не высылал расширение supported_groups?
 	if (!s->ext.supportedgroups)
@@ -317,7 +317,7 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 		goto err;
 	// определить oid(curve)
     if (!(ginf = tls1_group_id_lookup(curve_id)) ||
-		!(obj = OBJ_nid2obj(ginf->nid)) || 
+		!(obj = OBJ_nid2obj(ginf->nid)) ||
 		!(oid_len = i2d_ASN1_OBJECT(obj, &oid)))
 		goto err;
 	// записать oid(curve)
@@ -325,11 +325,11 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 		goto err;
 	// генерировать эфемерный ключ
     pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL);
-	if (!pctx || 
+	if (!pctx ||
 		EVP_PKEY_keygen_init(pctx) <= 0 ||
-		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
+		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1,
 			ginf->nid, NULL) <= 0 ||
-		EVP_PKEY_keygen(pctx, &pk) <= 0) 
+		EVP_PKEY_keygen(pctx, &pk) <= 0)
         goto err;
 	// записать эфемерный ключ
     if (!EVP_PKEY_get_raw_public_key(pk, NULL, &pk_len) ||
@@ -344,7 +344,7 @@ int btls_construct_ske_psk_bign_dhe(SSL* s, WPACKET* pkt)
 err:
     EVP_PKEY_CTX_free(pctx);
     EVP_PKEY_free(pk);
-    if (pk_val) 
+    if (pk_val)
 	{
 		OPENSSL_cleanse(pk_val, pk_len);
 		OPENSSL_free(pk_val);
@@ -367,27 +367,27 @@ int btls_process_ske_psk_bign_dhe(SSL* s, PACKET* pkt, EVP_PKEY** pkey)
 	EVP_PKEY* pk = NULL;
 	EVP_PKEY_CTX* pctx = NULL;
     PACKET encoded_pt;
-	// загрузить oid(curve) 
+	// загрузить oid(curve)
     if (!PACKET_get_1(pkt, &oid_len) ||
         !PACKET_get_bytes(pkt, &oid, (size_t)oid_len) ||
 		!(obj = d2i_ASN1_OBJECT(NULL, &oid, oid_len)) ||
 		(params_nid = OBJ_obj2nid(obj)) == NID_undef)
 		goto err;
 	// подготовиться к загрузке эфемерного открытого ключа сервера
-    if (s->s3->peer_tmp == 0 && 
+    if (s->s3->peer_tmp == 0 &&
 		(s->s3->peer_tmp = EVP_PKEY_new()) == 0)
 		goto err;
 	if (!(pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL)) ||
 		EVP_PKEY_paramgen_init(pctx) <= 0 ||
-		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1, 
+		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1,
 			params_nid, NULL) <= 0 ||
 	    EVP_PKEY_paramgen(pctx, &pk) <= 0 ||
 		!EVP_PKEY_copy_parameters(s->s3->peer_tmp, pk))
 		goto err;
     // загрузить эфемерный открытый ключ сервера
-    if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt) || 
+    if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt) ||
 		!EVP_PKEY_set1_tls_encodedpoint(s->s3->peer_tmp,
-			PACKET_data(&encoded_pt), 
+			PACKET_data(&encoded_pt),
 			PACKET_remaining(&encoded_pt)))
 		goto err;
 	ret = 1;
@@ -406,13 +406,13 @@ err:
  - C -> S: ClientKeyExchange[token]
    * token = зашифрованный pre_master_secret
 
-Ключ pre_master_secret состоит из 48 октетов. Он генерируется клиентом с 
+Ключ pre_master_secret состоит из 48 октетов. Он генерируется клиентом с
 помощью функции RAND_bytes().
 
-Ключ pre_master_secret зашифровывается на открытом ключе сервера из сертификата 
-сервера. Зашифрование выполняется с помощью алгоритма bign-keytransport. При 
-зашифровании используется нулевой заголовок ключа. В результате зашифрования 
-получается токен ключа. 
+Ключ pre_master_secret зашифровывается на открытом ключе сервера из сертификата
+сервера. Зашифрование выполняется с помощью алгоритма bign-keytransport. При
+зашифровании используется нулевой заголовок ключа. В результате зашифрования
+получается токен ключа.
 
 Подготовка CKE: btls_construct_cke_bign_dht().
 Обработка CKE: btls_process_сke_bign_dht().
@@ -420,7 +420,7 @@ err:
 Вызовы перечисленных функций встраиваются в модули ssl/statem/statem_srvr.c,
 ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHT).
 
-todo: Клиент должен проверить установку флага keyEncipherment в расширении 
+todo: Клиент должен проверить установку флага keyEncipherment в расширении
 KeyUsage сертификата сервера.
 
 todo: Можно ли взять под контроль генерацию pre_master_secret клиентом?
@@ -496,8 +496,8 @@ int btls_process_cke_bign_dht(SSL* s, PACKET* pkt)
     if (!EVP_PKEY_decrypt_init(pkey_ctx))
         goto err;
     // извлечь токен ключа
-    if (!PACKET_get_1(pkt, &token_len) || 
-        !PACKET_get_bytes(pkt, &token, token_len) || 
+    if (!PACKET_get_1(pkt, &token_len) ||
+        !PACKET_get_bytes(pkt, &token, token_len) ||
         PACKET_remaining(pkt) != 0)
         goto err;
     // снять защиту с токена
