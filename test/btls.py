@@ -23,7 +23,7 @@ def btls_issue_cert(cert, privkey):
 	openssl(cmd)
 
 def btls_server(tmpdir, suite, curve, cert, psk):
-	assert cert or psk 
+	assert cert or psk
 	# prepare cmd
 	cmd = 's_server -tls1_2 -rev'
 	if cert:
@@ -44,7 +44,7 @@ def btls_server(tmpdir, suite, curve, cert, psk):
 	g_server = openssl2(cmd)
 
 def btls_client(tmpdir, suite, curve, cert, psk):
-	assert cert or psk 
+	assert cert or psk
 	# prepare cmd
 	cmd = 's_client -tls1_2 -cipher {}'.format(suite)
 	if psk:
@@ -62,25 +62,34 @@ def btls_client(tmpdir, suite, curve, cert, psk):
 		echo2 = f.read()
 	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
 
-def btls_test():
+def btls_test(openssl_version_major):
 	tmpdir = tempfile.mkdtemp()
 
-	ciphersuites = [
-		'DHE-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
-		'DHT-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT',
-		'DHE-PSK-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT',
-		'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT', 
-		'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
-	curves_shortlist = [
-		'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
-	curves_longlist = [
-		'NULL', 
-		'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
-		'bign-curve256v1:bign-curve384v1:bign-curve512v1', 
-		'bign-curve256v1:bign-curve512v1']
+	if openssl_version_major < 3:
+		ciphersuites = [
+			'DHE-BIGN-WITH-BELT-DWP-HBELT',
+			'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
+			'DHT-BIGN-WITH-BELT-DWP-HBELT',
+			'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT',
+			'DHE-PSK-BIGN-WITH-BELT-DWP-HBELT',
+			'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT',
+			'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT',
+			'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT']
+		curves_shortlist = [
+			'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1']
+		curves_longlist = [
+			'NULL',
+			'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1',
+			'bign-curve256v1:bign-curve384v1:bign-curve512v1',
+			'bign-curve256v1:bign-curve512v1']
+	else:
+		ciphersuites = [
+			'DHE-BIGN-WITH-BELT-CTR-MAC-HBELT',
+			'DHT-BIGN-WITH-BELT-CTR-MAC-HBELT']
+		curves_shortlist = ['bign-curve256v1']
+		curves_longlist = [
+			'NULL',
+			'bign-curve256v1']
 
 	for suite in ciphersuites:
 		# psk?

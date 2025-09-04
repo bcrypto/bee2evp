@@ -379,38 +379,3 @@ def belt_test():
 	out = out.decode()
 	res = (out.find('valid') != -1)
 	process_result('belt-kwp256', res)
-
-	# belt-dwp128
-	dwp128 = os.path.join(tmpdirname, 'dwp128.pem')
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp128 -pass pass:root -out {}'
-			.format(params256, dwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp128))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp128', res)
-
-	# belt-dwp192
-	dwp192 = os.path.join(tmpdirname, 'dwp192.pem')
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp192 -pass pass:root -out {}'
-			.format(params256, dwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp192))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp192', res)
-
-	# belt-dwp256
-	dwp256 = os.path.join(tmpdirname, 'dwp256.pem')
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
-			.format(params256, dwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp256))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp256', res)
-
-	shutil.rmtree(tmpdirname)

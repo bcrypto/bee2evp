@@ -93,8 +93,8 @@ seq_num всякий раз подмешивается к fixed-части си�
 
 const char OID_belt_dwpt[] = "1.2.112.0.2.0.34.101.31.67";
 #if OPENSSL_VERSION_MAJOR < 3
-const char SN_belt_dwpt[] = "belt-dwpt";
-const char LN_belt_dwpt[] = "belt-dwpt";
+const char SN_belt_dwpt[] = "belt-dwp-tls";
+const char LN_belt_dwpt[] = "belt-dwp-tls";
 #endif
 
 #define FLAGS_belt_dwpt (EVP_CIPH_FLAG_AEAD_CIPHER |\

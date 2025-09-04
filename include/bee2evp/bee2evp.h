@@ -615,10 +615,10 @@ extern const char LN_bign_with_bash384[];
 #endif
 
 /* bign-with-bash512 */
-#if OPENSSL_VERSION_MAJOR < 3
 extern const char OID_bign_with_bash512[];
+#if OPENSSL_VERSION_MAJOR < 3
 extern const char SN_bign_with_bash512[];
-extern char LN_bign_with_bash512[];
+extern const char LN_bign_with_bash512[];
 #define NID_bign_with_bash512 OBJ_sn2nid(SN_bign_with_bash512)
 #endif
 

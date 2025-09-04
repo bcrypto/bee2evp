@@ -19,8 +19,10 @@ usage() {
   echo "Usage: $0 [OPTIONS] <openssl_tag>"
   echo "Build bee2evp for debian based distributions:"
   echo ""
+  echo "  --build-type    build type: |Debug|Release|Coverage|"
   echo "  -d, --debug     enable debug mode"
-  echo "  -b,             only build"
+  echo "  -s,             setup"
+  echo "  -t,             test"
   echo "  -h, --help      display this help and exit"
   exit 1
 }
@@ -30,7 +32,7 @@ bee2evp=$(pwd)/..
 build_root=$bee2evp/build
 bee2=$bee2evp/bee2
 openssl=$bee2evp/openssl
-build_bee2evp=$build_root
+build_bee2evp=$build_root/bee2evp
 build_bee2=$build_root/bee2
 build_openssl=$build_root/openssl
 local=${BEE2EVP_INSTALL_DIR:-$build_root/local}
@@ -38,18 +40,37 @@ lib_path=$local/lib
 is_openssl_3=false
 openssl_git_url=https://github.com/openssl/openssl.git
 btls_srcs_path=$bee2evp/btls/legacy
-just_build=false
+enable_setup=false
+enable_test=false
+
 openssl_tag=""
 
-while [[ "$#" -gt 0 ]]; do
+while [[ $# -gt 0 ]]; do
   case $1 in
+    --build-type=*)
+      build_type="${1#*=}"
+      case "$build_type" in
+        Debug|Release|Coverage)
+          # Valid value, continue
+          ;;
+        *)
+          echo "received build type: $build_type"
+          red echo "error: --build-type must be one of: Release, Debug, Coverage"
+          exit 1
+          ;;
+      esac
+      shift
+      ;;
     -d|--debug)
       build_type=Debug
       shift
       ;;
-    -b)
-    echo "build"
-      just_build=true
+    -s)
+      enable_setup=true
+      shift
+      ;;
+    -t)
+      enable_test=true
       shift
       ;;
     -h|--help)
@@ -84,19 +105,19 @@ clean(){
   rm -rf $openssl
 }
 
-install_prereq(){
-  green echo "[-] install prereq"
-  for package in git gcc cmake python3 doxygen
+check_prereq(){
+  set +e
+  green echo "[-] check prereq"
+  for package in git gcc cmake python
   do
-    dpkg -s $package &> /dev/null
+    which -s $package &> /dev/null
     if [ $? -ne 0 ]; then
-      echo "$package not installed"
-      sudo apt-get install $package
-      echo "$package already installed"
-    else
-      echo "$package already installed"
+      set -e
+      red echo "$package not installed"
+      exit 1
     fi
   done
+  set -e
   export GIT_REDIRECT_STDERR='2>&1'
 }
 
@@ -124,13 +145,13 @@ check_openssl_tag(){
 update_repos(){
   green echo "[-] update repos"
   git submodule update --init
-  git clone -b $openssl_tag --depth 1  $openssl_git_url $openssl
+  git clone -b $openssl_tag --depth 1 $openssl_git_url $openssl
 }
 
 patch_openssl(){
   green echo "[-] patch openssl"
   cd $openssl
-  if [[ $is_openssl_3 ]];
+  if $is_openssl_3;
   then
     cat $btls_srcs_path/objects.txt >> $openssl/crypto/objects/objects.txt
   fi
@@ -142,7 +163,7 @@ patch_openssl(){
 build_bee2(){
   green echo "[-] build bee2"
   mkdir -p $build_bee2 && cd $build_bee2
-  cmake -DCMAKE_BUILD_TYPE=$build_type \
+  cmake -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
     -DLIB_INSTALL_DIR=$lib_path $bee2
@@ -159,7 +180,7 @@ build_openssl(){
     $openssl/config shared --prefix=$local --openssldir=$local
   fi
 
-  if [[ $is_openssl_3 ]];
+  if $is_openssl_3;
   then
     make update
   fi
@@ -190,7 +211,7 @@ build_bee2evp(){
 attach_bee2evp(){
   green echo "[-] attach bee2evp"
   cp $local/openssl.cnf.dist $local/openssl.cnf
-  if [[ $is_openssl_3 ]];
+  if $is_openssl_3;
   then
     sed -i "/providers = provider\_sect/a engines = engine_sect\
 \n\n[ engine_sect]\
@@ -228,7 +249,7 @@ test_bee2evp(){
 setup(){
   green echo "Setup..."
   clean
-  install_prereq
+  check_prereq
   check_openssl_tag
   update_repos
   patch_openssl
@@ -246,8 +267,12 @@ build(){
 
 is_openssl_3
 
-if $just_build; then
-  build
-else
-  setup && build && test_bee2evp
+if $enable_setup; then
+  setup
+fi
+
+build
+
+if $enable_test; then
+  test_bee2evp
 fi
