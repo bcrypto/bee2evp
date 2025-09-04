@@ -680,7 +680,7 @@ static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	// открытые данные?
 	if (!out)
 	{
-		beltDWPStepA(in, inlen, state->state);
+		beltDWPStepI(in, inlen, state->state);
 		return 0;
 	}
 	// установить защиту
