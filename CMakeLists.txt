@@ -38,7 +38,7 @@ set(CMAKE_C_WARNINGS "-Wall -Wextra -W -Wdeclaration-after-statement \
   -Wno-xor-used-as-pow -Wno-deprecated-declarations")
 
 if(CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-maybe-uninitialized -Wincompatible-pointer-types")
+  set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-maybe-uninitialized")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_WARNINGS}")
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 \
     -fno-strict-aliasing")
