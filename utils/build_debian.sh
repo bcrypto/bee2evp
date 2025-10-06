@@ -3,8 +3,8 @@
 # \file source.sh
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Reusable script code
-# \created 2020.07.10
-# \version 2024.06.07
+# \created 2025.10.06
+# \version 2025.10.06
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************

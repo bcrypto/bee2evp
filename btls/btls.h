@@ -113,9 +113,9 @@ extern "C" {
 
 /* t1_lib.c */
 
-#define BIGN_CURVE256V1_ID 31 /* indices in TLS_GROUP_INFO nid_list[] */
-#define BIGN_CURVE384V1_ID 32
-#define BIGN_CURVE512V1_ID 33
+#define BIGN_CURVE256V1_ID 0x0200
+#define BIGN_CURVE384V1_ID 0x0201
+#define BIGN_CURVE512V1_ID 0x0202
 
 /*
 *******************************************************************************
