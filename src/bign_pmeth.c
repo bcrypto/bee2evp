@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2025.03.26
+\version 2023.09.25
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -22,6 +22,7 @@
 #include <bee2/crypto/bign.h>
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
+#include <openssl/obj_mac.h>
 
 /*
 *******************************************************************************
@@ -33,13 +34,13 @@
 
 \remark По мотивам схемы подключения EC (openssl/crypto/cmac/ec_pmeth.c).
 
-\remark Ключ в EVP_PKEY очищается в функции EVP_PKEY_free через 
+\remark Ключ в EVP_PKEY очищается в функции EVP_PKEY_free через
 вызов EVP_PKEY::ameth->pkey_free.
 
 \remark В момент вызова ctrl-функций ключ (bign_key) еще не создан, создан
 только контекст его создания (bign_pkey_ctx).
 
-\remark Команды EVP_PKEY_CTRL_MD, EVP_PKEY_GET_MD отвечают за установку / 
+\remark Команды EVP_PKEY_CTRL_MD, EVP_PKEY_GET_MD отвечают за установку /
 чтение идентификатора алгоритма хэширования, который используется в
 алгоритмах ЭЦП. Идентификатор по умолчанию определяется с помощью команды
 ASN1_PKEY_CTRL_DEFAULT_MD_NID (модуль bign_ameth).
@@ -55,20 +56,26 @@ const char SN_bign_with_hspec[] = "bign-with-hspec";
 const char LN_bign_with_hspec[] = "bign-with-hspec";
 
 const char OID_bign_with_hbelt[] = "1.2.112.0.2.0.34.101.45.12";
+#ifndef SN_bign_with_hbelt
 const char SN_bign_with_hbelt[] = "bign-with-hbelt";
 const char LN_bign_with_hbelt[] = "bign-with-hbelt";
+#endif
 
 const char OID_bign_with_bash256[] = "1.2.112.0.2.0.34.101.45.13";
 const char SN_bign_with_bash256[] = "bign-with-bash256";
 const char LN_bign_with_bash256[] = "bign-with-bash256";
 
 const char OID_bign_with_bash384[] = "1.2.112.0.2.0.34.101.45.14";
+#ifndef SN_bign_with_bash384
 const char SN_bign_with_bash384[] = "bign-with-bash384";
 const char LN_bign_with_bash384[] = "bign-with-bash384";
+#endif
 
 const char OID_bign_with_bash512[] = "1.2.112.0.2.0.34.101.45.15";
+#ifndef SN_bign_with_bash512
 const char SN_bign_with_bash512[] = "bign-with-bash512";
 const char LN_bign_with_bash512[] = "bign-with-bash512";
+#endif
 
 const char OID_bign_keytransport[] = "1.2.112.0.2.0.34.101.45.41";
 const char SN_bign_keytransport[] = "bign-keytransport";
@@ -76,23 +83,31 @@ const char LN_bign_keytransport[] = "bign-keytransport";
 
 /* bign-pubkey */
 const char OID_bign_pubkey[] = "1.2.112.0.2.0.34.101.45.2.1";
+#ifndef SN_bign_pubkey
 const char SN_bign_pubkey[] = "bign-pubkey";
 const char LN_bign_pubkey[] = "bign-pubkey";
+#endif
 
 /* bign-curve256v1 */
 const char OID_bign_curve256v1[] = "1.2.112.0.2.0.34.101.45.3.1";
+#ifndef SN_bign_curve256v1
 const char SN_bign_curve256v1[] = "bign-curve256v1";
 const char LN_bign_curve256v1[] = "bign-curve256v1";
+#endif
 
 /* bign-curve384v1 */
 const char OID_bign_curve384v1[] = "1.2.112.0.2.0.34.101.45.3.2";
+#ifndef SN_bign_curve384v1
 const char SN_bign_curve384v1[] = "bign-curve384v1";
 const char LN_bign_curve384v1[] = "bign-curve384v1";
+#endif
 
 /* bign-curve512v1 */
 const char OID_bign_curve512v1[] = "1.2.112.0.2.0.34.101.45.3.3";
+#ifndef SN_bign_curve512v1
 const char SN_bign_curve512v1[] = "bign-curve512v1";
 const char LN_bign_curve512v1[] = "bign-curve512v1";
+#endif
 
 /* bign-primefield */
 const char OID_bign_primefield[] = "1.2.112.0.2.0.34.101.45.4.1";
@@ -107,7 +122,7 @@ const char LN_bign_primefield[] = "bign-primefield";
 
 typedef struct bign_pkey_ctx
 {
-	int params_nid;		/*< идентификатор параметров */	
+	int params_nid;		/*< идентификатор параметров */
 	int hash_nid;		/*< рекомендуемый хэш-алгоритм для ЭЦП */
 	u8 flags;			/*< флаги */
 	const EVP_MD* md;	/*< алгоритм хэширования для ЭЦП */
@@ -140,7 +155,7 @@ static int evpBign_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, CONST3 EVP_PKEY_CTX* src)
+static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, EVP_PKEY_CTX* src)
 {
 	bign_pkey_ctx* sctx;
 	bign_pkey_ctx* dctx;
@@ -212,7 +227,7 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 	bign_key* key;
 	// разобрать указатели
 	ASSERT(memIsValid(dctx, sizeof(bign_pkey_ctx)));
-	// генератор не работает? 
+	// генератор не работает?
 	if (!rngIsValid())
 		return 0;
 	// параметры могут передаваться либо в ctx->pkey (при чтении их из файла),
@@ -255,7 +270,7 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 		return 0;
 	}
 	// сгенерировать пару ключей
-	return bignKeypairGen(key->privkey, key->pubkey, key->params, 
+	return bignKeypairGen(key->privkey, key->pubkey, key->params,
 		rngStepR, 0) == ERR_OK;
 }
 
@@ -265,7 +280,7 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 *******************************************************************************
 */
 
-static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen, 
+static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
@@ -291,10 +306,10 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	*siglen = key->params->l / 8 * 3;
 	// установить флаги подписи
 	key->flags = dctx->flags;
-	// проанализировать алгоритм хэширования 
+	// проанализировать алгоритм хэширования
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
 	if (dctx->md == 0 ||
-		EVP_MD_size(dctx->md) != (int)key->params->l / 4 || 
+		EVP_MD_size(dctx->md) != (int)key->params->l / 4 ||
 		EVP_MD_size(dctx->md) != (int)tbslen)
 		return 0;
 	if ((obj = OBJ_nid2obj(EVP_MD_type(dctx->md))) == 0)
@@ -309,17 +324,17 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// подписать
 	if ((key->flags & EVP_BIGN_PKEY_SIG_DETERMINISTIC) || !rngIsValid())
-		ret = bignSign2(sig, key->params, der, der_len, tbs, 
+		ret = bignSign2(sig, key->params, der, der_len, tbs,
 			key->privkey, 0, 0) == ERR_OK;
 	else
-		ret = bignSign(sig, key->params, der, der_len, tbs, 
+		ret = bignSign(sig, key->params, der, der_len, tbs,
 			key->privkey, rngStepR, 0) == ERR_OK;
 	// завершить
 	blobClose(der);
 	return ret;
 }
 
-static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig, 
+static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	size_t siglen, const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
@@ -356,7 +371,7 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 		return 0;
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// проверить подпись
-	ret = bignVerify(key->params, der, der_len, tbs, sig, 
+	ret = bignVerify(key->params, der, der_len, tbs, sig,
 		key->pubkey) == ERR_OK;
 	// завершить
 	blobClose(der);
@@ -383,10 +398,10 @@ static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out, size_t* outlen,
 		return 0;
 	// установить длину выходных данных
 	*outlen = inlen + 16 + key->params->l / 4;
-	if (!out) 
+	if (!out)
 		return 1;
 	// зашифровать (установить защиту)
-	return bignKeyWrap(out, key->params, in, inlen, 0, key->pubkey, 
+	return bignKeyWrap(out, key->params, in, inlen, 0, key->pubkey,
 		rngStepR, 0) == ERR_OK;
 }
 
@@ -407,7 +422,7 @@ static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx, octet* out, size_t* outlen,
 	if (!out)
 		return 1;
 	// расшифровать (снять защиту)
-	return bignKeyUnwrap(out, key->params, in, inlen, 0, 
+	return bignKeyUnwrap(out, key->params, in, inlen, 0,
 		key->privkey) == ERR_OK;
 }
 
@@ -442,11 +457,11 @@ static int evpBign_pkey_derive(EVP_PKEY_CTX* ctx, octet* key, size_t* key_len)
 	}
 	// построить ключ
 	*key_len = MIN2(*key_len, mykey->params->l / 2);
-	return bignDH(key, mykey->params, mykey->privkey, 
+	return bignDH(key, mykey->params, mykey->privkey,
 		peerkey->pubkey, *key_len) == ERR_OK;
 }
 
-static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key, 
+static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key,
 	size_t* keylen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
@@ -477,7 +492,7 @@ static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key,
 	}
 	// построить ключ bake-kdf
 	*keylen = MIN2(*keylen, 32);
-	code = bakeKDF(key, secret, secret_len, (octet*)dctx->kdf_ukm, 
+	code = bakeKDF(key, secret, secret_len, (octet*)dctx->kdf_ukm,
 		blobSize(dctx->kdf_ukm), dctx->kdf_num);
 	// завершить
 	blobClose(secret);
@@ -594,21 +609,21 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 
 int evpBign_pkey_set_params(EVP_PKEY_CTX* ctx, int params_nid)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
 		EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
 }
 
 int evpBign_pkey_set_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
 		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
 		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
@@ -644,14 +659,14 @@ int evpBign_pkey_clr_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm,
 	size_t ukm_len)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
 		EVP_BIGN_PKEY_CTRL_SET_KDF_UKM, (int)ukm_len, ukm);
 }
 
 int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, 
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
 		EVP_BIGN_PKEY_CTRL_SET_KDF_NUM, (int)num, 0);
 }
@@ -661,8 +676,8 @@ int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 Строковая сtrl-функция
 *******************************************************************************
 */
-			
-static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type, 
+
+static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 	const char* value)
 {
 	// долговременные параметры
@@ -680,10 +695,10 @@ static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 	if (strEq(type, "enc_params"))
 	{
 		if (strEq(value, "specified"))
-			return evpBign_pkey_set_enc_flags(ctx, 
+			return evpBign_pkey_set_enc_flags(ctx,
 				EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
 		if (strEq(value, "cofactor"))
-			return evpBign_pkey_set_enc_flags(ctx, 
+			return evpBign_pkey_set_enc_flags(ctx,
 				EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
 		return -2;
 	}
@@ -737,14 +752,14 @@ static int bign_pmeth_count;
 *******************************************************************************
 Перечисление методов
 
-\remark В prev_enum может задаваться указатель на перечислитель, объявленный 
+\remark В prev_enum может задаваться указатель на перечислитель, объявленный
 в другом модуле. Тогда таблицы идентификаторов перечислителей объединяются.
 *******************************************************************************
 */
 
 static ENGINE_PKEY_METHS_PTR prev_enum;
 
-static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth, 
+static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
 	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
@@ -758,7 +773,7 @@ static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
 				return 0;
 			if (bign_pmeth_count + nid >= (int)COUNT_OF(bign_pmeth_nids))
 				return 0;
-			memCopy(bign_pmeth_nids + bign_pmeth_count, *nids, 
+			memCopy(bign_pmeth_nids + bign_pmeth_count, *nids,
 				nid * sizeof(int));
 			*nids = bign_pmeth_nids;
 			return bign_pmeth_count + nid;
@@ -783,7 +798,7 @@ static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
 Подключение / закрытие
 
 \warning Вызов EVP_PKEY_meth_free(EVP_bign_pmeth) в evpBign_pmeth_destroy()
-отключен (по аналогии с belt_pmeth.c), хотя включение вызова не приводит 
+отключен (по аналогии с belt_pmeth.c), хотя включение вызова не приводит
 к ошибке.
 *******************************************************************************
 */
@@ -819,7 +834,7 @@ int evpBign_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_encrypt(EVP_bign_pmeth, 0, evpBign_pkey_encrypt);
 	EVP_PKEY_meth_set_decrypt(EVP_bign_pmeth, 0, evpBign_pkey_decrypt);
 	EVP_PKEY_meth_set_derive(EVP_bign_pmeth, 0, evpBign_pkey_kdf_derive);
-	EVP_PKEY_meth_set_ctrl(EVP_bign_pmeth, evpBign_pkey_ctrl, 
+	EVP_PKEY_meth_set_ctrl(EVP_bign_pmeth, evpBign_pkey_ctrl,
 		evpBign_pkey_ctrl_str);
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_meths(e);

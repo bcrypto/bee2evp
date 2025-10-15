@@ -4,7 +4,7 @@ project(BEE2EVP C)
 set(BEE2EVP_VERSION_MAJOR "1")
 set(BEE2EVP_VERSION_MINOR "0")
 set(BEE2EVP_VERSION_PATCH "9")
-set(BEE2EVP_VERSION 
+set(BEE2EVP_VERSION
   "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
@@ -101,7 +101,7 @@ if (NOT OPENSSL_INCLUDE_DIRS OR NOT OPENSSL_LIBRARY_DIRS)
   find_package(PkgConfig REQUIRED)
   pkg_search_module(OPENSSL openssl>=1.1.1)
   if(NOT OPENSSL_FOUND)
-    message(WARNING 
+    message(WARNING
       "Can't find the OpenSSL package. Suppose that OpenSSL exists...")
     set(OPENSSL_INCLUDE_DIRS /usr/local/include)
     set(OPENSSL_LIBRARY_DIRS /usr/local/lib)
@@ -153,14 +153,14 @@ endif()
 add_library(bee2evp SHARED ${src})
 target_link_libraries(bee2evp ${libs})
 
-set_target_properties(bee2evp PROPERTIES 
+set_target_properties(bee2evp PROPERTIES
   VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
 
 install(TARGETS bee2evp
   DESTINATION ${LIB_INSTALL_DIR}
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE 
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
-) 
+)
 
 if(BUILD_DOC)
   add_subdirectory(doc)

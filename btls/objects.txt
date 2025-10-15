@@ -1,0 +1,18 @@
+# bee2evp NIDs
+1 2 112 0 2 0 34 101 45 2 1 : bign-pubkey : bign-pubkey
+1 2 112 0 2 0 34 101 31 81 : belt-hash : belt-hash
+1 2 112 0 2 0 34 101 77 12 : bash384 : bash384
+1 2 112 0 2 0 34 101 77 13 : bash512 : bash512
+1 2 112 0 2 0 34 101 31 67 : belt-dwpt : belt-dwpt
+1 2 112 0 2 0 34 101 31 44 : belt-ctrt : belt-ctrt
+1 2 112 0 2 0 34 101 31 53 : belt-mac256 : belt-mac256
+1 2 112 0 2 0 34 101 45 12 : bign-with-hbelt : bign-with-hbelt
+1 2 112 0 2 0 34 101 45 14 : bign-with-bash384 : bign-with-bash384
+1 2 112 0 2 0 34 101 45 15 : bign-with-bash512 : bign-with-bash512
+1 2 112 0 2 0 34 101 45 3 1 : bign-curve256v1 : bign-curve256v1 
+1 2 112 0 2 0 34 101 45 3 2 : bign-curve384v1 : bign-curve384v1
+1 2 112 0 2 0 34 101 45 3 3 : bign-curve512v1 : bign-curve512v1
+: kxbdhe : kxbdhe
+: kxbdht : kxbdht
+: kxbdhe_psk : kxbdhe_psk
+: kxbdht_psk : kxbdht_psk

@@ -26,8 +26,10 @@
 */
 
 const char OID_belt_hash[] = "1.2.112.0.2.0.34.101.31.81";
+#ifndef SN_belt_hash
 const char SN_belt_hash[] = "belt-hash";
 const char LN_belt_hash[] = "belt-hash";
+#endif
 
 EVP_MD* EVP_belt_hash;
 const EVP_MD* evpBeltHash()
@@ -35,7 +37,7 @@ const EVP_MD* evpBeltHash()
 	return EVP_belt_hash;
 }
 
-static int evpBeltHash_init(EVP_MD_CTX* ctx) 
+static int evpBeltHash_init(EVP_MD_CTX* ctx)
 {
 	void* state = EVP_MD_CTX_md_data(ctx);
 	ASSERT(state);
@@ -82,7 +84,7 @@ static int belt_md_count;
 
 static ENGINE_DIGESTS_PTR prev_enum;
 
-static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids, 
+static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 	int nid)
 {
 	// возвратить таблицу идентификаторов?
@@ -96,7 +98,7 @@ static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 				return 0;
 			if (belt_md_count + nid >= (int)COUNT_OF(belt_md_nids))
 				return 0;
-			memCopy(belt_md_nids + belt_md_count, *nids, 
+			memCopy(belt_md_nids + belt_md_count, *nids,
 				nid * sizeof(int));
 			*nids = belt_md_nids;
 			return belt_md_count + nid;
@@ -144,7 +146,7 @@ int evpBeltMD_bind(ENGINE* e)
 		return 0;
 	// задать перечислитель
 	prev_enum = ENGINE_get_digests(e);
-	if (!ENGINE_set_digests(e, evpBeltMD_enum)) 
+	if (!ENGINE_set_digests(e, evpBeltMD_enum))
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_digests(e) &&

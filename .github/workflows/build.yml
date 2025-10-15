@@ -8,102 +8,59 @@ on:
   pull_request:
     branches: master
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
-    name: Build and test
+    name: Build
     runs-on: ubuntu-latest
     container: ubuntu
+    strategy:
+      matrix:
+        openssl-config:
+          - tag: "OpenSSL_1_1_1i"
+            lib_path: "lib"
+
+          - tag: "openssl-3.3.1"
+            lib_path: "lib64"
     env:
-      OPENSSL_BRANCH: OpenSSL_1_1_1i
       BEE2_BRANCH: master
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
-      local: ${{github.workspace}}/build
+      local: ${{github.workspace}}/build/local
     steps:
     - name: Setup packages
       run: |
         apt update
         apt install -y git cmake lcov curl
-        git config --global --add safe.directory '*' 
+        git config --global --add safe.directory '*'
+    - name: Get source
+      uses: actions/checkout@v5
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.12
-    - name: Get source
-      uses: actions/checkout@v3
-    - name: Get Bee2 and OpenSSL
+    - name: Build
       run: |
-        git submodule update --init --remote
-        git clone -b ${OPENSSL_BRANCH} --depth 1 \
-          https://github.com/openssl/openssl.git
-    - name: Build Bee2
-      working-directory: ${{github.workspace}}/bee2
-      run: |
-        mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_PIC=ON -DCMAKE_INSTALL_PREFIX=${local} ..
-        make > build.log 2>&1 || (cat build.log && exit 1)
-        make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la ${local}/lib/libbee2_static.a
-    - name: Patch OpenSSL
-      working-directory: ${{github.workspace}}/openssl
-      run: |
-        git apply ../btls/patch/${OPENSSL_BRANCH}.patch
-        cp ../btls/btls.c ./ssl/
-        cp ../btls/btls.h ./ssl/
-    - name: Build OpenSSL
-      working-directory: ${{github.workspace}}/openssl
-      run: |
-        mkdir build && cd build
-        ../config shared -d --prefix=${local} --openssldir=${local}
-        make -j$(nproc) all > build.log 2>&1 || (cat build.log && exit 1)
-        make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la ${local}/lib/libcrypto.a
-        ls -la ${local}/lib/libssl.a
-        ls -la ${local}/lib/libcrypto.so
-        ls -la ${local}/lib/libssl.so
-        ls -la ${local}/bin/openssl
-    - name: Build Bee2evp
-      working-directory: ${{github.workspace}}/build
-      run: |
-        cmake -DCMAKE_BUILD_TYPE=Coverage \
-          -DBEE2_LIBRARY_DIRS=${local}/lib \
-          -DBEE2_INCLUDE_DIRS=${local}/include \
-          -DOPENSSL_LIBRARY_DIRS=${local}/lib \
-          -DOPENSSL_INCLUDE_DIRS=${local}/include \
-          -DLIB_INSTALL_DIR=${local}/lib \
-          -DCMAKE_INSTALL_PREFIX=${local} ..
-        make > build.log 2>&1 || (cat build.log && exit 1)
-        make install > build.log 2>&1 || (cat build.log && exit 1)
-        ls -la ${local}/lib/libbee2evp.so
-    - name: Attach Bee2evp
-      run: |
-        cp ${local}/openssl.cnf.dist ${local}/openssl.cnf
-        sed -i "/\[ new\_oids \]/i openssl_conf = openssl_init\
-          \n[ openssl_init ]\
-          \nengines = engine_section\
-          \n[ engine_section ]\
-          \nbee2evp = bee2evp_section\
-          \n[ bee2evp_section ]\
-          \nengine_id = bee2evp\
-          \ndynamic_path = ${local}/lib/libbee2evp.so\
-          \ndefault_algorithms = ALL\
-          \n" ${local}/openssl.cnf
+        bash ./utils/build_debian.sh -s --build-type=Coverage ${{ matrix.openssl-config.tag }}
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
         cp -a ../test/. .
         lcov -c -i -d . -o coverage_base.info
-        export LD_LIBRARY_PATH="${local}/lib:${LD_LIBRARY_PATH}"
+        export PATH=${local}/bin:${PATH}
+        export LD_LIBRARY_PATH="${local}/${{ matrix.openssl-config.lib_path }}:${LD_LIBRARY_PATH}"
         python3 --version
         python3 test.py
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
-          sed -e "s|${local}/lib:||")
+          sed -e "s|${local}/${{ matrix.openssl-config.lib_path }}:||")
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
         lcov -c -d . -o coverage_test.info
         lcov -a coverage_base.info -a coverage_test.info -o coverage.info
         curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov 
+        chmod +x codecov
         ./codecov -t ${CODECOV_TOKEN}

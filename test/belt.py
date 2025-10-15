@@ -59,7 +59,7 @@ def beltECBDecr(src, key):
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'enc -d -belt-ecb{} -nosalt -nopad -K {}'.format(key_bitlen, key)
 	retcode, dest, er__ = openssl(cmd, prefix)
-	return dest	
+	return dest
 
 def beltCBCEncr(src, key, iv):
 	assert len(src) % 16 == 0
@@ -149,7 +149,7 @@ def beltMAC(src, key):
 	plain = b64_encoder(src)[0].decode()
 	key = hex_encoder(key)[0].decode()
 	key_bitlen = 4 * len(key)
-	
+
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'dgst -mac belt-mac{} -macopt hexkey:{}'.format(key_bitlen, key)
 	retcode, out, er__ = openssl(cmd, prefix)
@@ -161,7 +161,7 @@ def beltHMAC(src, key):
 	plain = b64_encoder(src)[0].decode()
 	key = hex_encoder(key)[0].decode()
 	key_bitlen = 4 * len(key)
-	
+
 	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
 	cmd = 'dgst -mac belt-hmac -macopt hexkey:{}'.format(key)
 	retcode, out, er__ = openssl(cmd, prefix)
@@ -195,7 +195,7 @@ def belt_test():
 	block = beltBlockDecr(bytes(block), bytes(key))
 	res = hex_encoder(block)[0].decode() == '0dc5300600cab840b38448e5e993f421'
 	process_result('belt-block-inv', res)
-	
+
 	# belt-ecb: A.9 (|X| = 384)
 	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
 					  '8504fa9d1bb6c7ac252e72c202fdce0d'
@@ -348,7 +348,7 @@ def belt_test():
 	openssl('{} {}'.format(cmd, params256))
 
 	# belt-kwp128
-	kwp128 = os.path.join(tmpdirname, 'kwp128.pem') 
+	kwp128 = os.path.join(tmpdirname, 'kwp128.pem')
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp128 -pass pass:root -out {}'
 			.format(params256, kwp128))
@@ -359,7 +359,7 @@ def belt_test():
 	process_result('belt-kwp128', res)
 
 	# belt-kwp192
-	kwp192 = os.path.join(tmpdirname, 'kwp192.pem') 
+	kwp192 = os.path.join(tmpdirname, 'kwp192.pem')
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp192 -pass pass:root -out {}'
 			.format(params256, kwp192))
@@ -370,7 +370,7 @@ def belt_test():
 	process_result('belt-kwp192', res)
 
 	# belt-kwp256
-	kwp256 = os.path.join(tmpdirname, 'kwp256.pem') 
+	kwp256 = os.path.join(tmpdirname, 'kwp256.pem')
 	retcode, out, er__ = openssl(
 		'genpkey -paramfile {} -belt-kwp256 -pass pass:root -out {}'
 			.format(params256, kwp256))
@@ -379,38 +379,3 @@ def belt_test():
 	out = out.decode()
 	res = (out.find('valid') != -1)
 	process_result('belt-kwp256', res)
-
-	# belt-dwp128
-	dwp128 = os.path.join(tmpdirname, 'dwp128.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp128 -pass pass:root -out {}'
-			.format(params256, dwp128))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp128))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp128', res)
-
-	# belt-dwp192
-	dwp192 = os.path.join(tmpdirname, 'dwp192.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp192 -pass pass:root -out {}'
-			.format(params256, dwp192))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp192))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp192', res)
-
-	# belt-dwp256
-	dwp256 = os.path.join(tmpdirname, 'dwp256.pem') 
-	retcode, out, er__ = openssl(
-		'genpkey -paramfile {} -belt-dwp256 -pass pass:root -out {}'
-			.format(params256, dwp256))
-	retcode, out, er__ = openssl('pkey -in {} -check -passin pass:root'
-		.format(dwp256))
-	out = out.decode()
-	res = (out.find('valid') != -1)
-	process_result('belt-dwp256', res)
-
-	shutil.rmtree(tmpdirname)

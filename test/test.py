@@ -15,10 +15,18 @@ from btls import btls_test
 from openssl import openssl
 from util import fail, process_result
 
+import re
+import sys
+
 def version_test():
 	retcode, out, __ = openssl('version')
-	process_result('version', retcode == 0)
+	openssl_version_string = out.decode()
+	match = re.search(r"OpenSSL (\d+)\.", openssl_version_string)
+	process_result('version', retcode == 0 and match)
 	print(out.decode())
+	openssl_version_major = match.group(1)
+	return openssl_version_major
+
 
 def engine_test():
 	retcode, out, er__ = openssl('engine -c -t bee2evp')
@@ -26,11 +34,11 @@ def engine_test():
 	print(out.decode())
 
 if __name__ == '__main__':
-	version_test()
+	openssl_version_major = int(version_test())
 	engine_test()
 	bash_test()
 	belt_test()
 	bign_test()
-	btls_test()
+	btls_test(openssl_version_major)
 	if fail:
 		sys.exit(1)
