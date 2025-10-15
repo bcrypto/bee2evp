@@ -92,7 +92,7 @@ seq_num всякий раз подмешивается к fixed-части си�
 */
 
 const char OID_belt_dwpt[] = "1.2.112.0.2.0.34.101.31.67";
-#if OPENSSL_VERSION_MAJOR < 3
+#ifndef SN_belt_dwpt
 const char SN_belt_dwpt[] = "belt-dwp-tls";
 const char LN_belt_dwpt[] = "belt-dwp-tls";
 #endif
@@ -287,7 +287,7 @@ EVP_CTRL_AEAD_SET_MAC_KEY.
 */
 
 const char OID_belt_ctrt[] = "1.2.112.0.2.0.34.101.31.44";
-#if OPENSSL_VERSION_MAJOR < 3
+#ifndef SN_belt_ctrt
 const char SN_belt_ctrt[] = "belt-ctr-tls";
 const char LN_belt_ctrt[] = "belt-ctr-tls";
 #endif
