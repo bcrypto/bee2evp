@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for belt-macXXX and belt-hmac (hmac-hbelt) keys
 \created 2014.09.16
-\version 2021.02.18
+\version 2025.10.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -89,7 +89,7 @@ static int evpBeltMAC_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBeltMAC_pkey_copy(EVP_PKEY_CTX* dest, EVP_PKEY_CTX* src)
+static int evpBeltMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltMAC_pkey_init(dest))
 		return 0;
@@ -352,7 +352,7 @@ static int evpBeltHMAC_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBeltHMAC_pkey_copy(EVP_PKEY_CTX* dest, EVP_PKEY_CTX* src)
+static int evpBeltHMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltHMAC_pkey_init(dest))
 		return 0;

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2023.09.25
+\version 2025.10.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -155,7 +155,7 @@ static int evpBign_pkey_init(EVP_PKEY_CTX* ctx)
 	return 1;
 }
 
-static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, EVP_PKEY_CTX* src)
+static int evpBign_pkey_copy(EVP_PKEY_CTX* dst, CONST3 EVP_PKEY_CTX* src)
 {
 	bign_pkey_ctx* sctx;
 	bign_pkey_ctx* dctx;
