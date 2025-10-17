@@ -1,5 +1,6 @@
 add_executable(testb2e
 	aead_test.c
+	hmac_test.c
 	test.c
 )
 target_link_libraries(testb2e  ${libs})
