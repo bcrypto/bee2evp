@@ -50,6 +50,7 @@ int testCyphers()
 */
 
 extern bool_t HMACTest();
+extern bool_t HKDFTest();
 
 int testFunctions()
 {
@@ -58,7 +59,8 @@ int testFunctions()
 
 	printf("HMAC(belt-hash): %s\n", (code = HMACTest()) ? "OK" : "Err");
     ret |= !code;
-
+	printf("HKDF(SHA256): %s\n", (code = HKDFTest()) ? "OK" : "Err");
+    ret |= !code;
 
 	return ret;
 }
