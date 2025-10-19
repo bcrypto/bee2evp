@@ -13,6 +13,7 @@
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
+#include <openssl/opensslv.h>
 
 #include <stdio.h>
 #include <bee2/defs.h>
@@ -26,7 +27,6 @@
 extern bool_t beltDWPTest();
 extern bool_t beltCHETest();
 extern bool_t bashPrgTest();
-extern bool_t HMACTest();
 
 int testCyphers()
 {
@@ -45,23 +45,27 @@ int testCyphers()
 
 /*
 *******************************************************************************
-Тестирование функций OpenSSL
+Тестирование функций OpenSSL 3
 *******************************************************************************
 */
 
+
+
+#if OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HMACTest();
 extern bool_t HKDFTest();
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
 int testFunctions()
 {
-	bool_t code;
 	int ret = 0;
-
+#if OPENSSL_VERSION_MAJOR >= 3
+	bool_t code;
 	printf("HMAC(belt-hash): %s\n", (code = HMACTest()) ? "OK" : "Err");
     ret |= !code;
 	printf("HKDF(SHA256): %s\n", (code = HKDFTest()) ? "OK" : "Err");
     ret |= !code;
-
+#endif // OPENSSL_VERSION_MAJOR >= 3
 	return ret;
 }
 

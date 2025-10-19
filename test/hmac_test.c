@@ -4,11 +4,15 @@
 \brief Tests for HMAC function
 \project bee2evp/test
 \created 2025.10.17
-\version 2025.10.17
+\version 2025.10.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
+
+#include <openssl/opensslv.h>
+
+#if OPENSSL_VERSION_MAJOR >= 3
 
 #include <openssl/evp.h>
 #include <openssl/engine.h>
@@ -106,3 +110,5 @@ bool_t HMACTest()
 	// все нормально
 	return TRUE;
 }
+
+#endif // OPENSSL_VERSION_MAJOR >= 3
