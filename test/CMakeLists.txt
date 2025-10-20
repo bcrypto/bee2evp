@@ -1,5 +1,6 @@
 add_executable(testb2e
 	aead_test.c
+	belt_test.c
 	hmac_test.c
 	hkdf_test.c
 	test.c
