@@ -4,19 +4,44 @@
 \brief Bee2evp testing
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.20
+\version 2025.10.21
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
+#include <stdio.h>
 
-#include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/opensslv.h>
 
-#include <stdio.h>
 #include <bee2/defs.h>
+
+/*
+*******************************************************************************
+Тестирование алгоритмов хэширования
+*******************************************************************************
+*/
+
+extern bool_t beltHashTest();
+extern bool_t bash256Test();
+extern bool_t bash384Test();
+extern bool_t bash512Test();
+
+int testDigests()
+{
+	bool_t code;
+	int ret = 0;
+	printf("belt-hash: %s\n", (code = beltHashTest()) ? "OK" : "Err");
+    ret |= !code;
+	printf("bash256: %s\n", (code = bash256Test()) ? "OK" : "Err");
+    ret |= !code;
+	printf("bash384: %s\n", (code = bash384Test()) ? "OK" : "Err");
+    ret |= !code;	
+	printf("bash512: %s\n", (code = bash512Test()) ? "OK" : "Err");
+    ret |= !code;	
+	return ret;
+}
 
 /*
 *******************************************************************************
@@ -35,7 +60,7 @@ extern bool_t beltCHETest();
 extern bool_t bashPrgTest();
 extern bool_t beltKWPTest();
 
-int testCyphers()
+int testCiphers()
 {
 	bool_t code;
 	int ret = 0;
@@ -94,7 +119,8 @@ int main()
 {
     int ret = 0;
     OPENSSL_add_all_algorithms_conf();
-	ret |= testCyphers();
+	ret |= testDigests();
+	ret |= testCiphers();
     ret |= testFunctions();
     EVP_cleanup();
     ERR_free_strings();
