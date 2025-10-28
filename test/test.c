@@ -91,25 +91,27 @@ int testCiphers()
 
 #if OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HMACTest();
+#endif // OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HKDFTest();
 extern bool_t beltHKDFTest();
 extern bool_t bashHKDFTest();
-#endif // OPENSSL_VERSION_MAJOR >= 3
+
 
 int testFunctions()
 {
 	int ret = 0;
-#if OPENSSL_VERSION_MAJOR >= 3
 	bool_t code;
+#if OPENSSL_VERSION_MAJOR >= 3
 	printf("HMAC(belt-hash): %s\n", (code = HMACTest()) ? "OK" : "Err");
     ret |= !code;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 	printf("HKDF(SHA256): %s\n", (code = HKDFTest()) ? "OK" : "Err");
     ret |= !code;
 	printf("HKDF(belt-hash): %s\n", (code = beltHKDFTest()) ? "OK" : "Err");
     ret |= !code;
 	printf("HKDF(bash256): %s\n", (code = bashHKDFTest()) ? "OK" : "Err");
     ret |= !code;
-#endif // OPENSSL_VERSION_MAJOR >= 3
+
 	return ret;
 }
 

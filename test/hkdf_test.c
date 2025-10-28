@@ -10,28 +10,30 @@
 *******************************************************************************
 */
 
-#include <openssl/opensslv.h>
-
-#if OPENSSL_VERSION_MAJOR >= 3
-
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/opensslv.h>
 #include <openssl/evp.h>
+#include <openssl/kdf.h>
+
+#include <bee2/defs.h>
+#include <bee2/core/hex.h>
+#include <bee2/core/mem.h>
+#include <bee2/crypto/belt.h>
+
+#if OPENSSL_VERSION_MAJOR >= 3
+
 #include <openssl/engine.h>
 #include <openssl/x509.h>
 #include <openssl/core_names.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
-#include <openssl/kdf.h>
+
 #include <openssl/obj_mac.h>
 #include <openssl/params.h>
 
-#include <bee2/defs.h>
-#include <bee2/core/hex.h>
-#include <bee2/core/mem.h>
-#include <bee2/crypto/belt.h>
 
 /*
 *******************************************************************************
@@ -110,6 +112,69 @@ err:
     EVP_KDF_free(kdf);
     return ret;
 }
+
+#else
+
+// HKDF only is supported for OpenSSL 1.1.1
+bool_t kdf_test(
+    const char* name,
+    const char* md_name,               
+    const unsigned char* key, 
+    int key_len,
+    const unsigned char* s,
+    int s_len,
+    const unsigned char* i, 
+    int i_len,
+    const char* y,
+    const char* mode
+) {
+    bool_t ret = FALSE;
+    octet out[128];
+
+    EVP_PKEY_CTX *pctx;
+    const EVP_MD *evp_md = NULL;
+    size_t outlen = strlen(y) / 2;
+    int _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND;
+    if (!strcmp(mode, "EXTRACT_ONLY"))
+        _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY;
+    if (!strcmp(mode, "EXPAND_ONLY"))
+        _mode = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY;
+
+    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+
+    if (EVP_PKEY_derive_init(pctx) <= 0)
+        goto err;
+
+    evp_md = EVP_get_digestbyname(md_name);
+
+    if (EVP_PKEY_CTX_set_hkdf_md(pctx, evp_md) <= 0)
+        goto err;
+    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, s, s_len) <= 0)
+        goto err;
+    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, key, key_len) <= 0)
+        goto err;
+    if (EVP_PKEY_CTX_add1_hkdf_info(pctx, i, i_len) <= 0)
+        goto err;
+    if (EVP_PKEY_CTX_hkdf_mode(pctx, _mode) <= 0)
+        goto err;
+    if (EVP_PKEY_derive(pctx, out, &outlen) <= 0)
+        goto err;
+
+    if (!hexEq(out, y))
+    {
+        for (size_t i = 0; i < strlen(y)/2; i++) {
+            printf("%02X", out[i]);
+        }
+        printf("\n");
+        goto err;
+    }
+//		goto err;
+    ret = TRUE;
+err:
+    EVP_PKEY_CTX_free(pctx);
+    return ret;
+}
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
 /*
 *******************************************************************************
@@ -331,66 +396,3 @@ bool_t bashHKDFTest()
 	// все нормально
 	return TRUE;
 }
-
-#else
-
-// HKDF only is supported for OpenSSL 1.1.1
-bool_t kdf_test(
-    const char* name,
-    const char* md_name,               
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const unsigned char* i, 
-    int i_len,
-    const char* y,
-    const char* mode
-) {
-    bool_t ret = FALSE;
-    octet out[128];
-
-    EVP_PKEY_CTX *pctx;
-    const EVP_MD *evp_md = NULL;
-    size_t outlen = strlen(y) / 2;
-    int _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND;
-    if (!strcmp(mode, "EXTRACT_ONLY"))
-        _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY;
-    if (!strcmp(mode, "EXPAND_ONLY"))
-        _mode = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY;
-
-    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
-
-    if (EVP_PKEY_derive_init(pctx) <= 0)
-        goto err;
-
-    evp_md = EVP_get_digestbyname(md_name);
-
-    if (EVP_PKEY_CTX_set_hkdf_md(pctx, evp_md) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, s, s_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, key, key_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_add1_hkdf_info(pctx, i, i_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_set_hkdf_mode(pctx, _mode) <= 0)
-        goto err;
-    if (EVP_PKEY_derive(pctx, out, &outlen) <= 0)
-        goto err;
-
-    if (!hexEq(out, y))
-    {
-        for (size_t i = 0; i < strlen(y)/2; i++) {
-            printf("%02X", out[i]);
-        }
-        printf("\n");
-        goto err;
-    }
-//		goto err;
-    ret = TRUE;
-err:
-    EVP_PKEY_CTX_free(pctx);
-    return ret;
-}
-#endif // OPENSSL_VERSION_MAJOR >= 3
