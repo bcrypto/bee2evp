@@ -27,8 +27,8 @@
 
 \remark По мотивам схемы подключения CMAC (openssl/crypto/cmac/cm_ameth.c).
 
-\warning В OpenSSL 1.1.0 в структуре EVP_PKEY_ASN1_METHOD появляется 
-дополнительное поле pkey_security_bits. Это поле настраивается с помощью 
+\warning В OpenSSL 1.1.0 в структуре EVP_PKEY_ASN1_METHOD появляется
+дополнительное поле pkey_security_bits. Это поле настраивается с помощью
 функции EVP_PKEY_asn1_set_security_bits.
 *******************************************************************************
 */
@@ -72,8 +72,8 @@ const EVP_PKEY_ASN1_METHOD* evpBeltMAC256_ameth()
 
 \remark По мотивам схемы подключения HMAC (openssl/crypto/hmac/hm_ameth.c).
 
-\warning В OpenSSL 1.1.0 в структуре EVP_PKEY_ASN1_METHOD появляется 
-дополнительное поле pkey_security_bits. 
+\warning В OpenSSL 1.1.0 в структуре EVP_PKEY_ASN1_METHOD появляется
+дополнительное поле pkey_security_bits.
 *******************************************************************************
 */
 
@@ -115,25 +115,26 @@ const EVP_PKEY_ASN1_METHOD* evpBeltHMAC_ameth()
 static int belt_ameth_nids[128];
 static int belt_ameth_count;
 
-#define BELT_AMETH_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		belt_ameth_nids[belt_ameth_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			belt_ameth_nids[belt_ameth_count++] = tmp :	NID_undef))
+#define BELT_AMETH_REG(name, tmp)                                              \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			belt_ameth_nids[belt_ameth_count++] = tmp :                        \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					belt_ameth_nids[belt_ameth_count++] = tmp :                \
+					NID_undef))
 
 /*
 *******************************************************************************
 Перечисление методов
 
-\remark В prev_enum может задаваться указатель на перечислитель, объявленный 
+\remark В prev_enum может задаваться указатель на перечислитель, объявленный
 в другом модуле. Тогда таблицы идентификаторов перечислителей объединяются.
 *******************************************************************************
 */
 
 static ENGINE_PKEY_ASN1_METHS_PTR prev_enum;
 
-static int evpBelt_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, 
-	const int** nids, int nid)
+static int evpBelt_ameth_enum(
+	ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!ameth)
@@ -146,8 +147,8 @@ static int evpBelt_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 				return 0;
 			if (belt_ameth_count + nid >= (int)COUNT_OF(belt_ameth_nids))
 				return 0;
-			memCopy(belt_ameth_nids + belt_ameth_count, *nids, 
-				nid * sizeof(int));
+			memCopy(
+				belt_ameth_nids + belt_ameth_count, *nids, nid * sizeof(int));
 			*nids = belt_ameth_nids;
 			return belt_ameth_count + nid;
 		}
@@ -176,8 +177,8 @@ static int evpBelt_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 *******************************************************************************
 Подключение / закрытие
 
-\remark При добавлении в evpBelt_ameth_destroy() вызовов 
-EVP_PKEY_asn1_free(EVP_belt_XXX_ameth) будет ошибка: к моменту вызова 
+\remark При добавлении в evpBelt_ameth_destroy() вызовов
+EVP_PKEY_asn1_free(EVP_belt_XXX_ameth) будет ошибка: к моменту вызова
 описатели уже освобождены в ядре OpenSSL.
 *******************************************************************************
 */
@@ -192,36 +193,36 @@ int evpBelt_ameth_bind(ENGINE* e)
 		BELT_AMETH_REG(belt_hmac, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатель belt_mac128
-	EVP_belt_mac128_ameth = EVP_PKEY_asn1_new(NID_belt_mac128, 0, "belt-mac128", 
-		"OpenSSL belt-mac128 method");
+	EVP_belt_mac128_ameth = EVP_PKEY_asn1_new(
+		NID_belt_mac128, 0, "belt-mac128", "OpenSSL belt-mac128 method");
 	if (EVP_belt_mac128_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(EVP_belt_mac128_ameth, 0, 0, 0, 0, 
-		evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(
+		EVP_belt_mac128_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac128_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac192
-	EVP_belt_mac192_ameth = EVP_PKEY_asn1_new(NID_belt_mac192, 0, "belt-mac192", 
-		"OpenSSL belt-mac192 method");
+	EVP_belt_mac192_ameth = EVP_PKEY_asn1_new(
+		NID_belt_mac192, 0, "belt-mac192", "OpenSSL belt-mac192 method");
 	if (EVP_belt_mac192_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(EVP_belt_mac192_ameth, 0, 0, 0, 0, 
-		evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(
+		EVP_belt_mac192_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac192_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac256
-	EVP_belt_mac256_ameth = EVP_PKEY_asn1_new(NID_belt_mac256, 0, "belt-mac256", 
-		"OpenSSL belt-mac256 method");
+	EVP_belt_mac256_ameth = EVP_PKEY_asn1_new(
+		NID_belt_mac256, 0, "belt-mac256", "OpenSSL belt-mac256 method");
 	if (EVP_belt_mac256_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(EVP_belt_mac256_ameth, 0, 0, 0, 0, 
-		evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(
+		EVP_belt_mac256_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac256_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_hmac
-	EVP_belt_hmac_ameth = EVP_PKEY_asn1_new(NID_belt_hmac, 0, "belt-hmac", 
-		"OpenSSL belt-hmac method");
+	EVP_belt_hmac_ameth = EVP_PKEY_asn1_new(
+		NID_belt_hmac, 0, "belt-hmac", "OpenSSL belt-hmac method");
 	if (EVP_belt_hmac_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(EVP_belt_hmac_ameth, 
-		0, 0, 0, 0, evpBeltHMAC_size, 0);
+	EVP_PKEY_asn1_set_public(
+		EVP_belt_hmac_ameth, 0, 0, 0, 0, evpBeltHMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_hmac_ameth, evpBeltHMAC_key_free);
 	EVP_PKEY_asn1_set_ctrl(EVP_belt_hmac_ameth, evpBeltHMAC_key_ctrl);
 	// задать перечислитель

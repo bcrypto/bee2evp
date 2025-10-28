@@ -38,7 +38,7 @@
 
 \todo Поддержать методы siginf_set, sig_print [EVP_PKEY_ASN1_METHOD.pod]?
 
-\todo Методы set_priv_key, get_priv_key используются в OpenSSL безопасно? 
+\todo Методы set_priv_key, get_priv_key используются в OpenSSL безопасно?
 *******************************************************************************
 */
 
@@ -65,7 +65,7 @@ static int evpBign_param_decode(EVP_PKEY* pkey, const octet** der, int der_len)
 	if (!key)
 		return 0;
 	if (!evpBign_asn1_d2i_params(key, &specified, der, der_len))
-	{	
+	{
 		blobClose(key);
 		return 0;
 	}
@@ -86,9 +86,7 @@ static int evpBign_param_missing(const EVP_PKEY* pkey)
 	if (!key)
 		return 1;
 	ASSERT(memIsValid(key, sizeof(bign_key)));
-	if (key->params->l != 128 && 
-		key->params->l != 192 && 
-		key->params->l != 256)
+	if (key->params->l != 128 && key->params->l != 192 && key->params->l != 256)
 		return 1;
 	return 0;
 }
@@ -118,9 +116,8 @@ static int evpBign_param_cmp(const EVP_PKEY* a, const EVP_PKEY* b)
 	size_t len;
 	// обработать уровень стойкости
 	if (keya->params->l != keyb->params->l ||
-		(keya->params->l != 128 && 
-			keya->params->l != 192 && 
-				keya->params->l != 256))
+		(keya->params->l != 128 && keya->params->l != 192 &&
+			keya->params->l != 256))
 		return 0;
 	len = 2 * O_OF_B(keya->params->l);
 	// сравнить параметры
@@ -131,8 +128,8 @@ static int evpBign_param_cmp(const EVP_PKEY* a, const EVP_PKEY* b)
 		memEq(keya->params->yG, keyb->params->yG, len);
 }
 
-static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
-	ASN1_PCTX *ctx)
+static int evpBign_param_print(
+	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
 {
 	const bign_key* key;
 	int nid;
@@ -152,18 +149,17 @@ static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent,
 	{
 		size_t len = O_OF_B(key->params->l) * 2;
 		if (len != 32 && len != 48 && len != 64 ||
-			!BIO_indent(bp, indent, 128) ||
-			BIO_printf(bp, "p:    ") <= 0 ||
+			!BIO_indent(bp, indent, 128) || BIO_printf(bp, "p:    ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->p, len) ||
-			BIO_printf(bp, "\nq:    ") <= 0 || 
+			BIO_printf(bp, "\nq:    ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->q, len) ||
-			BIO_printf(bp, "\na:    ") <= 0 || 
+			BIO_printf(bp, "\na:    ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->a, len) ||
-			BIO_printf(bp, "\nb:    ") <= 0 || 
+			BIO_printf(bp, "\nb:    ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->b, len) ||
-			BIO_printf(bp, "\nyG:   ") <= 0 || 
+			BIO_printf(bp, "\nyG:   ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->yG, len) ||
-			BIO_printf(bp, "\nseed: ") <= 0 || 
+			BIO_printf(bp, "\nseed: ") <= 0 ||
 			!evpBign_print_hex(bp, key->params->seed, 8) ||
 			BIO_printf(bp, "\n") <= 0)
 			return 0;
@@ -185,19 +181,19 @@ static int evpBign_param_check(const EVP_PKEY* pkey)
 в СТБ 34.101.45 [приложение Д]:
 
   SubjectPublicKeyInfo ::= SEQUENCE {
-    algorithm AlgorithmIdentifier,
-    subjectPublicKey PublicKey
+	algorithm AlgorithmIdentifier,
+	subjectPublicKey PublicKey
   }
 
 Этой структуре соответствует тип X509_PUBKEY.
 
-\remark Поддержка PublicKey и структуры DomainParameters, вложенной в 
+\remark Поддержка PublicKey и структуры DomainParameters, вложенной в
 AlgorithmIdentifier, реализована в bign_asn1.c.
 *******************************************************************************
 */
 
-static int evpBign_pub_encode0(void** params, int* params_type,
-	const bign_key* key)
+static int evpBign_pub_encode0(
+	void** params, int* params_type, const bign_key* key)
 {
 	octet* out = 0;
 	int out_len;
@@ -250,8 +246,12 @@ static int evpBign_pub_encode(X509_PUBKEY* pk, const EVP_PKEY* pkey)
 	if (pubkey_len <= 0)
 		goto err;
 	// кодировать SubjectPublicKeyInfo
-	if (X509_PUBKEY_set0_param(pk, OBJ_nid2obj(NID_bign_pubkey),
-			params_type, params, pubkey, pubkey_len))
+	if (X509_PUBKEY_set0_param(pk,
+			OBJ_nid2obj(NID_bign_pubkey),
+			params_type,
+			params,
+			pubkey,
+			pubkey_len))
 		return 1;
 err:
 	if (params_type == V_ASN1_SEQUENCE)
@@ -263,8 +263,8 @@ err:
 	return 0;
 }
 
-static int evpBign_pub_decode0(bign_key* key, int params_type, 
-	const void* params)
+static int evpBign_pub_decode0(
+	bign_key* key, int params_type, const void* params)
 {
 	// параметры заданы явно?
 	if (params_type == V_ASN1_SEQUENCE)
@@ -326,15 +326,13 @@ static int evpBign_pub_cmp(const EVP_PKEY* a, const EVP_PKEY* b)
 	return memEq(keya->pubkey, keyb->pubkey, O_OF_B(keya->params->l) * 4);
 }
 
-static int evpBign_pub_print(BIO* bp, const EVP_PKEY* pkey, int indent,
-	ASN1_PCTX* ctx)
+static int evpBign_pub_print(
+	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
 	size_t len = O_OF_B(key->params->l) * 4;
-	return BIO_indent(bp, indent, 128) &&
-		BIO_printf(bp, "Pubkey:  ") > 0 &&
-		evpBign_print_hex(bp, key->pubkey, len) &&
-		BIO_printf(bp, "\n") > 0;
+	return BIO_indent(bp, indent, 128) && BIO_printf(bp, "Pubkey:  ") > 0 &&
+		evpBign_print_hex(bp, key->pubkey, len) && BIO_printf(bp, "\n") > 0;
 }
 
 static int evpBign_pub_check(const EVP_PKEY* pkey)
@@ -347,14 +345,14 @@ static int evpBign_pub_check(const EVP_PKEY* pkey)
 *******************************************************************************
 Личный ключ
 
-Личный ключ описывается следующей структурой, определенной в PKCS#8 
+Личный ключ описывается следующей структурой, определенной в PKCS#8
 и поддержанной типом PKCS8_PRIV_KEY_INFO:
 
 PrivateKeyInfo ::= SEQUENCE {
    version INTEGER,
    privateKeyAlgorithm AlgorithmIdentifier,
    privateKey OCTET STRING,
-   attributes [0] Attributes OPTIONAL 
+   attributes [0] Attributes OPTIONAL
 }
 
 Тип профилируется в СТБ 34.101.bpki следующим образом:
@@ -363,10 +361,10 @@ PrivateKeyInfo ::= SEQUENCE {
 3) privateKey содержит личный ключ;
 4) список attributes пустой.
 
-\remark Реализация разрешает указывать ЭК в параметрах privateKeyAlgorithm 
+\remark Реализация разрешает указывать ЭК в параметрах privateKeyAlgorithm
 не только в форме named, но еще и в форме specified.
 
-\warning В evpBign_priv_decode() для передачи лк в PKCS8_pkey_set0() 
+\warning В evpBign_priv_decode() для передачи лк в PKCS8_pkey_set0()
 приходится помещать его в обычный блок памяти (а не в блоб).
 *******************************************************************************
 */
@@ -422,8 +420,13 @@ static int evpBign_priv_encode(PKCS8_PRIV_KEY_INFO* p8, const EVP_PKEY* pkey)
 		goto err;
 	memCopy(privkey, key->privkey, key->params->l / 4);
 	// кодировать PrivateKeyInfo
-	if (PKCS8_pkey_set0(p8, OBJ_nid2obj(NID_bign_pubkey), 0,
-		params_type, params, privkey, (int)key->params->l / 4))
+	if (PKCS8_pkey_set0(p8,
+			OBJ_nid2obj(NID_bign_pubkey),
+			0,
+			params_type,
+			params,
+			privkey,
+			(int)key->params->l / 4))
 		return 1;
 err:
 	if (params_type == V_ASN1_SEQUENCE)
@@ -435,15 +438,13 @@ err:
 	return 0;
 }
 
-static int evpBign_priv_print(BIO* bp, const EVP_PKEY* pkey, int indent,
-	ASN1_PCTX* ctx)
+static int evpBign_priv_print(
+	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
 	size_t len = O_OF_B(key->params->l) * 2;
-	return BIO_indent(bp, indent, 128) &&
-		BIO_printf(bp, "Privkey: ") > 0 &&
-		evpBign_print_hex(bp, key->privkey, len) &&
-		BIO_printf(bp, "\n") > 0;
+	return BIO_indent(bp, indent, 128) && BIO_printf(bp, "Privkey: ") > 0 &&
+		evpBign_print_hex(bp, key->privkey, len) && BIO_printf(bp, "\n") > 0;
 }
 
 static int evpBign_keypair_check(const EVP_PKEY* pkey)
@@ -491,8 +492,8 @@ static void evpBign_pkey_free(EVP_PKEY* pkey)
 *******************************************************************************
 CMS: подпись
 
-Функция evpBign_cms_sign(), evpBign_cms_verify() обрабатывают структуру 
-SignerInfo при выработке и проверке подписи. 
+Функция evpBign_cms_sign(), evpBign_cms_verify() обрабатывают структуру
+SignerInfo при выработке и проверке подписи.
 
 Структура SignerInfo описывается следующим образом:
 	SignerInfo ::= SEQUENCE {
@@ -507,18 +508,18 @@ SignerInfo при выработке и проверке подписи.
 
 Требования СТБ 34.101.45 (Д.2):
 
-1. Если signatureAlgorithm.algorithm == bign_with_hbelt, то 
-параметры signatureAlgorithm.parameters описываются типом NULL. 
+1. Если signatureAlgorithm.algorithm == bign_with_hbelt, то
+параметры signatureAlgorithm.parameters описываются типом NULL.
 
-2. Если signatureAlgorithm.algorithm == bign_with_hspec, то в 
+2. Если signatureAlgorithm.algorithm == bign_with_hspec, то в
 signatureAlgorithm.parameters должен задаваться идентификатор используемой
-функции хэширования и этот идентификатор должен совпадать 
+функции хэширования и этот идентификатор должен совпадать
 с digestAlgorithm.algorithm.
 
 Дополнительное требование:
 
-3. Если signatureAlgorithm.algorithm == bign_with_bashXXX, то 
-параметры signatureAlgorithm.parameters описываются типом NULL. 
+3. Если signatureAlgorithm.algorithm == bign_with_bashXXX, то
+параметры signatureAlgorithm.parameters описываются типом NULL.
 *******************************************************************************
 */
 
@@ -534,20 +535,22 @@ static int evpBign_cms_sign(CMS_SignerInfo* si)
 	// hnid -> snid \in {bign_with_hbelt, bign_with_bashXXX}
 	hnid = OBJ_obj2nid(alg1->algorithm);
 	if (hnid == NID_belt_hash)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hbelt), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_hbelt), V_ASN1_NULL, 0);
 	if (hnid == NID_bash256)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash256), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash256), V_ASN1_NULL, 0);
 	if (hnid == NID_bash384)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash384), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash384), V_ASN1_NULL, 0);
 	if (hnid == NID_bash512)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash512), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash512), V_ASN1_NULL, 0);
 	// hnid -> bign_with_hspec
-	return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hspec), 
-		V_ASN1_OBJECT, OBJ_dup(alg1->algorithm));
+	return X509_ALGOR_set0(alg2,
+		OBJ_nid2obj(NID_bign_with_hspec),
+		V_ASN1_OBJECT,
+		OBJ_dup(alg1->algorithm));
 }
 
 static int evpBign_cms_verify(CMS_SignerInfo* si)
@@ -574,8 +577,7 @@ static int evpBign_cms_verify(CMS_SignerInfo* si)
 		return hnid == NID_bash512 && alg2->parameter->type == V_ASN1_NULL;
 	// snid == bign_with_hspec?
 	if (snid == NID_bign_with_hspec)
-		return alg2->parameter->type == V_ASN1_OBJECT &&
-			hnid != NID_undef &&
+		return alg2->parameter->type == V_ASN1_OBJECT && hnid != NID_undef &&
 			hnid == OBJ_obj2nid(alg2->parameter->value.object);
 	// нестандартный идентификатор алгоритма ЭЦП?
 	return 0;
@@ -601,20 +603,22 @@ static int evpBign_pkcs7_sign(PKCS7_SIGNER_INFO* si)
 	// hnid -> snid \in {bign_with_hbelt, bign_with_bashXXX}
 	hnid = OBJ_obj2nid(alg1->algorithm);
 	if (hnid == NID_belt_hash)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hbelt), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_hbelt), V_ASN1_NULL, 0);
 	if (hnid == NID_bash256)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash256), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash256), V_ASN1_NULL, 0);
 	if (hnid == NID_bash384)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash384), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash384), V_ASN1_NULL, 0);
 	if (hnid == NID_bash512)
-		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash512), 
-			V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(
+			alg2, OBJ_nid2obj(NID_bign_with_bash512), V_ASN1_NULL, 0);
 	// hnid -> bign_with_hspec
-	return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hspec), 
-		V_ASN1_OBJECT, OBJ_dup(alg1->algorithm));
+	return X509_ALGOR_set0(alg2,
+		OBJ_nid2obj(NID_bign_with_hspec),
+		V_ASN1_OBJECT,
+		OBJ_dup(alg1->algorithm));
 }
 
 static int evpBign_pkcs7_verify(PKCS7_SIGNER_INFO* si)
@@ -641,8 +645,7 @@ static int evpBign_pkcs7_verify(PKCS7_SIGNER_INFO* si)
 		return hnid == NID_bash512 && alg2->parameter->type == V_ASN1_NULL;
 	// snid == bign_with_hspec?
 	if (snid == NID_bign_with_hspec)
-		return alg2->parameter->type == V_ASN1_OBJECT &&
-			hnid != NID_undef &&
+		return alg2->parameter->type == V_ASN1_OBJECT && hnid != NID_undef &&
 			hnid == OBJ_obj2nid(alg2->parameter->value.object);
 	// нестандартный идентификатор алгоритма ЭЦП?
 	return 0;
@@ -652,7 +655,7 @@ static int evpBign_pkcs7_verify(PKCS7_SIGNER_INFO* si)
 *******************************************************************************
 CMS: конвертование (шифрование)
 
-При шифровании данных ключевой материал передается в структуре 
+При шифровании данных ключевой материал передается в структуре
 	RecipientInfo ::= CHOICE {
 		ktri KeyTransRecipientInfo,
 		kari [1] KeyAgreeRecipientInfo,
@@ -669,11 +672,11 @@ CMS: конвертование (шифрование)
 		keyEncryptionAlgorithm AlgorithmIdentifier,
 		encryptedKey EncryptedKey}
 
-Требования СТБ 34.101.23 (Б.4): 
-1. В keyEncryptionAlgorithm.algorithm задается идентификатор 
-bign_keytransport. 
+Требования СТБ 34.101.23 (Б.4):
+1. В keyEncryptionAlgorithm.algorithm задается идентификатор
+bign_keytransport.
 
-2. Параметры keyEncryptionAlgorithm.parameters опускаются. 
+2. Параметры keyEncryptionAlgorithm.parameters опускаются.
 *******************************************************************************
 */
 
@@ -682,8 +685,8 @@ static int evpBign_cms_encrypt(CMS_RecipientInfo* ri)
 	X509_ALGOR* alg;
 	if (!CMS_RecipientInfo_ktri_get0_algs(ri, 0, 0, &alg))
 		return 0;
-	return X509_ALGOR_set0(alg, OBJ_nid2obj(NID_bign_keytransport), 
-		V_ASN1_NULL, 0);
+	return X509_ALGOR_set0(
+		alg, OBJ_nid2obj(NID_bign_keytransport), V_ASN1_NULL, 0);
 }
 
 static int evpBign_cms_decrypt(CMS_RecipientInfo* ri)
@@ -715,8 +718,8 @@ static int evpBign_pkcs7_encrypt(PKCS7_RECIP_INFO* ri)
 {
 	X509_ALGOR* alg;
 	PKCS7_RECIP_INFO_get0_alg(ri, &alg);
-	return X509_ALGOR_set0(alg, OBJ_nid2obj(NID_bign_keytransport), 
-		V_ASN1_NULL, 0);
+	return X509_ALGOR_set0(
+		alg, OBJ_nid2obj(NID_bign_keytransport), V_ASN1_NULL, 0);
 }
 
 /*
@@ -813,11 +816,11 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 *******************************************************************************
 Параметры алгоритмов ЭЦП
 
-Функция v() интерфейса EVP_PKEY_ASN1_METHOD::item_verify() вызывается только 
-в функции ASN1_item_verify() (модуль a_verify.c). В последней функции 
-по идентификатору алгоритма ЭЦП (snid) определяется сопутствующий 
-алгоритм хэширования (hnid). Если hnid по snid определить не удалось, 
-то вызывается v(). Если удалось, то инициализируется проверка подписи. 
+Функция v() интерфейса EVP_PKEY_ASN1_METHOD::item_verify() вызывается только
+в функции ASN1_item_verify() (модуль a_verify.c). В последней функции
+по идентификатору алгоритма ЭЦП (snid) определяется сопутствующий
+алгоритм хэширования (hnid). Если hnid по snid определить не удалось,
+то вызывается v(). Если удалось, то инициализируется проверка подписи.
 
 В функции evpBign_item_verify(), реализующей интерфейс item_verify(),
 по snid определяется hnid, затем проверяются параметры алгоритма подписи
@@ -838,18 +841,18 @@ https://github.com/openssl/openssl/issues/20955.
 
 Функция s() интерфейса EVP_PKEY_ASN1_METHOD::item_sign() вызывается только
 в функции ASN1_item_sign_ctx() (модуль a_sign.c). В последней функции s()
-вызывается безусловно. В s() можно настроить параметры алгоритма ЭЦП. 
+вызывается безусловно. В s() можно настроить параметры алгоритма ЭЦП.
 
 В функции evpBign_item_sign(), реализующей интерфейс item_sign(), по hnid
 определяется snid, а затем настраиваются параметры алгоритма подписи.
 
-\remark Информация об интерфейсе EVP_PKEY_ASN1_METHOD::item_verify() 
+\remark Информация об интерфейсе EVP_PKEY_ASN1_METHOD::item_verify()
 из модуля a_verify.c:
 	Return value of 2 means carry on, anything else means we
 	exit straight away: either a fatal error of the underlying
 	verification routine handles all verification.
 
-\remark Информация об интерфейсе EVP_PKEY_ASN1_METHOD::item_sign() 
+\remark Информация об интерфейсе EVP_PKEY_ASN1_METHOD::item_sign()
 из модуля a_sign.c:
 	Return value meanings:
 	 <= 0: error.
@@ -859,8 +862,12 @@ https://github.com/openssl/openssl/issues/20955.
 *******************************************************************************
 */
 
-int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
-	CONST3 X509_ALGOR* alg, CONST3 ASN1_BIT_STRING* sig, EVP_PKEY* pkey)
+int evpBign_item_verify(EVP_MD_CTX* ctx,
+	const ASN1_ITEM* it,
+	CONST3 void* asn,
+	CONST3 X509_ALGOR* alg,
+	CONST3 ASN1_BIT_STRING* sig,
+	EVP_PKEY* pkey)
 {
 	const ASN1_OBJECT* sobj;
 	int snid;
@@ -913,8 +920,12 @@ int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 	return 2;
 }
 
-int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
-	X509_ALGOR* alg1, X509_ALGOR* alg2, ASN1_BIT_STRING* sig)
+int evpBign_item_sign(EVP_MD_CTX* ctx,
+	const ASN1_ITEM* it,
+	CONST3 void* asn,
+	X509_ALGOR* alg1,
+	X509_ALGOR* alg2,
+	ASN1_BIT_STRING* sig)
 {
 	int hnid = EVP_MD_type(EVP_MD_CTX_md(ctx));
 	int snid = 0;
@@ -935,10 +946,8 @@ int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 	if (snid == NID_undef)
 		return 0;
 	// snid == bign_with_hbelt or bign_with_bashXXX => params <- NULL
-	if (snid == NID_bign_with_hbelt ||
-		snid == NID_bign_with_bash256 ||
-		snid == NID_bign_with_bash384 ||
-		snid == NID_bign_with_bash512)
+	if (snid == NID_bign_with_hbelt || snid == NID_bign_with_bash256 ||
+		snid == NID_bign_with_bash384 || snid == NID_bign_with_bash512)
 	{
 		params_type = V_ASN1_NULL;
 		params = 0;
@@ -964,8 +973,7 @@ int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 *******************************************************************************
 */
 
-static int evpBign_set_pubkey(EVP_PKEY* pkey, const octet* pubkey,
-	size_t len)
+static int evpBign_set_pubkey(EVP_PKEY* pkey, const octet* pubkey, size_t len)
 {
 	bign_key* key;
 	if (evpBign_param_missing(pkey))
@@ -977,8 +985,7 @@ static int evpBign_set_pubkey(EVP_PKEY* pkey, const octet* pubkey,
 	return 1;
 }
 
-static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey,
-	size_t* len)
+static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey, size_t* len)
 {
 	const bign_key* key;
 	if (evpBign_param_missing(pkey))
@@ -1002,8 +1009,7 @@ static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey,
 *******************************************************************************
 */
 
-static int evpBign_set_privkey(EVP_PKEY *pkey, const octet* privkey,
-	size_t len)
+static int evpBign_set_privkey(EVP_PKEY* pkey, const octet* privkey, size_t len)
 {
 	bign_key* key;
 	if (evpBign_param_missing(pkey))
@@ -1017,8 +1023,8 @@ static int evpBign_set_privkey(EVP_PKEY *pkey, const octet* privkey,
 	return 1;
 }
 
-static int evpBign_get_privkey(const EVP_PKEY* pkey, octet* privkey,
-	size_t* len)
+static int evpBign_get_privkey(
+	const EVP_PKEY* pkey, octet* privkey, size_t* len)
 {
 	const bign_key* key;
 	if (evpBign_param_missing(pkey))
@@ -1057,25 +1063,26 @@ const EVP_PKEY_ASN1_METHOD* evpBign_ameth()
 static int bign_ameth_nids[128];
 static int bign_ameth_count;
 
-#define BIGN_AMETH_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		bign_ameth_nids[bign_ameth_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			bign_ameth_nids[bign_ameth_count++] = tmp : NID_undef))
+#define BIGN_AMETH_REG(name, tmp)                                              \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			bign_ameth_nids[bign_ameth_count++] = tmp :                        \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					bign_ameth_nids[bign_ameth_count++] = tmp :                \
+					NID_undef))
 
 /*
 *******************************************************************************
 Перечисление алгоритмов
 
-\remark В prev_enum может задаваться указатель на перечислитель, объявленный 
+\remark В prev_enum может задаваться указатель на перечислитель, объявленный
 в другом модуле. Тогда таблицы идентификаторов перечислителей объединяются.
 *******************************************************************************
 */
 
 static ENGINE_PKEY_ASN1_METHS_PTR prev_enum;
 
-static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, 
-	const int** nids, int nid)
+static int evpBign_ameth_enum(
+	ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!ameth)
@@ -1088,8 +1095,8 @@ static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 				return 0;
 			if (bign_ameth_count + nid >= (int)COUNT_OF(bign_ameth_nids))
 				return 0;
-			memCopy(bign_ameth_nids + bign_ameth_count, *nids, 
-				nid * sizeof(int));
+			memCopy(
+				bign_ameth_nids + bign_ameth_count, *nids, nid * sizeof(int));
 			*nids = bign_ameth_nids;
 			return bign_ameth_count + nid;
 		}
@@ -1121,8 +1128,8 @@ int evpBign_ameth_bind(ENGINE* e)
 	if (BIGN_AMETH_REG(bign_pubkey, tmp) == NID_undef)
 		return 0;
 	// создать описатель методов ключа
-	EVP_bign_ameth = EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", 
-		"OpenSSL bign method");
+	EVP_bign_ameth =
+		EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", "OpenSSL bign method");
 	if (!EVP_bign_ameth)
 		return 0;
 	// настроить описатель
@@ -1133,8 +1140,7 @@ int evpBign_ameth_bind(ENGINE* e)
 		evpBign_param_copy,
 		evpBign_param_cmp,
 		evpBign_param_print);
-	EVP_PKEY_asn1_set_param_check(EVP_bign_ameth,
-		evpBign_param_check);
+	EVP_PKEY_asn1_set_param_check(EVP_bign_ameth, evpBign_param_check);
 	EVP_PKEY_asn1_set_public(EVP_bign_ameth,
 		evpBign_pub_decode,
 		evpBign_pub_encode,
@@ -1142,31 +1148,21 @@ int evpBign_ameth_bind(ENGINE* e)
 		evpBign_pub_print,
 		evpBign_pkey_size,
 		evpBign_pkey_bits);
-	EVP_PKEY_asn1_set_public_check(EVP_bign_ameth,
-		evpBign_pub_check);
+	EVP_PKEY_asn1_set_public_check(EVP_bign_ameth, evpBign_pub_check);
 	EVP_PKEY_asn1_set_private(EVP_bign_ameth,
 		evpBign_priv_decode,
 		evpBign_priv_encode,
 		evpBign_priv_print);
-	EVP_PKEY_asn1_set_check(EVP_bign_ameth,
-		evpBign_keypair_check);
-	EVP_PKEY_asn1_set_free(EVP_bign_ameth,
-		evpBign_pkey_free);
-	EVP_PKEY_asn1_set_ctrl(EVP_bign_ameth,
-		evpBign_pkey_asn1_ctrl);
-	EVP_PKEY_asn1_set_item(EVP_bign_ameth, 
-		evpBign_item_verify, 
-		evpBign_item_sign);
-	EVP_PKEY_asn1_set_security_bits(EVP_bign_ameth,
-		evpBign_pkey_security_bits);
-	EVP_PKEY_asn1_set_set_pub_key(EVP_bign_ameth,
-		evpBign_set_pubkey);
-	EVP_PKEY_asn1_set_get_pub_key(EVP_bign_ameth,
-		evpBign_get_pubkey);
-	EVP_PKEY_asn1_set_set_priv_key(EVP_bign_ameth,
-		evpBign_set_privkey);
-	EVP_PKEY_asn1_set_get_priv_key(EVP_bign_ameth,
-		evpBign_get_privkey);
+	EVP_PKEY_asn1_set_check(EVP_bign_ameth, evpBign_keypair_check);
+	EVP_PKEY_asn1_set_free(EVP_bign_ameth, evpBign_pkey_free);
+	EVP_PKEY_asn1_set_ctrl(EVP_bign_ameth, evpBign_pkey_asn1_ctrl);
+	EVP_PKEY_asn1_set_item(
+		EVP_bign_ameth, evpBign_item_verify, evpBign_item_sign);
+	EVP_PKEY_asn1_set_security_bits(EVP_bign_ameth, evpBign_pkey_security_bits);
+	EVP_PKEY_asn1_set_set_pub_key(EVP_bign_ameth, evpBign_set_pubkey);
+	EVP_PKEY_asn1_set_get_pub_key(EVP_bign_ameth, evpBign_get_pubkey);
+	EVP_PKEY_asn1_set_set_priv_key(EVP_bign_ameth, evpBign_set_privkey);
+	EVP_PKEY_asn1_set_get_priv_key(EVP_bign_ameth, evpBign_get_privkey);
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_asn1_meths(e);
 	if (!ENGINE_set_pkey_asn1_meths(e, evpBign_ameth_enum))

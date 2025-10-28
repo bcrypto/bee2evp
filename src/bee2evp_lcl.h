@@ -18,7 +18,8 @@
 #include <bee2/crypto/bign.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*
@@ -49,39 +50,44 @@ Belt
 *******************************************************************************
 */
 
-int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
-	ASN1_TYPE* param, const EVP_CIPHER* c, const EVP_MD* md, int en_de);
+int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx,
+	const char* pass,
+	int passlen,
+	ASN1_TYPE* param,
+	const EVP_CIPHER* c,
+	const EVP_MD* md,
+	int en_de);
 
 /*
 *******************************************************************************
 Bign
 
-\remark В функциях evpBign_asn1_d2i_params() / evpBign_asn1_i2d_params() 
+\remark В функциях evpBign_asn1_d2i_params() / evpBign_asn1_i2d_params()
 флаг EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED в key->enc_flags указывает на желаемую
-специфицированность параметров при кодировании. Если флаг установлен, 
-то параметры обязательно будут специфироваться. Если флаг снят, то параметры 
-могут специфицироваться, если они не распознаны как именованные. Актуальный 
+специфицированность параметров при кодировании. Если флаг установлен,
+то параметры обязательно будут специфироваться. Если флаг снят, то параметры
+могут специфицироваться, если они не распознаны как именованные. Актуальный
 признак специфицированности возвращается через переменную specified.
 *******************************************************************************
 */
 
 typedef struct bign_key
 {
-	bign_params params[1];		/*< долговременные параметры */
-	octet privkey[64];			/*< личный ключ */
-	octet pubkey[128];			/*< открытый ключ */
-	u8 flags;					/*< флаги */
-	int hash_nid;				/*< рекомендуемый алгоритм хэширования */
+	bign_params params[1]; /*< долговременные параметры */
+	octet privkey[64];	   /*< личный ключ */
+	octet pubkey[128];	   /*< открытый ключ */
+	u8 flags;			   /*< флаги */
+	int hash_nid;		   /*< рекомендуемый алгоритм хэширования */
 } bign_key;
 
 int evpBign_eq_params(const bign_params* params1, const bign_params* params2);
 int evpBign_params2nid(const bign_params* params);
 int evpBign_nid2params(bign_params* params, int nid);
 
-int evpBign_asn1_d2i_params(bign_key* key, bool_t* specified, 
-	const octet** in, long len);
-int evpBign_asn1_i2d_params(octet** out, bool_t* specified, 
-	const bign_key* key);
+int evpBign_asn1_d2i_params(
+	bign_key* key, bool_t* specified, const octet** in, long len);
+int evpBign_asn1_i2d_params(
+	octet** out, bool_t* specified, const bign_key* key);
 int evpBign_asn1_o2i_pubkey(bign_key* key, const octet** in, long len);
 int evpBign_asn1_i2o_pubkey(octet** out, const bign_key* key);
 

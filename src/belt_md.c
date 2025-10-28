@@ -70,11 +70,12 @@ static int evpBeltHash_final(EVP_MD_CTX* ctx, octet* md)
 static int belt_md_nids[128];
 static int belt_md_count;
 
-#define BELT_MD_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		belt_md_nids[belt_md_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			belt_md_nids[belt_md_count++] = tmp : NID_undef))
+#define BELT_MD_REG(name, tmp)                                                 \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			belt_md_nids[belt_md_count++] = tmp :                              \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					belt_md_nids[belt_md_count++] = tmp :                      \
+					NID_undef))
 
 /*
 *******************************************************************************
@@ -84,8 +85,8 @@ static int belt_md_count;
 
 static ENGINE_DIGESTS_PTR prev_enum;
 
-static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids,
-	int nid)
+static int evpBeltMD_enum(
+	ENGINE* e, const EVP_MD** md, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!md)
@@ -98,8 +99,7 @@ static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 				return 0;
 			if (belt_md_count + nid >= (int)COUNT_OF(belt_md_nids))
 				return 0;
-			memCopy(belt_md_nids + belt_md_count, *nids,
-				nid * sizeof(int));
+			memCopy(belt_md_nids + belt_md_count, *nids, nid * sizeof(int));
 			*nids = belt_md_nids;
 			return belt_md_count + nid;
 		}
@@ -136,8 +136,7 @@ int evpBeltMD_bind(ENGINE* e)
 		return 0;
 	// создать и настроить описатель belt_hash
 	EVP_belt_hash = EVP_MD_meth_new(NID_belt_hash, 0);
-	if (EVP_belt_hash == 0 ||
-		!EVP_MD_meth_set_result_size(EVP_belt_hash, 32) ||
+	if (EVP_belt_hash == 0 || !EVP_MD_meth_set_result_size(EVP_belt_hash, 32) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_belt_hash, 32) ||
 		!EVP_MD_meth_set_app_datasize(EVP_belt_hash, (int)beltHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_belt_hash, evpBeltHash_init) ||
@@ -149,8 +148,7 @@ int evpBeltMD_bind(ENGINE* e)
 	if (!ENGINE_set_digests(e, evpBeltMD_enum))
 		return 0;
 	// зарегистрировать алгоритмы
-	return ENGINE_register_digests(e) &&
-		EVP_add_digest(EVP_belt_hash);
+	return ENGINE_register_digests(e) && EVP_add_digest(EVP_belt_hash);
 }
 
 void evpBeltMD_finish()
