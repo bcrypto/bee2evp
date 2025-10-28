@@ -21,16 +21,16 @@
 #ifndef __BEE2EVP_INFO
 #define __BEE2EVP_INFO
 
-#define BEE2EVP_NAME			"Bee2evp"
-#define BEE2EVP_VERSION_MAJOR	"1"
-#define BEE2EVP_VERSION_MINOR 	"0"
-#define BEE2EVP_VERSION_PATCH	"9"
+#define BEE2EVP_NAME		  "Bee2evp"
+#define BEE2EVP_VERSION_MAJOR "1"
+#define BEE2EVP_VERSION_MINOR "0"
+#define BEE2EVP_VERSION_PATCH "9"
 
-#define BEE2EVP_VERSION\
-		BEE2EVP_VERSION_MAJOR "." BEE2EVP_VERSION_MINOR "." BEE2EVP_VERSION_PATCH
+#define BEE2EVP_VERSION                                                        \
+	BEE2EVP_VERSION_MAJOR "." BEE2EVP_VERSION_MINOR "." BEE2EVP_VERSION_PATCH
 
-#define BEE2EVP_VERSION_NUM\
-		1, 0, 9
+#define BEE2EVP_VERSION_NUM                                                    \
+	@BEE2EVP_VERSION_MAJOR @, @BEE2EVP_VERSION_MINOR @, @BEE2EVP_VERSION_PATCH @
 
 /*!
 *******************************************************************************
@@ -46,8 +46,8 @@
 
 \section descr Описание
 
-Библиотека bee2evp является плагином (engine) популярной криптографической 
-библиотеки OpenSSL. Плагин предоставляет криптографические сервисы библиотеки 
+Библиотека bee2evp является плагином (engine) популярной криптографической
+библиотеки OpenSSL. Плагин предоставляет криптографические сервисы библиотеки
 bee2 по интерфейсу EVP.
 
 \section make Сборка
@@ -106,7 +106,7 @@ make install
 
 \section license Лицензия
 
-Библиотека распространяется на условиях Apache License, Version 2.0. 
+Библиотека распространяется на условиях Apache License, Version 2.0.
 
 *******************************************************************************
 */

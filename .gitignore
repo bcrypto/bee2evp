@@ -70,3 +70,6 @@
 openssl
 build
 clear.cmd
+
+# Cache files
+.cache/clangd/**

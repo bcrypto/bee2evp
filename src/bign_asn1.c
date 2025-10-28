@@ -22,33 +22,33 @@
 
 /*
 *******************************************************************************
-Реализована поддержка следующих структур ASN.1, описанных 
+Реализована поддержка следующих структур ASN.1, описанных
 в СТБ 34.101.45 [приложение Д]:
 
   DomainParameters ::= CHOICE {
-    specified  ECParameters,
-    named      OBJECT IDENTIFIER,
-    implicit   NULL
+	specified  ECParameters,
+	named      OBJECT IDENTIFIER,
+	implicit   NULL
   }
 
   ECParameters ::= SEQUENCE {
-    version  INTEGER {ecpVer1(1)} (ecpVer1),
-    fieldID  FieldID,
-    curve    Curve,
-    base     OCTET STRING (SIZE(32|48|64)),
-    order    INTEGER,
-    cofactor INTEGER (1) OPTIONAL
+	version  INTEGER {ecpVer1(1)} (ecpVer1),
+	fieldID  FieldID,
+	curve    Curve,
+	base     OCTET STRING (SIZE(32|48|64)),
+	order    INTEGER,
+	cofactor INTEGER (1) OPTIONAL
   }
 
   FieldID ::= SEQUENCE {
-    fieldType   OBJECT IDENTIFIER (bign-primefield),
-    parameters  INTEGER
-  } 
+	fieldType   OBJECT IDENTIFIER (bign-primefield),
+	parameters  INTEGER
+  }
 
   Curve ::= SEQUENCE {
-    a     OCTET STRING (SIZE(32|48|64)),
-    b     OCTET STRING (SIZE(32|48|64)),
-    seed  BIT STRING (SIZE(64))
+	a     OCTET STRING (SIZE(32|48|64)),
+	b     OCTET STRING (SIZE(32|48|64)),
+	seed  BIT STRING (SIZE(64))
   }
 
   PublicKey ::= BIT STRING (SIZE(512|768|1024))
@@ -80,85 +80,89 @@ typedef struct
 
 typedef struct
 {
-	int	type;
-	union {
+	int type;
+	union
+	{
 		ASN1_OBJECT* named;
 		BIGN_ECPARAMS* specified;
 		ASN1_NULL* implicit;
 	} value;
 } BIGN_DOMAINPARAMS;
 
-typedef struct 
+typedef struct
 {
 	ASN1_OBJECT* algorithm;
 	BIGN_DOMAINPARAMS* parameters;
 } BIGN_ALGID;
 
-typedef struct 
+typedef struct
 {
 	long version;
 	BIGN_ALGID* keyAlgorithm;
 	ASN1_OCTET_STRING* privateKey;
 } BIGN_PRIVATEKEY;
 
-ASN1_SEQUENCE(BIGN_FIELDID) =
-{
-	ASN1_SIMPLE(BIGN_FIELDID, fieldType, ASN1_OBJECT),
-	ASN1_SIMPLE(BIGN_FIELDID, prime, ASN1_INTEGER)
-} ASN1_SEQUENCE_END(BIGN_FIELDID)
+ASN1_SEQUENCE(
+	BIGN_FIELDID) = {ASN1_SIMPLE(BIGN_FIELDID, fieldType, ASN1_OBJECT),
+	ASN1_SIMPLE(
+		BIGN_FIELDID, prime, ASN1_INTEGER)} ASN1_SEQUENCE_END(BIGN_FIELDID)
 
-ASN1_SEQUENCE(BIGN_CURVE) = 
-{
-	ASN1_SIMPLE(BIGN_CURVE, a, ASN1_OCTET_STRING),
-	ASN1_SIMPLE(BIGN_CURVE, b, ASN1_OCTET_STRING),
-	ASN1_OPT(BIGN_CURVE, seed, ASN1_BIT_STRING)
-} ASN1_SEQUENCE_END(BIGN_CURVE)
+	ASN1_SEQUENCE(BIGN_CURVE) = {ASN1_SIMPLE(BIGN_CURVE, a, ASN1_OCTET_STRING),
+		ASN1_SIMPLE(BIGN_CURVE, b, ASN1_OCTET_STRING),
+		ASN1_OPT(
+			BIGN_CURVE, seed, ASN1_BIT_STRING)} ASN1_SEQUENCE_END(BIGN_CURVE)
 
-ASN1_SEQUENCE(BIGN_ECPARAMS) = 
-{
-	ASN1_SIMPLE(BIGN_ECPARAMS, version, LONG),
-	ASN1_SIMPLE(BIGN_ECPARAMS, fieldID, BIGN_FIELDID),
-	ASN1_SIMPLE(BIGN_ECPARAMS, curve, BIGN_CURVE),
-	ASN1_SIMPLE(BIGN_ECPARAMS, base, ASN1_OCTET_STRING),
-	ASN1_SIMPLE(BIGN_ECPARAMS, order, ASN1_INTEGER),
-	ASN1_OPT(BIGN_ECPARAMS, cofactor, ASN1_INTEGER)
-} ASN1_SEQUENCE_END(BIGN_ECPARAMS)
+		ASN1_SEQUENCE(
+			BIGN_ECPARAMS) = {ASN1_SIMPLE(BIGN_ECPARAMS, version, LONG),
+			ASN1_SIMPLE(BIGN_ECPARAMS, fieldID, BIGN_FIELDID),
+			ASN1_SIMPLE(BIGN_ECPARAMS, curve, BIGN_CURVE),
+			ASN1_SIMPLE(BIGN_ECPARAMS, base, ASN1_OCTET_STRING),
+			ASN1_SIMPLE(BIGN_ECPARAMS, order, ASN1_INTEGER),
+			ASN1_OPT(BIGN_ECPARAMS,
+				cofactor,
+				ASN1_INTEGER)} ASN1_SEQUENCE_END(BIGN_ECPARAMS)
 
-DECLARE_ASN1_ALLOC_FUNCTIONS(BIGN_ECPARAMS)
-IMPLEMENT_ASN1_ALLOC_FUNCTIONS(BIGN_ECPARAMS)
+			DECLARE_ASN1_ALLOC_FUNCTIONS(
+				BIGN_ECPARAMS) IMPLEMENT_ASN1_ALLOC_FUNCTIONS(BIGN_ECPARAMS)
 
-ASN1_CHOICE(BIGN_DOMAINPARAMS) = 
-{
-	ASN1_SIMPLE(BIGN_DOMAINPARAMS, value.named, ASN1_OBJECT),
-	ASN1_SIMPLE(BIGN_DOMAINPARAMS, value.specified, BIGN_ECPARAMS),
-	ASN1_SIMPLE(BIGN_DOMAINPARAMS, value.implicit, ASN1_NULL)
-} ASN1_CHOICE_END(BIGN_DOMAINPARAMS)
+				ASN1_CHOICE(BIGN_DOMAINPARAMS) = {ASN1_SIMPLE(BIGN_DOMAINPARAMS,
+													  value.named,
+													  ASN1_OBJECT),
+					ASN1_SIMPLE(
+						BIGN_DOMAINPARAMS, value.specified, BIGN_ECPARAMS),
+					ASN1_SIMPLE(BIGN_DOMAINPARAMS,
+						value.implicit,
+						ASN1_NULL)} ASN1_CHOICE_END(BIGN_DOMAINPARAMS)
 
 
 #if OPENSSL_VERSION_MAJOR >= 3
-	DECLARE_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
-	DECLARE_ASN1_ENCODE_FUNCTIONS_name(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
-	IMPLEMENT_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+					DECLARE_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
+						DECLARE_ASN1_ENCODE_FUNCTIONS_name(
+							BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+							IMPLEMENT_ASN1_FUNCTIONS(BIGN_DOMAINPARAMS)
 #else
-	DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
-	DECLARE_ASN1_ENCODE_FUNCTIONS_const(BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
-	IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+					DECLARE_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
+						DECLARE_ASN1_ENCODE_FUNCTIONS_const(
+							BIGN_DOMAINPARAMS, BIGN_DOMAINPARAMS)
+							IMPLEMENT_ASN1_FUNCTIONS_const(BIGN_DOMAINPARAMS)
 #endif
 
 
-/*
-*******************************************************************************
-Расширение модуля bee2/bign
+	/*
+	*******************************************************************************
+	Расширение модуля bee2/bign
 
-\pre Параметры функции evpBign_eq_params() корректны. Поэтому можно сравнивать 
-только тройки (p, a, b) [все остальные поля определяются по этой тройке].
-*******************************************************************************
-*/
+	\pre Параметры функции evpBign_eq_params() корректны. Поэтому можно
+	сравнивать только тройки (p, a, b) [все остальные поля определяются по этой
+	тройке].
+	*******************************************************************************
+	*/
 
-int evpBign_eq_params(const bign_params* params1, const bign_params* params2)
+	int evpBign_eq_params(
+		const bign_params* params1, const bign_params* params2)
 {
-	return params1 && params2 && 
-		params1->l <= 256 && params1->l == params2->l &&
+	return params1 && params2 && params1->l <= 256 &&
+		params1->l == params2->l &&
 		memEq(params1->p, params2->p, params1->l / 4) &&
 		memEq(params1->a, params2->a, params1->l / 4) &&
 		memEq(params1->b, params2->b, params1->l / 4);
@@ -202,8 +206,8 @@ int evpBign_nid2params(bign_params* params, int nid)
 *******************************************************************************
 */
 
-static int evpBign_asn1_params2fieldid(BIGN_FIELDID* field, 
-	const bign_params* params)
+static int evpBign_asn1_params2fieldid(
+	BIGN_FIELDID* field, const bign_params* params)
 {
 	int ok = 0;
 	BIGNUM* p = NULL;
@@ -232,8 +236,8 @@ err:
 	return ok;
 }
 
-static int evpBign_asn1_params2curve(BIGN_CURVE* curve, 
-	const bign_params* params)
+static int evpBign_asn1_params2curve(
+	BIGN_CURVE* curve, const bign_params* params)
 {
 	// входной контроль
 	if (!params || !curve || !curve->a || !curve->b)
@@ -252,10 +256,10 @@ static int evpBign_asn1_params2curve(BIGN_CURVE* curve,
 	return 1;
 }
 
-static BIGN_ECPARAMS* evpBign_asn1_params2ecp(BIGN_ECPARAMS* ecp, 
-	const bign_params* params, bool_t cofactor)
+static BIGN_ECPARAMS* evpBign_asn1_params2ecp(
+	BIGN_ECPARAMS* ecp, const bign_params* params, bool_t cofactor)
 {
-	int	ok = 0;
+	int ok = 0;
 	BIGN_ECPARAMS* ret = ecp;
 	BIGNUM* order = 0;
 	octet rev[64];
@@ -294,7 +298,7 @@ static BIGN_ECPARAMS* evpBign_asn1_params2ecp(BIGN_ECPARAMS* ecp,
 			goto err;
 	}
 	ok = 1;
-err:	
+err:
 	if (!ok)
 	{
 		if (ret && !ecp)
@@ -306,8 +310,10 @@ err:
 	return ret;
 }
 
-static BIGN_DOMAINPARAMS* evpBign_asn1_params2dp(BIGN_DOMAINPARAMS* dp, 
-	bool_t* specified, const bign_params* params, bool_t cofactor)
+static BIGN_DOMAINPARAMS* evpBign_asn1_params2dp(BIGN_DOMAINPARAMS* dp,
+	bool_t* specified,
+	const bign_params* params,
+	bool_t cofactor)
 {
 	BIGN_DOMAINPARAMS* ret = dp;
 	int nid;
@@ -339,7 +345,7 @@ static BIGN_DOMAINPARAMS* evpBign_asn1_params2dp(BIGN_DOMAINPARAMS* dp,
 	}
 	// специфицированные параметры?
 	if (*specified)
-	{	
+	{
 		ret->value.specified = evpBign_asn1_params2ecp(0, params, cofactor);
 		if (ret->value.specified)
 			ret->type = 1;
@@ -359,8 +365,8 @@ static BIGN_DOMAINPARAMS* evpBign_asn1_params2dp(BIGN_DOMAINPARAMS* dp,
 *******************************************************************************
 */
 
-static int evpBign_asn1_ecp2params(bign_params* params, 
-	const BIGN_ECPARAMS* ecp)
+static int evpBign_asn1_ecp2params(
+	bign_params* params, const BIGN_ECPARAMS* ecp)
 {
 	int ok = 0;
 	BIGNUM* p = 0;
@@ -372,17 +378,16 @@ static int evpBign_asn1_ecp2params(bign_params* params,
 	if (ecp->version != 1)
 		goto err;
 	// разобрать описание поля GF(p)
-	if (!ecp->fieldID || 
-		!ecp->fieldID->fieldType || 
-		OBJ_obj2nid(ecp->fieldID->fieldType) != NID_bign_primefield || 
+	if (!ecp->fieldID || !ecp->fieldID->fieldType ||
+		OBJ_obj2nid(ecp->fieldID->fieldType) != NID_bign_primefield ||
 		!ecp->fieldID->prime)
 		goto err;
 	p = ASN1_INTEGER_to_BN(ecp->fieldID->prime, NULL);
 	if (!p)
 		goto err;
 	if (BN_is_negative(p) || BN_is_zero(p) ||
-		(params->l = (size_t)BN_num_bits(p)) != 256 && 
-			params->l != 384 && params->l != 512)
+		(params->l = (size_t)BN_num_bits(p)) != 256 && params->l != 384 &&
+			params->l != 512)
 		goto err;
 	params->l /= 2;
 	// загрузить p
@@ -390,8 +395,7 @@ static int evpBign_asn1_ecp2params(bign_params* params,
 		goto err;
 	memRev(params->p, params->l / 4);
 	// загрузить a и b
-	if (!ecp->curve || 
-		!ecp->curve->a || !ecp->curve->a->data || 
+	if (!ecp->curve || !ecp->curve->a || !ecp->curve->a->data ||
 		!ecp->curve->b || !ecp->curve->b->data ||
 		ecp->curve->a->length != (int)params->l / 4 ||
 		ecp->curve->b->length != (int)params->l / 4)
@@ -406,14 +410,14 @@ static int evpBign_asn1_ecp2params(bign_params* params,
 		memCopy(params->seed, ecp->curve->seed->data, 8);
 	}
 	// загрузить base
-	if (!ecp->base || !ecp->base->data || 
+	if (!ecp->base || !ecp->base->data ||
 		ecp->base->length != (int)params->l / 4)
 		goto err;
 	memCopy(params->yG, ecp->base->data, params->l / 4);
 	// загрузить order
 	if ((p = ASN1_INTEGER_to_BN(ecp->order, p)) == NULL)
 		goto err;
-	if (BN_is_negative(p) || BN_is_zero(p) || 
+	if (BN_is_negative(p) || BN_is_zero(p) ||
 		BN_num_bits(p) != (int)params->l * 2)
 		goto err;
 	if (!BN_bn2bin(p, params->q))
@@ -422,8 +426,7 @@ static int evpBign_asn1_ecp2params(bign_params* params,
 	// загрузить cofactor (optional)
 	if (ecp->cofactor)
 	{
-		if (!(p = ASN1_INTEGER_to_BN(ecp->cofactor, p)) ||
-			!BN_is_one(p))
+		if (!(p = ASN1_INTEGER_to_BN(ecp->cofactor, p)) || !BN_is_one(p))
 			goto err;
 	}
 	ok = 1;
@@ -432,29 +435,29 @@ err:
 	return ok;
 }
 
-static int evpBign_asn1_dp2params(bign_params* params, bool_t* specified,
-	const BIGN_DOMAINPARAMS* dp)
+static int evpBign_asn1_dp2params(
+	bign_params* params, bool_t* specified, const BIGN_DOMAINPARAMS* dp)
 {
 	// входной контроль
 	if (!params || !specified || !dp)
 		return 0;
 	// именованные параметры?
 	if (dp->type == 0)
-	{ 
+	{
 		if (!evpBign_nid2params(params, OBJ_obj2nid(dp->value.named)))
 			return 0;
 		*specified = FALSE;
 	}
 	// специфицированные параметры?
 	else if (dp->type == 1)
-	{ 
+	{
 		if (!evpBign_asn1_ecp2params(params, dp->value.specified))
 			return 0;
 		*specified = TRUE;
 	}
 	// наследованные параметры?
 	else if (dp->type == 2)
-	{ 
+	{
 		*specified = FALSE;
 		return 0;
 	}
@@ -472,8 +475,8 @@ static int evpBign_asn1_dp2params(bign_params* params, bool_t* specified,
 *******************************************************************************
 */
 
-int evpBign_asn1_d2i_params(bign_key* key, bool_t* specified, 
-	const octet** in, long len)
+int evpBign_asn1_d2i_params(
+	bign_key* key, bool_t* specified, const octet** in, long len)
 {
 	BIGN_DOMAINPARAMS* dp;
 	int ret;
@@ -490,8 +493,7 @@ int evpBign_asn1_d2i_params(bign_key* key, bool_t* specified,
 	return ret;
 }
 
-int evpBign_asn1_i2d_params(octet** out, bool_t* specified, 
-	const bign_key* key)
+int evpBign_asn1_i2d_params(octet** out, bool_t* specified, const bign_key* key)
 {
 	bool_t cofactor;
 	BIGN_DOMAINPARAMS* dp;
