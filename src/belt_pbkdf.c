@@ -23,28 +23,28 @@
 Подробности -- в PKCS#5, а также в СТБ 34.101.45 (Е.2).
 
 Для подключения belt-pbkdf следует:
-1	Выполнить регистрацию, вызвав EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, 
+1	Выполнить регистрацию, вызвав EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF,
 	NID_belt_hmac, -1, NID_belt_hash, 0).
-2	В ctrl-функциях алгоритмов шифрования, ключ которых будет строиться по 
+2	В ctrl-функциях алгоритмов шифрования, ключ которых будет строиться по
 	паролю, возвращать NID_belt_hmac в ответ на команду EVP_CTRL_PBE_PRF_NID.
-	
+
 Параметрами belt-pbkdf являются число итераций и синхропосылка (соль).
-В СТБ 34.101.45 рекомендуется использовать не менее чем 64-битовую 
-синхропосылку (соль) и не менее чем 10000 итераций. 
+В СТБ 34.101.45 рекомендуется использовать не менее чем 64-битовую
+синхропосылку (соль) и не менее чем 10000 итераций.
 
 В evp.h заданы стандартные для OpenSSL длина синхропосылки и число итераций:
 	#define PKCS5_SALT_LEN		8
 	#define PKCS5_DEFAULT_ITER	2048
-Таким образом, рекомендации по длине синхропосылки поддерживаются, а по числу 
-итераций -- нет. Рекомендации можно выполнить, если зарегистрировать 
-функцию интерфейса EVP_PBE_KEYGEN (объявленного в evp.h), которая их 
+Таким образом, рекомендации по длине синхропосылки поддерживаются, а по числу
+итераций -- нет. Рекомендации можно выполнить, если зарегистрировать
+функцию интерфейса EVP_PBE_KEYGEN (объявленного в evp.h), которая их
 поддерживает.
 
-К сожалению, эта функция не получает управления при работе через командный 
-интерфейс OpenSSL. Возможный выход (через патч) -- расширение массива 
+К сожалению, эта функция не получает управления при работе через командный
+интерфейс OpenSSL. Возможный выход (через патч) -- расширение массива
 builtin_pbe, объявленного в crypto/evp/evp_pbe.c.
 
-\remark По мотивам openssl/crypto/asn1/p5_pbev2.c, 
+\remark По мотивам openssl/crypto/asn1/p5_pbev2.c,
 openssl/crypto/evp/p5_crpt2.c.
 
 todo: полноценное встраивание (?)
@@ -56,8 +56,13 @@ const char SN_belt_pbkdf[] = "belt-pbkdf";
 const char LN_belt_pbkdf[] = "belt-pbkdf";
 #define NID_belt_pbkdf OBJ_sn2nid(SN_belt_pbkdf)
 
-int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
-	ASN1_TYPE* param, const EVP_CIPHER* c, const EVP_MD* md, int en_de)
+int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx,
+	const char* pass,
+	int passlen,
+	ASN1_TYPE* param,
+	const EVP_CIPHER* c,
+	const EVP_MD* md,
+	int en_de)
 {
 	int key_len;
 	const octet* der;
@@ -75,15 +80,15 @@ int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
 	if (key_len > 32)
 		return 0;
 	// декодировать параметры
-	if(!param || param->type != V_ASN1_SEQUENCE)
+	if (!param || param->type != V_ASN1_SEQUENCE)
 		return 0;
 	der = param->value.sequence->data;
 	der_len = param->value.sequence->length;
 	kdf = d2i_PBKDF2PARAM(0, &der, der_len);
-	if(!kdf)
+	if (!kdf)
 		return 0;
 	// проверить параметры
-	if(kdf->keylength && ASN1_INTEGER_get(kdf->keylength) != (int)key_len ||
+	if (kdf->keylength && ASN1_INTEGER_get(kdf->keylength) != (int)key_len ||
 		OBJ_obj2nid(kdf->prf->algorithm) != NID_belt_hmac ||
 		kdf->prf->parameter->type != V_ASN1_NULL ||
 		kdf->salt->type != V_ASN1_OCTET_STRING)
@@ -112,8 +117,12 @@ int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
 	key = blobCreate(32);
 	if (!key)
 		goto err;
-	if (beltPBKDF2((octet*)key, (const octet*)pass, passlen, 
-		(size_t)iter, salt, salt_len) != ERR_OK)
+	if (beltPBKDF2((octet*)key,
+			(const octet*)pass,
+			passlen,
+			(size_t)iter,
+			salt,
+			salt_len) != ERR_OK)
 		goto err;
 	// задать ключ
 	ret = EVP_CipherInit_ex(ctx, 0, 0, (const octet*)key, 0, en_de);
@@ -132,11 +141,12 @@ err:
 static int belt_pbkdf_nids[128];
 static int belt_pbkdf_count;
 
-#define BELT_PBKDF_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		belt_pbkdf_nids[belt_pbkdf_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			belt_pbkdf_nids[belt_pbkdf_count++] = tmp : NID_undef))
+#define BELT_PBKDF_REG(name, tmp)                                              \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			belt_pbkdf_nids[belt_pbkdf_count++] = tmp :                        \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					belt_pbkdf_nids[belt_pbkdf_count++] = tmp :                \
+					NID_undef))
 
 /*
 *******************************************************************************

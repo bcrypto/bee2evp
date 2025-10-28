@@ -97,9 +97,10 @@ const char SN_belt_dwpt[] = "belt-dwp-tls";
 const char LN_belt_dwpt[] = "belt-dwp-tls";
 #endif
 
-#define FLAGS_belt_dwpt (EVP_CIPH_FLAG_AEAD_CIPHER |\
-	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |\
-	EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_CUSTOM_COPY | EVP_CIPH_CUSTOM_IV)
+#define FLAGS_belt_dwpt                                                        \
+	(EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_CTRL_INIT |                          \
+		EVP_CIPH_ALWAYS_CALL_INIT | EVP_CIPH_FLAG_CUSTOM_CIPHER |              \
+		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_CUSTOM_IV)
 
 static EVP_CIPHER* EVP_belt_dwpt;
 const EVP_CIPHER* evpBeltDWPT()
@@ -109,16 +110,16 @@ const EVP_CIPHER* evpBeltDWPT()
 
 typedef struct belt_dwpt_ctx
 {
-	octet key[32];			/*< ключ */
-	octet iv[16];			/*< синхропосылка */
-	octet aad[16];			/*< заголовок TLS */
-	size_t aad_len;			/*< длина заголовка TLS */
-	octet tag[8];			/*< имитовставка */
-	octet state[];			/*< состояние beltDWP */
+	octet key[32];	/*< ключ */
+	octet iv[16];	/*< синхропосылка */
+	octet aad[16];	/*< заголовок TLS */
+	size_t aad_len; /*< длина заголовка TLS */
+	octet tag[8];	/*< имитовставка */
+	octet state[];	/*< состояние beltDWP */
 } belt_dwpt_ctx;
 
-static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key,
-	const octet* iv, int enc)
+static int evpBeltDWPT_init(
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
 	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
@@ -134,8 +135,8 @@ static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	return 1;
 }
 
-static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
-	const octet* in, size_t len)
+static int evpBeltDWPT_cipher(
+	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
 {
 	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// выполняются соглашения libssl?
@@ -292,8 +293,9 @@ const char SN_belt_ctrt[] = "belt-ctr-tls";
 const char LN_belt_ctrt[] = "belt-ctr-tls";
 #endif
 
-#define FLAGS_belt_ctrt (EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_STREAM_CIPHER |\
-	EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT)
+#define FLAGS_belt_ctrt                                                        \
+	(EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_STREAM_CIPHER | EVP_CIPH_CTRL_INIT | \
+		EVP_CIPH_ALWAYS_CALL_INIT)
 
 static EVP_CIPHER* EVP_belt_ctrt;
 const EVP_CIPHER* evpBeltCTRT()
@@ -303,16 +305,16 @@ const EVP_CIPHER* evpBeltCTRT()
 
 typedef struct belt_ctrt_ctx
 {
-	octet ekey[32];		/*< ключ шифрования */
-	octet mkey[32];		/*< ключ имитозащиты */
-	octet iv[16];		/*< синхропосылка */
-	octet aad[16];		/*< заголовок TLS */
-	size_t aad_len;		/*< длина заголовка TLS */
-	octet state[];		/*< состояние beltCTR + beltMAC */
+	octet ekey[32]; /*< ключ шифрования */
+	octet mkey[32]; /*< ключ имитозащиты */
+	octet iv[16];	/*< синхропосылка */
+	octet aad[16];	/*< заголовок TLS */
+	size_t aad_len; /*< длина заголовка TLS */
+	octet state[];	/*< состояние beltCTR + beltMAC */
 } belt_ctrt_ctx;
 
-static int evpBeltCTRT_init(EVP_CIPHER_CTX* ctx, const octet* key,
-	const octet* iv, int enc)
+static int evpBeltCTRT_init(
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
 	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
@@ -321,8 +323,8 @@ static int evpBeltCTRT_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	return 1;
 }
 
-static int evpBeltCTRT_cipher(EVP_CIPHER_CTX* ctx, octet* out,
-	const octet* in, size_t len)
+static int evpBeltCTRT_cipher(
+	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
 {
 	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// выполняются соглашения libssl?
@@ -371,8 +373,8 @@ static int evpBeltCTRT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob = blobCreate(sizeof(belt_ctrt_ctx) +
-			beltCTR_keep() + beltMAC_keep());
+		blob_t blob =
+			blobCreate(sizeof(belt_ctrt_ctx) + beltCTR_keep() + beltMAC_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
@@ -429,11 +431,12 @@ static int evpBeltCTRT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 static int belt_tls_nids[128];
 static int belt_tls_count;
 
-#define BELT_TLS_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		belt_tls_nids[belt_tls_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			belt_tls_nids[belt_tls_count++] = tmp : NID_undef))
+#define BELT_TLS_REG(name, tmp)                                                \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			belt_tls_nids[belt_tls_count++] = tmp :                            \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					belt_tls_nids[belt_tls_count++] = tmp :                    \
+					NID_undef))
 
 /*
 *******************************************************************************
@@ -443,8 +446,8 @@ static int belt_tls_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
-	const int** nids, int nid)
+static int evpBeltTLS_enum(
+	ENGINE* e, const EVP_CIPHER** cipher, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!cipher)
@@ -457,8 +460,7 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 				return 0;
 			if (belt_tls_count + nid >= (int)COUNT_OF(belt_tls_nids))
 				return 0;
-			memCopy(belt_tls_nids + belt_tls_count, *nids,
-				nid * sizeof(int));
+			memCopy(belt_tls_nids + belt_tls_count, *nids, nid * sizeof(int));
 			*nids = belt_tls_nids;
 			return belt_tls_count + nid;
 		}
@@ -485,20 +487,29 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 *******************************************************************************
 */
 
-#define BELT_TLS_DESCR(name, block_size, key_size, iv_len, flags,\
-	init, cipher, cleanup, set_params, get_params, ctrl)\
-	EVP_##name = EVP_CIPHER_meth_new(NID_##name, block_size, key_size);\
-	if (EVP_##name == 0 ||\
-		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||\
-		!EVP_CIPHER_meth_set_flags(EVP_##name, flags) ||\
-		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, 0) ||\
-		!EVP_CIPHER_meth_set_init(EVP_##name, init) ||\
-		!EVP_CIPHER_meth_set_do_cipher(EVP_##name, cipher) ||\
-		!EVP_CIPHER_meth_set_cleanup(EVP_##name, cleanup) ||\
-		!EVP_CIPHER_meth_set_set_asn1_params(EVP_##name, set_params) ||\
-		!EVP_CIPHER_meth_set_get_asn1_params(EVP_##name, get_params) ||\
-		!EVP_CIPHER_meth_set_ctrl(EVP_##name, ctrl))\
-		return 0;\
+#define BELT_TLS_DESCR(name,                                                   \
+	block_size,                                                                \
+	key_size,                                                                  \
+	iv_len,                                                                    \
+	flags,                                                                     \
+	init,                                                                      \
+	cipher,                                                                    \
+	cleanup,                                                                   \
+	set_params,                                                                \
+	get_params,                                                                \
+	ctrl)                                                                      \
+	EVP_##name = EVP_CIPHER_meth_new(NID_##name, block_size, key_size);        \
+	if (EVP_##name == 0 ||                                                     \
+		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||                  \
+		!EVP_CIPHER_meth_set_flags(EVP_##name, flags) ||                       \
+		!EVP_CIPHER_meth_set_impl_ctx_size(EVP_##name, 0) ||                   \
+		!EVP_CIPHER_meth_set_init(EVP_##name, init) ||                         \
+		!EVP_CIPHER_meth_set_do_cipher(EVP_##name, cipher) ||                  \
+		!EVP_CIPHER_meth_set_cleanup(EVP_##name, cleanup) ||                   \
+		!EVP_CIPHER_meth_set_set_asn1_params(EVP_##name, set_params) ||        \
+		!EVP_CIPHER_meth_set_get_asn1_params(EVP_##name, get_params) ||        \
+		!EVP_CIPHER_meth_set_ctrl(EVP_##name, ctrl))                           \
+		return 0;
 
 
 int evpBeltTLS_bind(ENGINE* e)
@@ -509,19 +520,34 @@ int evpBeltTLS_bind(ENGINE* e)
 		BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
-	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,
-		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup,
-		0, 0, evpBeltDWPT_ctrl);
-	BELT_TLS_DESCR(belt_ctrt, 1, 32, 0, FLAGS_belt_ctrt,
-		evpBeltCTRT_init, evpBeltCTRT_cipher, evpBeltCTRT_cleanup,
-		0, 0, evpBeltCTRT_ctrl);
+	BELT_TLS_DESCR(belt_dwpt,
+		1,
+		32,
+		8,
+		FLAGS_belt_dwpt,
+		evpBeltDWPT_init,
+		evpBeltDWPT_cipher,
+		evpBeltDWPT_cleanup,
+		0,
+		0,
+		evpBeltDWPT_ctrl);
+	BELT_TLS_DESCR(belt_ctrt,
+		1,
+		32,
+		0,
+		FLAGS_belt_ctrt,
+		evpBeltCTRT_init,
+		evpBeltCTRT_cipher,
+		evpBeltCTRT_cleanup,
+		0,
+		0,
+		evpBeltCTRT_ctrl);
 	// задать перечислитель
 	prev_enum = ENGINE_get_ciphers(e);
 	if (!ENGINE_set_ciphers(e, evpBeltTLS_enum))
 		return 0;
 	// зарегистрировать алгоритмы
-	return ENGINE_register_ciphers(e) &&
-		EVP_add_cipher(EVP_belt_dwpt) &&
+	return ENGINE_register_ciphers(e) && EVP_add_cipher(EVP_belt_dwpt) &&
 		EVP_add_cipher(EVP_belt_ctrt);
 }
 

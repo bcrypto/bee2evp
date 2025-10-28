@@ -24,7 +24,8 @@
 #include "bee2/defs.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // for API const changes in 3.0.0
@@ -556,19 +557,20 @@ const EVP_PKEY_ASN1_METHOD* evpBeltHMAC_ameth();
 		-pkeyopt params:bign-curve256v1\
 		-pkeyopt enc_params:specified\
 		-pkeyopt enc_params:cofactor\
-        -out privkey.pem
+		-out privkey.pem
 
-    openssl dgst\
-        -sign privkey.pem\
-        -pkeyopt sig:deterministic\
+	openssl dgst\
+		-sign privkey.pem\
+		-pkeyopt sig:deterministic\
 		-pkeyopt hash:sha256\
-        file_to_sign
+		file_to_sign
 \endcode
 
 Алгоритмы bign подключаются как методы ключа, через структуру EVP_PKEY_METHOD.
 Форматы данных для этих методов задаются через структуру EVP_PKEY_ASN1_METHOD.
 
-Алгоритмы ЭЦП работают в связке с алгоритмами хэширования. Разрешенные сочетания:
+Алгоритмы ЭЦП работают в связке с алгоритмами хэширования. Разрешенные
+сочетания:
 - алгоритмы bign уровня l = 128  вместе с belt-hash (bign-with-hspec);
 - алгоритмы bign уровня l = 192  вместе с belt-bash384 (bign-with-bash384);
 - алгоритмы bign уровня l = 256  вместе с belt-bash512 (bign-with-bash512);
@@ -681,13 +683,13 @@ const EVP_PKEY_METHOD* evpBign_pmeth();
 const EVP_PKEY_ASN1_METHOD* evpBign_ameth();
 
 /*! \brief Флаг явного кодирования параметров */
-#define EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED	1
+#define EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED 1
 /*! \brief Флаг кодирования кофактора */
-#define EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR	2
+#define EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR 2
 /*! \brief Флаг детерминированной выработки ЭЦП */
-#define EVP_BIGN_PKEY_SIG_DETERMINISTIC		4
+#define EVP_BIGN_PKEY_SIG_DETERMINISTIC 4
 /*! \brief Флаг использования bake-kdf */
-#define EVP_BIGN_PKEY_KDF_BAKE				8
+#define EVP_BIGN_PKEY_KDF_BAKE 8
 
 /*!	\brief Установить параметры ключей bign
 
@@ -698,8 +700,8 @@ const EVP_PKEY_ASN1_METHOD* evpBign_ameth();
 	При нарушении совместимости возвращается 0.
 */
 int evpBign_pkey_set_params(
-	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
-	int params_nid				/*!< [in] идентификатор параметров */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключа */
+	int params_nid	   /*!< [in] идентификатор параметров */
 );
 
 /*!	\brief Установить флаги кодирования bign
@@ -708,8 +710,8 @@ int evpBign_pkey_set_params(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_enc_flags(
-	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-	u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Сбросить флаги кодирования bign
@@ -718,48 +720,48 @@ int evpBign_pkey_set_enc_flags(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_enc_flags(
-	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-	u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Установить флаги подписи bign
 
-    В ctx устанавливаются флаги flags подписи bign.
-    \return Признак успеха (<= 0 в случае ошибки).
+	В ctx устанавливаются флаги flags подписи bign.
+	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_sig_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-    u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Сбросить флаги подписи bign
 
-    В ctx сбрасываются флаги flags подписи bign.
-    \return Признак успеха (<= 0 в случае ошибки).
+	В ctx сбрасываются флаги flags подписи bign.
+	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_sig_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-    u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Установить флаги механизма KDF для ключей bign
 
-    В ctx устанавливаются флаги flags механизма KDF для ключей bign.
-    \return Признак успеха (<= 0 в случае ошибки).
+	В ctx устанавливаются флаги flags механизма KDF для ключей bign.
+	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-    u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Сбросить флаги механизма KDF для ключей bign
 
-    В ctx сбрасываются флаги flags механизма KDF для ключей bign.
-    \return Признак успеха (<= 0 в случае ошибки).
+	В ctx сбрасываются флаги flags механизма KDF для ключей bign.
+	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_clr_kdf_flags(
-    EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключей */
-    u8 flags					/*!< [in] флаги */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключей */
+	u8 flags		   /*!< [in] флаги */
 );
 
 /*!	\brief Установить данные для метода bake-kdf
@@ -769,9 +771,9 @@ int evpBign_pkey_clr_kdf_flags(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_ukm(
-	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
-	void* ukm,					/*!< [in] данные bake-kdf */
-	size_t ukm_len				/*!< [in] длина ukm в октетах */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключа */
+	void* ukm,		   /*!< [in] данные bake-kdf */
+	size_t ukm_len	   /*!< [in] длина ukm в октетах */
 );
 
 /*!	\brief Установить номер ключа для метода bake-kdf
@@ -781,8 +783,8 @@ int evpBign_pkey_set_kdf_ukm(
 	\return Признак успеха (<= 0 в случае ошибки).
 */
 int evpBign_pkey_set_kdf_num(
-	EVP_PKEY_CTX* ctx,			/*!< [in,out] контекст ключа */
-	size_t num					/*!< [in] номер ключа */
+	EVP_PKEY_CTX* ctx, /*!< [in,out] контекст ключа */
+	size_t num		   /*!< [in] номер ключа */
 );
 
 /*!

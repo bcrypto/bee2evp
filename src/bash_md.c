@@ -95,11 +95,12 @@ static int evpBash_final(EVP_MD_CTX* ctx, octet* md)
 static int bash_md_nids[128];
 static int bash_md_count;
 
-#define BASH_MD_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		bash_md_nids[bash_md_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			bash_md_nids[bash_md_count++] = tmp : NID_undef))
+#define BASH_MD_REG(name, tmp)                                                 \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			bash_md_nids[bash_md_count++] = tmp :                              \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					bash_md_nids[bash_md_count++] = tmp :                      \
+					NID_undef))
 
 /*
 *******************************************************************************
@@ -109,8 +110,7 @@ static int bash_md_count;
 
 static ENGINE_DIGESTS_PTR prev_enum;
 
-static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids,
-	int nid)
+static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!md)
@@ -123,8 +123,7 @@ static int evpBash_enum(ENGINE* e, const EVP_MD** md, const int** nids,
 				return 0;
 			if (bash_md_count + nid >= (int)COUNT_OF(bash_md_nids))
 				return 0;
-			memCopy(bash_md_nids + bash_md_count, *nids,
-				nid * sizeof(int));
+			memCopy(bash_md_nids + bash_md_count, *nids, nid * sizeof(int));
 			*nids = bash_md_nids;
 			return bash_md_count + nid;
 		}
@@ -168,8 +167,7 @@ int evpBash_bind(ENGINE* e)
 		return 0;
 	// создать и настроить описатель bash256
 	EVP_bash256 = EVP_MD_meth_new(NID_bash256, 0);
-	if (EVP_bash256 == 0 ||
-		!EVP_MD_meth_set_result_size(EVP_bash256, 32) ||
+	if (EVP_bash256 == 0 || !EVP_MD_meth_set_result_size(EVP_bash256, 32) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash256, 128) ||
 		!EVP_MD_meth_set_app_datasize(EVP_bash256, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash256, evpBash_init) ||
@@ -178,8 +176,7 @@ int evpBash_bind(ENGINE* e)
 		return 0;
 	// создать и настроить описатель bash384
 	EVP_bash384 = EVP_MD_meth_new(NID_bash384, 0);
-	if (EVP_bash384 == 0 ||
-		!EVP_MD_meth_set_result_size(EVP_bash384, 48) ||
+	if (EVP_bash384 == 0 || !EVP_MD_meth_set_result_size(EVP_bash384, 48) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash384, 96) ||
 		!EVP_MD_meth_set_app_datasize(EVP_bash384, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash384, evpBash_init) ||
@@ -188,8 +185,7 @@ int evpBash_bind(ENGINE* e)
 		return 0;
 	// создать и настроить описатель bash512
 	EVP_bash512 = EVP_MD_meth_new(NID_bash512, 0);
-	if (EVP_bash512 == 0 ||
-		!EVP_MD_meth_set_result_size(EVP_bash512, 64) ||
+	if (EVP_bash512 == 0 || !EVP_MD_meth_set_result_size(EVP_bash512, 64) ||
 		!EVP_MD_meth_set_input_blocksize(EVP_bash512, 64) ||
 		!EVP_MD_meth_set_app_datasize(EVP_bash512, (int)bashHash_keep()) ||
 		!EVP_MD_meth_set_init(EVP_bash512, evpBash_init) ||
@@ -201,10 +197,8 @@ int evpBash_bind(ENGINE* e)
 	if (!ENGINE_set_digests(e, evpBash_enum))
 		return 0;
 	// зарегистрировать алгоритмы
-	return ENGINE_register_digests(e) &&
-		EVP_add_digest(EVP_bash256) &&
-		EVP_add_digest(EVP_bash384) &&
-		EVP_add_digest(EVP_bash512);
+	return ENGINE_register_digests(e) && EVP_add_digest(EVP_bash256) &&
+		EVP_add_digest(EVP_bash384) && EVP_add_digest(EVP_bash512);
 }
 
 void evpBash_finish()

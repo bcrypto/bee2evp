@@ -94,7 +94,8 @@ static int bee2evp_finish(ENGINE* e)
 	evpBign_pmeth_finish();
 	evpBign_ameth_finish();
 	evpBash_finish();
-	if (rngIsValid()) {
+	if (rngIsValid())
+	{
 		rngClose();
 	}
 	return 1;
@@ -102,11 +103,10 @@ static int bee2evp_finish(ENGINE* e)
 
 static int bee2evp_destroy(ENGINE* e)
 {
-		return 1;
+	return 1;
 }
 
-static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] =
-{
+static const ENGINE_CMD_DEFN bee2evp_cmd_defns[] = {
 	{0, 0, 0, 0},
 };
 
@@ -136,8 +136,7 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 	if (id && strCmp(id, SN_bee2evp) != 0)
 		return 0;
 	// настроить плагин
-	if (!ENGINE_set_id(e, SN_bee2evp) ||
-		!ENGINE_set_name(e, LN_bee2evp) ||
+	if (!ENGINE_set_id(e, SN_bee2evp) || !ENGINE_set_name(e, LN_bee2evp) ||
 		!ENGINE_set_init_function(e, bee2evp_init) ||
 		!ENGINE_set_finish_function(e, bee2evp_finish) ||
 		!ENGINE_set_destroy_function(e, bee2evp_destroy) ||
@@ -145,15 +144,10 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!ENGINE_set_ctrl_function(e, bee2evp_ctrl))
 		return 0;
 	// встроить модули
-	if (!evpBeltCipher_bind(e) ||
-		!evpBeltMD_bind(e) ||
-		!evpBelt_ameth_bind(e) ||
-		!evpBelt_pmeth_bind(e) ||
-		!evpBeltPBKDF_bind(e) ||
-		!evpBeltTLS_bind(e) ||
-		!evpBign_ameth_bind(e) ||
-		!evpBign_pmeth_bind(e) ||
-		!evpBash_bind(e))
+	if (!evpBeltCipher_bind(e) || !evpBeltMD_bind(e) ||
+		!evpBelt_ameth_bind(e) || !evpBelt_pmeth_bind(e) ||
+		!evpBeltPBKDF_bind(e) || !evpBeltTLS_bind(e) ||
+		!evpBign_ameth_bind(e) || !evpBign_pmeth_bind(e) || !evpBash_bind(e))
 		return 0;
 	// связать хэш + ЭЦП
 	if (!OBJ_add_sigid(NID_bign_with_hbelt, NID_belt_hash, NID_bign_pubkey) ||
@@ -163,8 +157,11 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!OBJ_add_sigid(NID_bign_with_hspec, NID_undef, NID_bign_pubkey))
 		return 0;
 	// связать belt-pbkdf + belt-hmac
-	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, NID_belt_hmac, -1,
-		NID_belt_hash, evpBeltPBKDF_keyivgen))
+	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF,
+			NID_belt_hmac,
+			-1,
+			NID_belt_hash,
+			evpBeltPBKDF_keyivgen))
 		return 0;
 	// все нормально
 	return 1;
@@ -177,14 +174,14 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 */
 
 #ifndef OPENSSL_NO_DYNAMIC_ENGINE
-	IMPLEMENT_DYNAMIC_CHECK_FN()
-	IMPLEMENT_DYNAMIC_BIND_FN(bee2evp_bind)
+IMPLEMENT_DYNAMIC_CHECK_FN()
+IMPLEMENT_DYNAMIC_BIND_FN(bee2evp_bind)
 #endif
 
 static ENGINE* ENGINE_bee2evp()
 {
 	ENGINE* ret = ENGINE_new();
-	if(ret == 0)
+	if (ret == 0)
 		return 0;
 	if (!bee2evp_bind(ret, SN_bee2evp))
 	{
