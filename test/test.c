@@ -89,8 +89,6 @@ int testCiphers()
 *******************************************************************************
 */
 
-
-
 #if OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HMACTest();
 extern bool_t HKDFTest();
@@ -111,6 +109,30 @@ int testFunctions()
 
 /*
 *******************************************************************************
+Тестирование ключей и сертификатов BIGN 
+*******************************************************************************
+*/
+
+extern bool_t bignParamsTest();
+extern bool_t bignKeyGenTest();
+extern bool_t bignPubKeyTest();
+
+int testBign()
+{
+	int ret = 0;
+	bool_t code;
+	printf("bign-params: %s\n", (code = bignParamsTest()) ? "OK" : "Err");
+    ret |= !code;
+	printf("bign-genkeypair: %s\n", (code = bignKeyGenTest()) ? "OK" : "Err");
+    ret |= !code;
+	printf("bign-pubkey: %s\n", (code = bignPubKeyTest()) ? "OK" : "Err");
+    ret |= !code;
+
+	return ret;
+}
+
+/*
+*******************************************************************************
 main
 *******************************************************************************
 */
@@ -122,6 +144,7 @@ int main()
 	ret |= testDigests();
 	ret |= testCiphers();
     ret |= testFunctions();
+	ret |= testBign();
     EVP_cleanup();
     ERR_free_strings();
 	return ret;
