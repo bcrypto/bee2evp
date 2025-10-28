@@ -122,12 +122,12 @@ const char LN_bign_primefield[] = "bign-primefield";
 
 typedef struct bign_pkey_ctx
 {
-	int params_nid;		/*< идентификатор параметров */
-	int hash_nid;		/*< рекомендуемый хэш-алгоритм для ЭЦП */
-	u8 flags;			/*< флаги */
-	const EVP_MD* md;	/*< алгоритм хэширования для ЭЦП */
-	blob_t kdf_ukm;		/*< данные для bake-kdf: ukm */
-	int kdf_num;		/*< данные для bake-kdf: номер ключа */
+	int params_nid;	  /*< идентификатор параметров */
+	int hash_nid;	  /*< рекомендуемый хэш-алгоритм для ЭЦП */
+	u8 flags;		  /*< флаги */
+	const EVP_MD* md; /*< алгоритм хэширования для ЭЦП */
+	blob_t kdf_ukm;	  /*< данные для bake-kdf: ukm */
+	int kdf_num;	  /*< данные для bake-kdf: номер ключа */
 } bign_pkey_ctx;
 
 /*
@@ -270,8 +270,8 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 		return 0;
 	}
 	// сгенерировать пару ключей
-	return bignKeypairGen(key->privkey, key->pubkey, key->params,
-		rngStepR, 0) == ERR_OK;
+	return bignKeypairGen(
+			   key->privkey, key->pubkey, key->params, rngStepR, 0) == ERR_OK;
 }
 
 /*
@@ -280,8 +280,11 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 *******************************************************************************
 */
 
-static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
-	const octet* tbs, size_t tbslen)
+static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx,
+	octet* sig,
+	size_t* siglen,
+	const octet* tbs,
+	size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
@@ -308,8 +311,7 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
-	if (dctx->md == 0 ||
-		EVP_MD_size(dctx->md) != (int)key->params->l / 4 ||
+	if (dctx->md == 0 || EVP_MD_size(dctx->md) != (int)key->params->l / 4 ||
 		EVP_MD_size(dctx->md) != (int)tbslen)
 		return 0;
 	if ((obj = OBJ_nid2obj(EVP_MD_type(dctx->md))) == 0)
@@ -324,18 +326,28 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// подписать
 	if ((key->flags & EVP_BIGN_PKEY_SIG_DETERMINISTIC) || !rngIsValid())
-		ret = bignSign2(sig, key->params, der, der_len, tbs,
-			key->privkey, 0, 0) == ERR_OK;
+		ret = bignSign2(
+				  sig, key->params, der, der_len, tbs, key->privkey, 0, 0) ==
+			ERR_OK;
 	else
-		ret = bignSign(sig, key->params, der, der_len, tbs,
-			key->privkey, rngStepR, 0) == ERR_OK;
+		ret = bignSign(sig,
+				  key->params,
+				  der,
+				  der_len,
+				  tbs,
+				  key->privkey,
+				  rngStepR,
+				  0) == ERR_OK;
 	// завершить
 	blobClose(der);
 	return ret;
 }
 
-static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
-	size_t siglen, const octet* tbs, size_t tbslen)
+static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx,
+	const octet* sig,
+	size_t siglen,
+	const octet* tbs,
+	size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
@@ -356,8 +368,7 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 	key->flags = dctx->flags;
 	// проанализировать алгоритм хэширования
 	// и получить суффикс DER-кодировки oid в [obj->len]obj->data
-	if (dctx->md == 0 ||
-		EVP_MD_size(dctx->md) != (int)key->params->l / 4 ||
+	if (dctx->md == 0 || EVP_MD_size(dctx->md) != (int)key->params->l / 4 ||
 		EVP_MD_size(dctx->md) != (int)tbslen)
 		return 0;
 	if ((obj = OBJ_nid2obj(EVP_MD_type(dctx->md))) == 0)
@@ -371,8 +382,8 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 		return 0;
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// проверить подпись
-	ret = bignVerify(key->params, der, der_len, tbs, sig,
-		key->pubkey) == ERR_OK;
+	ret =
+		bignVerify(key->params, der, der_len, tbs, sig, key->pubkey) == ERR_OK;
 	// завершить
 	blobClose(der);
 	return ret;
@@ -384,8 +395,11 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
 *******************************************************************************
 */
 
-static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out, size_t* outlen,
-	const octet* in, size_t inlen)
+static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx,
+	octet* out,
+	size_t* outlen,
+	const octet* in,
+	size_t inlen)
 {
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 	bign_key* key;
@@ -401,12 +415,16 @@ static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out, size_t* outlen,
 	if (!out)
 		return 1;
 	// зашифровать (установить защиту)
-	return bignKeyWrap(out, key->params, in, inlen, 0, key->pubkey,
-		rngStepR, 0) == ERR_OK;
+	return bignKeyWrap(
+			   out, key->params, in, inlen, 0, key->pubkey, rngStepR, 0) ==
+		ERR_OK;
 }
 
-static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx, octet* out, size_t* outlen,
-	const octet* in, size_t inlen)
+static int evpBign_pkey_decrypt(EVP_PKEY_CTX* ctx,
+	octet* out,
+	size_t* outlen,
+	const octet* in,
+	size_t inlen)
 {
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 	bign_key* key;
@@ -422,8 +440,8 @@ static int evpBign_pkey_decrypt(EVP_PKEY_CTX *ctx, octet* out, size_t* outlen,
 	if (!out)
 		return 1;
 	// расшифровать (снять защиту)
-	return bignKeyUnwrap(out, key->params, in, inlen, 0,
-		key->privkey) == ERR_OK;
+	return bignKeyUnwrap(out, key->params, in, inlen, 0, key->privkey) ==
+		ERR_OK;
 }
 
 /*
@@ -457,12 +475,13 @@ static int evpBign_pkey_derive(EVP_PKEY_CTX* ctx, octet* key, size_t* key_len)
 	}
 	// построить ключ
 	*key_len = MIN2(*key_len, mykey->params->l / 2);
-	return bignDH(key, mykey->params, mykey->privkey,
-		peerkey->pubkey, *key_len) == ERR_OK;
+	return bignDH(
+			   key, mykey->params, mykey->privkey, peerkey->pubkey, *key_len) ==
+		ERR_OK;
 }
 
-static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key,
-	size_t* keylen)
+static int evpBign_pkey_kdf_derive(
+	EVP_PKEY_CTX* ctx, octet* key, size_t* keylen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	octet* secret;
@@ -492,8 +511,12 @@ static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key,
 	}
 	// построить ключ bake-kdf
 	*keylen = MIN2(*keylen, 32);
-	code = bakeKDF(key, secret, secret_len, (octet*)dctx->kdf_ukm,
-		blobSize(dctx->kdf_ukm), dctx->kdf_num);
+	code = bakeKDF(key,
+		secret,
+		secret_len,
+		(octet*)dctx->kdf_ukm,
+		blobSize(dctx->kdf_ukm),
+		dctx->kdf_num);
 	// завершить
 	blobClose(secret);
 	return code == ERR_OK;
@@ -505,15 +528,15 @@ Ctrl-функции
 *******************************************************************************
 */
 
-#define EVP_BIGN_PKEY_CTRL_SET_PARAMS		(EVP_PKEY_ALG_CTRL + 1)
-#define EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 2)
-#define EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS	(EVP_PKEY_ALG_CTRL + 3)
-#define EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS	(EVP_PKEY_ALG_CTRL + 4)
-#define EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS	(EVP_PKEY_ALG_CTRL + 5)
-#define EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS	(EVP_PKEY_ALG_CTRL + 6)
-#define EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS	(EVP_PKEY_ALG_CTRL + 7)
-#define EVP_BIGN_PKEY_CTRL_SET_KDF_UKM		(EVP_PKEY_ALG_CTRL + 8)
-#define EVP_BIGN_PKEY_CTRL_SET_KDF_NUM		(EVP_PKEY_ALG_CTRL + 9)
+#define EVP_BIGN_PKEY_CTRL_SET_PARAMS	 (EVP_PKEY_ALG_CTRL + 1)
+#define EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS (EVP_PKEY_ALG_CTRL + 2)
+#define EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS (EVP_PKEY_ALG_CTRL + 3)
+#define EVP_BIGN_PKEY_CTRL_SET_SIG_FLAGS (EVP_PKEY_ALG_CTRL + 4)
+#define EVP_BIGN_PKEY_CTRL_CLR_SIG_FLAGS (EVP_PKEY_ALG_CTRL + 5)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_FLAGS (EVP_PKEY_ALG_CTRL + 6)
+#define EVP_BIGN_PKEY_CTRL_CLR_KDF_FLAGS (EVP_PKEY_ALG_CTRL + 7)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_UKM	 (EVP_PKEY_ALG_CTRL + 8)
+#define EVP_BIGN_PKEY_CTRL_SET_KDF_NUM	 (EVP_PKEY_ALG_CTRL + 9)
 
 static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 {
@@ -609,66 +632,92 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 
 int evpBign_pkey_set_params(EVP_PKEY_CTX* ctx, int params_nid)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
+		EVP_BIGN_PKEY_CTRL_SET_PARAMS,
+		params_nid,
+		0);
 }
 
 int evpBign_pkey_set_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
 int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
 int evpBign_pkey_set_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_SIG,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
 int evpBign_pkey_clr_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_TYPE_SIG,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
 int evpBign_pkey_set_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
 int evpBign_pkey_clr_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
+		(int)flags,
+		0);
 }
 
-int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm,
-	size_t ukm_len)
+int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm, size_t ukm_len)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_KDF_UKM, (int)ukm_len, ukm);
+		EVP_BIGN_PKEY_CTRL_SET_KDF_UKM,
+		(int)ukm_len,
+		ukm);
 }
 
 int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 {
-	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey,
+	return EVP_PKEY_CTX_ctrl(ctx,
+		NID_bign_pubkey,
 		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_KDF_NUM, (int)num, 0);
+		EVP_BIGN_PKEY_CTRL_SET_KDF_NUM,
+		(int)num,
+		0);
 }
 
 /*
@@ -677,8 +726,8 @@ int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 *******************************************************************************
 */
 
-static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
-	const char* value)
+static int evpBign_pkey_ctrl_str(
+	EVP_PKEY_CTX* ctx, const char* type, const char* value)
 {
 	// долговременные параметры
 	if (strEq(type, "params"))
@@ -695,19 +744,19 @@ static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
 	if (strEq(type, "enc_params"))
 	{
 		if (strEq(value, "specified"))
-			return evpBign_pkey_set_enc_flags(ctx,
-				EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
+			return evpBign_pkey_set_enc_flags(
+				ctx, EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
 		if (strEq(value, "cofactor"))
-			return evpBign_pkey_set_enc_flags(ctx,
-				EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
+			return evpBign_pkey_set_enc_flags(
+				ctx, EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
 		return -2;
 	}
 	// опции ЭЦП
 	if (strEq(type, "sig"))
 	{
 		if (strEq(value, "deterministic"))
-			return evpBign_pkey_set_sig_flags(ctx,
-				EVP_BIGN_PKEY_SIG_DETERMINISTIC);
+			return evpBign_pkey_set_sig_flags(
+				ctx, EVP_BIGN_PKEY_SIG_DETERMINISTIC);
 		return -2;
 	}
 	// опции kdf
@@ -742,11 +791,12 @@ const EVP_PKEY_METHOD* evpBign_pmeth()
 static int bign_pmeth_nids[128];
 static int bign_pmeth_count;
 
-#define BIGN_PMETH_REG(name, tmp)\
-	(((tmp = NID_##name) != NID_undef) ?\
-		bign_pmeth_nids[bign_pmeth_count++] = tmp :\
-		(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?\
-			bign_pmeth_nids[bign_pmeth_count++] = tmp :	NID_undef))
+#define BIGN_PMETH_REG(name, tmp)                                              \
+	(((tmp = NID_##name) != NID_undef) ?                                       \
+			bign_pmeth_nids[bign_pmeth_count++] = tmp :                        \
+			(((tmp = OBJ_create(OID_##name, SN_##name, LN_##name)) > 0) ?      \
+					bign_pmeth_nids[bign_pmeth_count++] = tmp :                \
+					NID_undef))
 
 /*
 *******************************************************************************
@@ -759,8 +809,8 @@ static int bign_pmeth_count;
 
 static ENGINE_PKEY_METHS_PTR prev_enum;
 
-static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
-	const int** nids, int nid)
+static int evpBign_pmeth_enum(
+	ENGINE* e, EVP_PKEY_METHOD** pmeth, const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!pmeth)
@@ -773,8 +823,8 @@ static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
 				return 0;
 			if (bign_pmeth_count + nid >= (int)COUNT_OF(bign_pmeth_nids))
 				return 0;
-			memCopy(bign_pmeth_nids + bign_pmeth_count, *nids,
-				nid * sizeof(int));
+			memCopy(
+				bign_pmeth_nids + bign_pmeth_count, *nids, nid * sizeof(int));
 			*nids = bign_pmeth_nids;
 			return bign_pmeth_count + nid;
 		}
@@ -834,8 +884,8 @@ int evpBign_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_encrypt(EVP_bign_pmeth, 0, evpBign_pkey_encrypt);
 	EVP_PKEY_meth_set_decrypt(EVP_bign_pmeth, 0, evpBign_pkey_decrypt);
 	EVP_PKEY_meth_set_derive(EVP_bign_pmeth, 0, evpBign_pkey_kdf_derive);
-	EVP_PKEY_meth_set_ctrl(EVP_bign_pmeth, evpBign_pkey_ctrl,
-		evpBign_pkey_ctrl_str);
+	EVP_PKEY_meth_set_ctrl(
+		EVP_bign_pmeth, evpBign_pkey_ctrl, evpBign_pkey_ctrl_str);
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_meths(e);
 	if (!ENGINE_set_pkey_meths(e, evpBign_pmeth_enum))
