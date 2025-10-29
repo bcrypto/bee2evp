@@ -108,9 +108,9 @@ clean(){
 check_prereq(){
   set +e
   green echo "[-] check prereq"
-  for package in git gcc cmake python
+  for package in git gcc cmake python3
   do
-    which -s $package &> /dev/null
+    which $package &> /dev/null
     if [ $? -ne 0 ]; then
       set -e
       red echo "$package not installed"
