@@ -265,6 +265,184 @@ static int evpBeltDWPT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 
 /*
 *******************************************************************************
+Алгоритмы belt-che-tls: belt-che для TLS
+*******************************************************************************
+*/
+
+const char OID_belt_chet[] = "1.2.112.0.2.0.34.101.31.68";
+#ifndef SN_belt_chet
+const char SN_belt_chet[] = "belt-che-tls";
+const char LN_belt_chet[] = "belt-che-tls";
+#endif
+
+#define FLAGS_belt_chet                                                        \
+	(EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_CTRL_INIT |                          \
+		EVP_CIPH_ALWAYS_CALL_INIT | EVP_CIPH_FLAG_CUSTOM_CIPHER |              \
+		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_CUSTOM_IV)
+
+static EVP_CIPHER* EVP_belt_chet;
+const EVP_CIPHER* evpBeltCHET()
+{
+	return EVP_belt_chet;
+}
+
+typedef struct belt_chet_ctx
+{
+	octet key[32];	/*< ключ */
+	octet iv[16];	/*< синхропосылка */
+	octet aad[16];	/*< заголовок TLS */
+	size_t aad_len; /*< длина заголовка TLS */
+	octet tag[8];	/*< имитовставка */
+	octet state[];	/*< состояние beltCHE */
+} belt_chet_ctx;
+
+static int evpBeltCHET_init(
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+{
+	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	if (iv)
+	{
+		memCopy(state->iv, iv, 8);
+		memSet(state->iv + 8, 0xFF, 8);
+	}
+	if (key)
+	{
+		memCopy(state->key, key, 32);
+	}
+	state->aad_len = 0;
+	return 1;
+}
+
+static int evpBeltCHET_cipher(
+	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+{
+	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	// выполняются соглашения libssl?
+	if (out != in || !state->aad_len || len < 8 + 8)
+		return -1;
+	// обработать явную синхропосылку
+	if (EVP_CIPHER_CTX_encrypting(ctx))
+	{
+		// записать синхропосылку в начало фрагмента
+		memMove(out + 8, in, len);
+		ASSERT(!memEq(state->aad, state->iv + 8, 8));
+		memCopy(out, state->aad, 8);
+		memCopy(state->iv + 8, state->aad, 8);
+	}
+	else
+		// прочитать синхропосылку из начала фрагмента
+		memCopy(state->iv + 8, out, 8);
+	in += 8, out += 8, len -= 8;
+	// запустить шифр
+	beltCHEStart(state->state, state->key, 32, state->iv);
+	// обработать открытые (ассоциированные) данные
+	beltCHEStepI(state->aad, state->aad_len, state->state);
+	// обработать фрагмент (без имитовставки)
+	len -= 8;
+	if (EVP_CIPHER_CTX_encrypting(ctx))
+	{
+		beltCHEStepE(out, len, state->state);
+		beltCHEStepA(out, len, state->state);
+		beltCHEStepG(out + len, state->state);
+		len += 8 + 8;
+	}
+	else
+	{
+		beltCHEStepA(out, len, state->state);
+		if (!beltCHEStepV(out + len, state->state))
+		{
+			memWipe(out, len);
+			return -1;
+		}
+		beltCHEStepD(out, len, state->state);
+		memMove(out - 8, out, len);
+	}
+	// число октетов, записанных в out
+	return (int)len;
+}
+
+static int evpBeltCHET_cleanup(EVP_CIPHER_CTX* ctx)
+{
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
+	return 1;
+}
+
+static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
+{
+	belt_chet_ctx* state;
+	switch (type)
+	{
+	case EVP_CTRL_INIT:
+	{
+		blob_t blob = blobCreate(sizeof(belt_chet_ctx) + beltCHE_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+			break;
+		blobClose(blob);
+		return 0;
+	}
+	case EVP_CTRL_COPY:
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
+		break;
+	case EVP_CTRL_GET_IVLEN:
+		*(int*)p2 = 8;
+		return 1;
+	case EVP_CTRL_AEAD_SET_IVLEN:
+		return p1 == 8 ? 1 : 0;
+	case EVP_CTRL_AEAD_SET_IV_FIXED:
+		if (p1 != 8)
+			return 0;
+		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		memCopy(state->iv, p2, 8);
+		return 1;
+	case EVP_CTRL_AEAD_SET_TAG:
+		if (p1 != 8)
+			return 0;
+		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		memCopy(state->tag, p2, 8);
+		return 1;
+	case EVP_CTRL_AEAD_GET_TAG:
+		if (p1 != 8)
+			return 0;
+		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		memCopy(p2, state->tag, 8);
+		return 1;
+	case EVP_CTRL_AEAD_TLS1_AAD:
+	{
+		size_t len;
+		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		// сохранить заголовок фрагмента
+		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
+			return 0;
+		ASSERT(sizeof(state->aad) >= EVP_AEAD_TLS1_AAD_LEN);
+		memCopy(state->aad, p2, state->aad_len = EVP_AEAD_TLS1_AAD_LEN);
+		// определить длину фрагмента
+		len = state->aad[state->aad_len - 2], len <<= 8;
+		len += state->aad[state->aad_len - 1];
+		// защита снимается?
+		if (!EVP_CIPHER_CTX_encrypting(ctx))
+		{
+			// уменьшить длину фрагмента на длину явной
+			// синхропосылки и имитовставки
+			if (len < 8 + 8)
+				return 0;
+			len -= 8 + 8;
+		}
+		// сохранить уточненную длину
+		state->aad[state->aad_len - 2] = (octet)(len >> 8);
+		state->aad[state->aad_len - 1] = (octet)len;
+		// возвратить поправку длины
+		return 8 + 8;
+	}
+	default:
+		return -1;
+	}
+	return 1;
+}
+
+/*
+*******************************************************************************
 Алгоритмы belt-ctr-tls: belt-ctr для TLS
 
 1. Введен специальный алгоритм belt-ctr-tls (belt_ctrt в программах),
@@ -471,6 +649,8 @@ static int evpBeltTLS_enum(
 	// обработать запрос
 	if (nid == NID_belt_dwpt)
 		*cipher = EVP_belt_dwpt;
+	if (nid == NID_belt_chet)
+		*cipher = EVP_belt_chet;
 	else if (nid == NID_belt_ctrt)
 		*cipher = EVP_belt_ctrt;
 	else if (prev_enum && prev_enum != evpBeltTLS_enum)
@@ -517,6 +697,7 @@ int evpBeltTLS_bind(ENGINE* e)
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef ||
+		BELT_TLS_REG(belt_chet, tmp) == NID_undef ||
 		BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
@@ -531,6 +712,17 @@ int evpBeltTLS_bind(ENGINE* e)
 		0,
 		0,
 		evpBeltDWPT_ctrl);
+	BELT_TLS_DESCR(belt_chet,
+		1,
+		32,
+		8,
+		FLAGS_belt_chet,
+		evpBeltCHET_init,
+		evpBeltCHET_cipher,
+		evpBeltCHET_cleanup,
+		0,
+		0,
+		evpBeltCHET_ctrl);
 	BELT_TLS_DESCR(belt_ctrt,
 		1,
 		32,
@@ -548,6 +740,7 @@ int evpBeltTLS_bind(ENGINE* e)
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_ciphers(e) && EVP_add_cipher(EVP_belt_dwpt) &&
+		EVP_add_cipher(EVP_belt_chet) &&
 		EVP_add_cipher(EVP_belt_ctrt);
 }
 
@@ -555,6 +748,8 @@ void evpBeltTLS_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_ctrt);
 	EVP_belt_ctrt = 0;
+	EVP_CIPHER_meth_free(EVP_belt_chet);
+	EVP_belt_chet = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwpt);
 	EVP_belt_dwpt = 0;
 }

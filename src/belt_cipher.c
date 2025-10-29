@@ -776,6 +776,186 @@ static int evpBeltDWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 
 /*
 *******************************************************************************
+Алгоритмы belt_che
+*******************************************************************************
+*/
+
+const char OID_belt_che128[] = "1.2.112.0.2.0.34.101.31.64";
+const char SN_belt_che128[] = "belt-che128";
+const char LN_belt_che128[] = "belt-che128";
+
+const char OID_belt_che192[] = "1.2.112.0.2.0.34.101.31.65";
+const char SN_belt_che192[] = "belt-che192";
+const char LN_belt_che192[] = "belt-che192";
+
+const char OID_belt_che256[] = "1.2.112.0.2.0.34.101.31.66";
+const char SN_belt_che256[] = "belt-che256";
+const char LN_belt_che256[] = "belt-che256";
+
+#define FLAGS_belt_che                                                         \
+	(EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_CTRL_INIT |                          \
+		EVP_CIPH_ALWAYS_CALL_INIT | EVP_CIPH_RAND_KEY |                        \
+		EVP_CIPH_FLAG_CUSTOM_CIPHER | EVP_CIPH_CUSTOM_COPY |                   \
+		EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_DEFAULT_ASN1)
+
+static EVP_CIPHER* EVP_belt_che128;
+const EVP_CIPHER* evpBeltCHE128()
+{
+	return EVP_belt_che128;
+}
+
+static EVP_CIPHER* EVP_belt_che192;
+const EVP_CIPHER* evpBeltCHE192()
+{
+	return EVP_belt_che192;
+}
+
+static EVP_CIPHER* EVP_belt_che256;
+const EVP_CIPHER* evpBeltCHE256()
+{
+	return EVP_belt_che256;
+}
+
+typedef struct belt_che_ctx
+{
+	octet block[8];	  /*< блок данных (ловим имитовставку) */
+	size_t block_len; /*< длина блока */
+	octet state[];	  /*< состояние beltCHE */
+} belt_che_ctx;
+
+
+static int evpBeltCHE_init(
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+{
+	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	if (iv)
+		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
+	if (key)
+	{
+		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
+			EVP_CIPHER_CTX_original_iv(ctx),
+			16);
+		beltCHEStart(state->state,
+			key,
+			EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_iv(ctx));
+	}
+	return 1;
+}
+
+static int evpBeltCHE_cipher(
+	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+{
+	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	size_t outlen = 0;
+	// завершение?
+	if (!in)
+	{
+		if (EVP_CIPHER_CTX_encrypting(ctx))
+		{
+			// вычислить и отправить имитовставку
+			beltCHEStepG(out, state->state);
+			return 8;
+		}
+		// проверить имитовставку
+		if (state->block_len != 8 || !beltCHEStepV(state->block, state->state))
+			return -1;
+		return 0;
+	}
+	// открытые данные?
+	if (!out)
+	{
+		beltCHEStepI(in, inlen, state->state);
+		return 0;
+	}
+	// установить защиту
+	if (EVP_CIPHER_CTX_encrypting(ctx))
+	{
+		// обработать критические данные
+		memMove(out, in, inlen);
+		beltCHEStepE(out, inlen, state->state);
+		beltCHEStepA(out, inlen, state->state);
+		outlen = inlen;
+	}
+	// снять защиту
+	else
+	{
+		// есть что обрабатывать?
+		if (state->block_len + inlen > 8)
+		{
+			// сколько всего обработать октетов
+			size_t l = state->block_len + inlen - 8;
+			// сколько обработать октетов block
+			size_t lb = MIN2(state->block_len, l);
+			// обработать октеты block
+			memCopy(out, state->block, lb);
+			beltCHEStepA(out, lb, state->state);
+			beltCHEStepD(out, lb, state->state);
+			out += lb, outlen += lb;
+			// обработать октеты in
+			memMove(out, in, l - lb);
+			beltCHEStepA(out, l - lb, state->state);
+			beltCHEStepD(out, l - lb, state->state);
+			out += l - lb, outlen += l - lb;
+			// обновить block
+			if (lb < state->block_len)
+			{
+				memMove(state->block, state->block + lb, state->block_len - lb);
+				memCopy(state->block + lb, in, 8 - state->block_len + lb);
+			}
+			else
+				memCopy(state->block, in + inlen - 8, 8);
+			state->block_len = 8;
+		}
+		// обрабатывать нечего, просто расширить блок
+		else
+		{
+			memCopy(state->block + state->block_len, in, inlen);
+			state->block_len += inlen;
+		}
+	}
+	return (int)outlen;
+}
+
+static int evpBeltCHE_cleanup(EVP_CIPHER_CTX* ctx)
+{
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
+	return 1;
+}
+
+static int evpBeltCHE_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
+{
+	switch (type)
+	{
+	case EVP_CTRL_INIT:
+	{
+		blob_t blob = blobCreate(sizeof(belt_che_ctx) + beltCHE_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+			break;
+		blobClose(blob);
+		return 0;
+	}
+	case EVP_CTRL_RAND_KEY:
+		if (!rngIsValid())
+			return 0;
+		rngStepR(p2, EVP_CIPHER_CTX_key_length(ctx), 0);
+		break;
+	case EVP_CTRL_COPY:
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
+		break;
+	case EVP_CTRL_PBE_PRF_NID:
+		*(int*)p2 = NID_belt_hmac;
+		break;
+	default:
+		return -1;
+	}
+	return 1;
+}
+
+/*
+*******************************************************************************
 Алгоритмы belt_kwp
 *******************************************************************************
 */
@@ -978,6 +1158,8 @@ static int evpBeltCipher_enum(
 		*cipher = EVP_belt_ecb256;
 	else if (nid == NID_belt_dwp256)
 		*cipher = EVP_belt_dwp256;
+	else if (nid == NID_belt_che256)
+		*cipher = EVP_belt_che256;
 	else if (nid == NID_belt_kwp256)
 		*cipher = EVP_belt_kwp256;
 	// .. короткий ключ
@@ -991,7 +1173,9 @@ static int evpBeltCipher_enum(
 		*cipher = EVP_belt_ecb128;
 	else if (nid == NID_belt_dwp128)
 		*cipher = EVP_belt_dwp128;
-	else if (nid == NID_belt_kwp128)
+	else if (nid == NID_belt_che128)
+		*cipher = EVP_belt_dwp128;
+	else if (nid == NID_belt_che128)
 		*cipher = EVP_belt_kwp128;
 	// .. средний ключ
 	else if (nid == NID_belt_cfb192)
@@ -1004,6 +1188,8 @@ static int evpBeltCipher_enum(
 		*cipher = EVP_belt_ecb192;
 	else if (nid == NID_belt_dwp192)
 		*cipher = EVP_belt_dwp192;
+	else if (nid == NID_belt_che192)
+		*cipher = EVP_belt_che192;
 	else if (nid == NID_belt_kwp192)
 		*cipher = EVP_belt_kwp192;
 	else if (prev_enum && prev_enum != evpBeltCipher_enum)
@@ -1064,6 +1250,9 @@ int evpBeltCipher_bind(ENGINE* e)
 		BELT_CIPHER_REG(belt_dwp128, tmp) == NID_undef ||
 		BELT_CIPHER_REG(belt_dwp192, tmp) == NID_undef ||
 		BELT_CIPHER_REG(belt_dwp256, tmp) == NID_undef ||
+		BELT_CIPHER_REG(belt_che128, tmp) == NID_undef ||
+		BELT_CIPHER_REG(belt_che192, tmp) == NID_undef ||
+		BELT_CIPHER_REG(belt_che256, tmp) == NID_undef ||
 		BELT_CIPHER_REG(belt_kwp128, tmp) == NID_undef ||
 		BELT_CIPHER_REG(belt_kwp192, tmp) == NID_undef ||
 		BELT_CIPHER_REG(belt_kwp256, tmp) == NID_undef)
@@ -1234,6 +1423,39 @@ int evpBeltCipher_bind(ENGINE* e)
 		0,
 		0,
 		evpBeltDWP_ctrl);
+	BELT_CIPHER_DESCR(belt_che128,
+		8,
+		16,
+		16,
+		FLAGS_belt_che,
+		evpBeltCHE_init,
+		evpBeltCHE_cipher,
+		evpBeltCHE_cleanup,
+		0,
+		0,
+		evpBeltCHE_ctrl);
+	BELT_CIPHER_DESCR(belt_che192,
+		8,
+		24,
+		16,
+		FLAGS_belt_che,
+		evpBeltCHE_init,
+		evpBeltCHE_cipher,
+		evpBeltCHE_cleanup,
+		0,
+		0,
+		evpBeltCHE_ctrl);
+	BELT_CIPHER_DESCR(belt_che256,
+		8,
+		32,
+		16,
+		FLAGS_belt_che,
+		evpBeltCHE_init,
+		evpBeltCHE_cipher,
+		evpBeltCHE_cleanup,
+		0,
+		0,
+		evpBeltCHE_ctrl);
 	BELT_CIPHER_DESCR(belt_kwp128,
 		16,
 		16,
@@ -1280,8 +1502,9 @@ int evpBeltCipher_bind(ENGINE* e)
 		EVP_add_cipher(EVP_belt_ctr128) && EVP_add_cipher(EVP_belt_ctr192) &&
 		EVP_add_cipher(EVP_belt_ctr256) && EVP_add_cipher(EVP_belt_dwp128) &&
 		EVP_add_cipher(EVP_belt_dwp192) && EVP_add_cipher(EVP_belt_dwp256) &&
-		EVP_add_cipher(EVP_belt_kwp128) && EVP_add_cipher(EVP_belt_kwp192) &&
-		EVP_add_cipher(EVP_belt_kwp256);
+		EVP_add_cipher(EVP_belt_che128) && EVP_add_cipher(EVP_belt_che192) &&
+		EVP_add_cipher(EVP_belt_che256) && EVP_add_cipher(EVP_belt_kwp128) &&
+		EVP_add_cipher(EVP_belt_kwp192) && EVP_add_cipher(EVP_belt_kwp256);
 }
 
 void evpBeltCipher_finish()
@@ -1292,6 +1515,12 @@ void evpBeltCipher_finish()
 	EVP_belt_kwp192 = 0;
 	EVP_CIPHER_meth_free(EVP_belt_kwp128);
 	EVP_belt_kwp128 = 0;
+	EVP_CIPHER_meth_free(EVP_belt_che256);
+	EVP_belt_che256 = 0;
+	EVP_CIPHER_meth_free(EVP_belt_che192);
+	EVP_belt_che192 = 0;
+	EVP_CIPHER_meth_free(EVP_belt_che128);
+	EVP_belt_che128 = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwp256);
 	EVP_belt_dwp256 = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwp192);
