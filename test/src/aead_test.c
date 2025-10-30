@@ -38,7 +38,7 @@ bool_t aead_encrypt(
     const unsigned char* key, 
     int key_len,
     const unsigned char* s,
-    int s_len,
+    int s_len,                  // устанавливается в 0 при фиксированной длине
     const unsigned char* i, 
     int i_len,
     const char* y, 
@@ -68,6 +68,14 @@ bool_t aead_encrypt(
     {
         fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
         goto err;
+    }
+    if (s_len)
+    {
+        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
+        {
+            fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
+            goto err;
+        }
     }
 
     if (i && i_len > 0)
@@ -188,7 +196,7 @@ bool_t beltDWPTest()
         "belt-dwp256",                      // шифр
         beltH(), 16,                        // критические данные
         beltH() + 128, 32,                  // ключ  
-        beltH() + 192, 8,                   // синхропосылка
+        beltH() + 192, 0,                   // синхропосылка
         beltH() + 16, 32,                   // открытые данные
         "52C9AF96FF50F64435FC43DEF56BD797", // шифротекст
         "3B2E0AEB2B91854B"                  // имитовставка
@@ -199,7 +207,7 @@ bool_t beltDWPTest()
         "belt-dwp256",                      // шифр
         beltH() + 64, 16,                   // шифротекст
         beltH() + 128 + 32, 32,             // ключ  
-        beltH() + 192 + 16, 8,              // синхропосылка
+        beltH() + 192 + 16, 0,              // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
         "DF181ED008A20F43DCBBB93650DAD34B", // критические данные
         "6A2C2C94C4150DC0"                  // имитовставка
@@ -215,7 +223,7 @@ bool_t beltCHETest()
         "belt-che256",                      // шифр
         beltH(), 15,                        // критические данные
         beltH() + 128, 32,                  // ключ  
-        beltH() + 192, 8,                   // синхропосылка
+        beltH() + 192, 0,                   // синхропосылка
         beltH() + 16, 32,                   // открытые данные
         "BF3DAEAF5D18D2BCC30EA62D2E70A4",   // шифротекст
         "548622B844123FF7"                  // имитовставка
@@ -226,7 +234,7 @@ bool_t beltCHETest()
         "belt-che256",                              // шифр
         beltH() + 64, 20,                           // шифротекст
         beltH() + 128 + 32, 32,                     // ключ  
-        beltH() + 192 + 16, 8,                      // синхропосылка
+        beltH() + 192 + 16, 0,                      // синхропосылка
         beltH() + 64 + 16, 32,                      // открытые данные
         "2BABF43EB37B5398A9068F31A3C758B762F44AA9", // критические данные
         "7D9D4F59D40D197D"                          // имитовставка
