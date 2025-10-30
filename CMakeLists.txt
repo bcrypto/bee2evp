@@ -8,6 +8,7 @@ set(BEE2EVP_VERSION
   "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
+option(BUILD_TESTS "Build tests." ON)
 option(INSTALL_HEADERS "Install headers." ON)
 
 if(CMAKE_BUILD_TYPE)
