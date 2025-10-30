@@ -124,6 +124,7 @@ int testFunctions()
 extern bool_t bignParamsTest();
 extern bool_t bignKeyGenTest();
 extern bool_t bignPubKeyTest();
+extern bool_t bignCertTest();
 
 int testBign()
 {
@@ -135,7 +136,8 @@ int testBign()
     ret |= !code;
 	printf("bign-pubkey: %s\n", (code = bignPubKeyTest()) ? "OK" : "Err");
     ret |= !code;
-
+	printf("bign-cert: %s\n", (code = bignCertTest()) ? "OK" : "Err");
+    ret |= !code;
 	return ret;
 }
 

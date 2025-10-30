@@ -5,6 +5,7 @@ add_executable(testb2e
 	src/hmac_test.c
 	src/hkdf_test.c
 	src/bign_test.c
+	src/cert_test.c
 	src/test.c
 )
 target_link_libraries(testb2e  ${libs})
