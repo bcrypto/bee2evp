@@ -1,11 +1,11 @@
 add_executable(testb2e
-	md_test.c
-	aead_test.c
-	belt_test.c
-	hmac_test.c
-	hkdf_test.c
-	bign_test.c
-	test.c
+	src/md_test.c
+	src/aead_test.c
+	src/belt_test.c
+	src/hmac_test.c
+	src/hkdf_test.c
+	src/bign_test.c
+	src/test.c
 )
 target_link_libraries(testb2e  ${libs})
 
