@@ -402,6 +402,19 @@ extern const char LN_belt_dwpt[];
 #define NID_belt_dwpt OBJ_sn2nid(SN_belt_dwpt)
 #endif
 
+/* bash-prg-ae2561 */
+extern const char OID_bash_prg_ae2561[];
+extern const char SN_bash_prg_ae2561[];
+extern const char LN_bash_prg_ae2561[];
+#define NID_bash_prg_ae2561 OBJ_sn2nid(SN_bash_prg_ae2561)
+
+/*!	\brief Описание алгоритмов bash-prg-ae2561
+
+	Возвращается описание алгоритмов bash-prg-ae2561.
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBashPrgAe2561();
+
 /*!	\brief Описание алгоритмов belt-dwpt
 
 	Возвращается описание алгоритмов belt-dwpt (редакция belt-dwp для TLS).

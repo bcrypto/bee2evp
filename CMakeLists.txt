@@ -130,6 +130,7 @@ add_subdirectory(include)
 
 set(src
   src/bee2evp.c
+  src/bash_cipher.c
   src/bash_md.c
   src/belt_ameth.c
   src/belt_cipher.c
