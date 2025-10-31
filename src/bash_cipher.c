@@ -59,7 +59,11 @@ static int evpBashPrgAe_init(
 
 	if (!key & !iv)
 	{
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 		int cipher_nid = EVP_CIPHER_CTX_get_nid(ctx);
+#else
+		int cipher_nid = EVP_CIPHER_CTX_nid(ctx);
+#endif
 		if (cipher_nid == NID_bash_prg_ae2561)
 		{
 			state->tag_len = 32;
