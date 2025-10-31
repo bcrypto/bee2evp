@@ -4,7 +4,7 @@
 \brief Tests for aead ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.16
+\version 2025.10.31
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -31,155 +31,153 @@
 *******************************************************************************
 */
 
-bool_t aead_encrypt(
-    const char* cipher_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,                  // устанавливается в 0 при фиксированной длине
-    const unsigned char* i, 
-    int i_len,
-    const char* y, 
-    const char* t
-) {
-    bool_t ret = FALSE;
-    octet out[128];
-    octet mac[128];
-    int len = 0;
-    const EVP_CIPHER *cipher;
+bool_t aead_encrypt(const char* cipher_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len, // устанавливается в 0 при фиксированной длине
+	const unsigned char* i,
+	int i_len,
+	const char* y,
+	const char* t)
+{
+	bool_t ret = FALSE;
+	octet out[128];
+	octet mac[128];
+	int len = 0;
+	const EVP_CIPHER* cipher;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx)
-    {
-        fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-        return FALSE;
-    }
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
 
-    cipher = EVP_get_cipherbyname(cipher_name);
-    if (!cipher)
-    {
-        fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
-        goto err;
-    }
+	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		goto err;
+	}
 
-    if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
-    {
-        fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
-        goto err;
-    }
-    if (s_len)
-    {
-        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
-        {
-            fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
-            goto err;
-        }
-    }
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+	if (s_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
+		{
+			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
 
-    if (i && i_len > 0)
-    {
-        if (EVP_EncryptUpdate(ctx, NULL, &len, i, i_len) != 1)
-        {
-            fprintf(stderr, "failed to setup aad(%s)\n", cipher_name);
-            goto err;
-        }
-    }
+	if (i && i_len > 0)
+	{
+		if (EVP_EncryptUpdate(ctx, NULL, &len, i, i_len) != 1)
+		{
+			fprintf(stderr, "failed to setup aad(%s)\n", cipher_name);
+			goto err;
+		}
+	}
 
-    if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
-    {
-        fprintf(stderr, "failed to encrypt x(%s)\n", cipher_name);
-        goto err;
-    }
-    if (EVP_EncryptFinal_ex(ctx, mac, &len) != 1)
-    {
-        fprintf(stderr, "failed to encrypt final(%s)\n", cipher_name);
-        goto err;
-    }
-    if (!hexEq(out, y))
+	if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
+	{
+		fprintf(stderr, "failed to encrypt x(%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptFinal_ex(ctx, mac, &len) != 1)
+	{
+		fprintf(stderr, "failed to encrypt final(%s)\n", cipher_name);
+		goto err;
+	}
+	if (!hexEq(out, y))
 		goto err;
 	if (!hexEq(mac, t))
 		goto err;
-    ret = TRUE;
+	ret = TRUE;
 err:
-    EVP_CIPHER_CTX_free(ctx);
-    return ret;
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
 }
 
 
-bool_t aead_decrypt(
-    const char* cipher_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const unsigned char* i, 
-    int i_len,
-    const char* y, 
-    const char* t
-) {
-    bool_t ret = FALSE;
-    octet out[128];
-    octet mac[128];
-    int len = 0;
-    int len2 = 0;
-    int mac_len = 0;
-    const EVP_CIPHER *cipher;
+bool_t aead_decrypt(const char* cipher_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len,
+	const unsigned char* i,
+	int i_len,
+	const char* y,
+	const char* t)
+{
+	bool_t ret = FALSE;
+	octet out[128];
+	octet mac[128];
+	int len = 0;
+	int len2 = 0;
+	int mac_len = 0;
+	const EVP_CIPHER* cipher;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx)
-    {
-        fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-        return FALSE;
-    }
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
 
-    cipher = EVP_get_cipherbyname(cipher_name);
-    if (!cipher)
-    {
-        fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
-    {
-        fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (i && i_len > 0)
-    {
-        if (EVP_DecryptUpdate(ctx, NULL, &len, i, i_len) != 1)
-        {
-            fprintf(stderr, "failed to setup aad(%s)\n", cipher_name);
-            goto err;
-        }
-    }
-
-    if (EVP_DecryptUpdate(ctx, out, &len, x, x_len) != 1)
-    {
-        fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
-        goto err;
-    }
-    hexTo(mac, t);
-    if (EVP_DecryptUpdate(ctx, out + len, &len2, mac, strlen(t) / 2) != 1)
-    {
-        fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
-        goto err;
-    }    
-    if (EVP_DecryptFinal_ex(ctx, out + len + len2, &mac_len) != 1)
-    {
-        fprintf(stderr, "failed to decrypt final(%s)\n", cipher_name);
-        goto err;
-    }
-    if (!hexEq(out, y))
+	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
-    ret = TRUE;
+	}
+
+	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+
+	if (i && i_len > 0)
+	{
+		if (EVP_DecryptUpdate(ctx, NULL, &len, i, i_len) != 1)
+		{
+			fprintf(stderr, "failed to setup aad(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+
+	if (EVP_DecryptUpdate(ctx, out, &len, x, x_len) != 1)
+	{
+		fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
+		goto err;
+	}
+	hexTo(mac, t);
+	if (EVP_DecryptUpdate(ctx, out + len, &len2, mac, strlen(t) / 2) != 1)
+	{
+		fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_DecryptFinal_ex(ctx, out + len + len2, &mac_len) != 1)
+	{
+		fprintf(stderr, "failed to decrypt final(%s)\n", cipher_name);
+		goto err;
+	}
+	if (!hexEq(out, y))
+		goto err;
+	ret = TRUE;
 err:
-    EVP_CIPHER_CTX_free(ctx);
-    return ret;
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
 }
 
 

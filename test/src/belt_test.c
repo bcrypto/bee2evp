@@ -4,7 +4,7 @@
 \brief Tests for block ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.21
+\version 2025.10.31
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -23,102 +23,100 @@
 *******************************************************************************
 */
 
-bool_t cipher_encrypt(
-    const char* cipher_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const char* y
-) {
-    bool_t ret = FALSE;
-    octet out[128];
-    int len = 0;
-    const EVP_CIPHER *cipher;
+bool_t cipher_encrypt(const char* cipher_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len,
+	const char* y)
+{
+	bool_t ret = FALSE;
+	octet out[128];
+	int len = 0;
+	const EVP_CIPHER* cipher;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx)
-    {
-        fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-        return FALSE;
-    }
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
 
-    cipher = EVP_get_cipherbyname(cipher_name);
-    if (!cipher)
-    {
-        fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
-    {
-        fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
-    {
-        fprintf(stderr, "failed to encrypt x(%s)\n", cipher_name);
-        goto err;
-    }
-    if (!hexEq(out, y))
+	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
-    ret = TRUE;
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+
+	if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
+	{
+		fprintf(stderr, "failed to encrypt x(%s)\n", cipher_name);
+		goto err;
+	}
+	if (!hexEq(out, y))
+		goto err;
+	ret = TRUE;
 err:
-    EVP_CIPHER_CTX_free(ctx);
-    return ret;
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
 }
 
 
-bool_t cipher_decrypt(
-    const char* cipher_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const char* y
-) {
-    bool_t ret = FALSE;
-    octet out[128];
-    int len = 0;
-    const EVP_CIPHER *cipher;
+bool_t cipher_decrypt(const char* cipher_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len,
+	const char* y)
+{
+	bool_t ret = FALSE;
+	octet out[128];
+	int len = 0;
+	const EVP_CIPHER* cipher;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx)
-    {
-        fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-        return FALSE;
-    }
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
 
-    cipher = EVP_get_cipherbyname(cipher_name);
-    if (!cipher)
-    {
-        fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
-    {
-        fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (EVP_DecryptUpdate(ctx, out, &len, x, x_len) != 1)
-    {
-        fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
-        goto err;
-    }
-
-    if (!hexEq(out, y))
+	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
-    ret = TRUE;
+	}
+
+	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+
+	if (EVP_DecryptUpdate(ctx, out, &len, x, x_len) != 1)
+	{
+		fprintf(stderr, "failed to decrypt x(%s)\n", cipher_name);
+		goto err;
+	}
+
+	if (!hexEq(out, y))
+		goto err;
+	ret = TRUE;
 err:
-    EVP_CIPHER_CTX_free(ctx);
-    return ret;
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
 }
 
 
@@ -161,15 +159,15 @@ bool_t beltECBTest()
 		"54120CA3E6E19C7AD750FC3531DAEAB7"   // критические данные
     )) return FALSE;
 	// belt-ecb: тест A.10-2
-    // if (!cipher_decrypt(
-    //     "belt-ecb256",                      // шифр
-    //     beltH() + 64, 36,                   // шифротекст
-    //     beltH() + 128 + 32, 32,             // ключ  
-    //     NULL, 0,                            // синхропосылка
-    //     "0DC5300600CAB840B38448E5E993F421"
+	// if (!cipher_decrypt(
+	//     "belt-ecb256",                      // шифр
+	//     beltH() + 64, 36,                   // шифротекст
+	//     beltH() + 128 + 32, 32,             // ключ
+	//     NULL, 0,                            // синхропосылка
+	//     "0DC5300600CAB840B38448E5E993F421"
 	// 	"5780A6E2B69EAFBB258726D7B6718523"
 	// 	"E55A239F"                          // критические данные
-    // )) return FALSE;
+	// )) return FALSE;
 
 	// все нормально
 	return TRUE;
@@ -188,15 +186,15 @@ bool_t beltCBCTest()
 		"657C1EE8C0E0AE5B58388BF8A68E3309"  // шифротекст
     )) return FALSE;
 	// belt-cbc: тест A.11-2
-    // if (!cipher_encrypt(
-    //     "belt-cbc256",                      // шифр
-    //     beltH(), 36,                        // критические данные
-    //     beltH() + 128, 32,                  // ключ  
-    //     beltH() + 192, 8,                   // синхропосылка
-    //     "10116EFAE6AD58EE14852E11DA1B8A74"
+	// if (!cipher_encrypt(
+	//     "belt-cbc256",                      // шифр
+	//     beltH(), 36,                        // критические данные
+	//     beltH() + 128, 32,                  // ключ
+	//     beltH() + 192, 8,                   // синхропосылка
+	//     "10116EFAE6AD58EE14852E11DA1B8A74"
 	// 	"6A9BBADCAF73F968F875DEDC0A44F6B1"
 	// 	"5CF2480E"                          // шифротекст
-    // )) return FALSE;
+	// )) return FALSE;
 	// belt-cbc: тест A.12-1
     if (!cipher_decrypt(
         "belt-cbc256",                              // шифр
@@ -208,16 +206,16 @@ bool_t beltCBCTest()
 		"95B97A9B7907E4B020960455E46176F8"          // критические данные
     )) return FALSE;
 	// belt-cbc: тест A.12-2
-    // if (!cipher_decrypt(
-    //     "belt-cbc256",                              // шифр
-    //     beltH() + 64, 36,                           // шифротекст
-    //     beltH() + 128 + 32, 32,                     // ключ  
-    //     beltH() + 192 + 16, 8,                      // синхропосылка
-    //     "730894D6158E17CC1600185A8F411CAB"
+	// if (!cipher_decrypt(
+	//     "belt-cbc256",                              // шифр
+	//     beltH() + 64, 36,                           // шифротекст
+	//     beltH() + 128 + 32, 32,                     // ключ
+	//     beltH() + 192 + 16, 8,                      // синхропосылка
+	//     "730894D6158E17CC1600185A8F411CAB"
 	// 	"B6AB7AF8541CF85755B8EA27239F08D2"
 	// 	"166646E4"                                  // критические данные
-    // )) return FALSE;
-	
+	// )) return FALSE;
+
 	// все нормально
 	return TRUE;
 }

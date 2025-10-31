@@ -4,7 +4,7 @@
 \brief Tests for message digests
 \project bee2evp/test
 \created 2025.10.21
-\version 2025.10.21
+\version 2025.10.31
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -24,69 +24,66 @@
 */
 
 bool_t digest(
-    const char* md_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const char* y
-) {
-    bool_t ret = FALSE;
-    unsigned int len = EVP_MAX_MD_SIZE;
-    unsigned char static_md[EVP_MAX_MD_SIZE];    
-    const EVP_MD *evp_md = NULL;
-    EVP_MD_CTX *mdctx;
+	const char* md_name, const unsigned char* x, int x_len, const char* y)
+{
+	bool_t ret = FALSE;
+	unsigned int len = EVP_MAX_MD_SIZE;
+	unsigned char static_md[EVP_MAX_MD_SIZE];
+	const EVP_MD* evp_md = NULL;
+	EVP_MD_CTX* mdctx;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
-    md = EVP_MD_fetch(NULL, md_name, NULL);
-    evp_md = md; 
-#endif // OPENSSL_VERSION_MAJOR >= 3    
-    
-    if (!evp_md) 
-    {
-        evp_md = EVP_get_digestbyname(md_name);
-    }
-    if (!evp_md) 
-    {
-        fprintf(stderr, "failed to get digest (%s)\n", md_name);
-        return FALSE;
-    }
+	EVP_MD* md = NULL;
+	md = EVP_MD_fetch(NULL, md_name, NULL);
+	evp_md = md;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
-    mdctx = EVP_MD_CTX_new();
+	if (!evp_md)
+	{
+		evp_md = EVP_get_digestbyname(md_name);
+	}
+	if (!evp_md)
+	{
+		fprintf(stderr, "failed to get digest (%s)\n", md_name);
+		return FALSE;
+	}
+
+	mdctx = EVP_MD_CTX_new();
 	if (!mdctx)
 	{
-        fprintf(stderr, "failed to create digest context (%s)\n", md_name);
-        return FALSE;
-    }
+		fprintf(stderr, "failed to create digest context (%s)\n", md_name);
+		return FALSE;
+	}
 
 	if (1 != EVP_DigestInit(mdctx, evp_md))
 	{
-        fprintf(stderr, "failed to init digest (%s)\n", md_name);
-        goto err;
-    }
+		fprintf(stderr, "failed to init digest (%s)\n", md_name);
+		goto err;
+	}
 
-	if(1 != EVP_DigestUpdate(mdctx, x, x_len))
-    {
-        fprintf(stderr, "failed to process message (%s)\n", md_name);
-        goto err;
-    }
+	if (1 != EVP_DigestUpdate(mdctx, x, x_len))
+	{
+		fprintf(stderr, "failed to process message (%s)\n", md_name);
+		goto err;
+	}
 
-	if(1 != EVP_DigestFinal_ex(mdctx, static_md, &len))
-    {
-        fprintf(stderr, "failed to digest (%s)\n", md_name);
-        goto err;
-    }
+	if (1 != EVP_DigestFinal_ex(mdctx, static_md, &len))
+	{
+		fprintf(stderr, "failed to digest (%s)\n", md_name);
+		goto err;
+	}
 
-    if (!hexEq(static_md, y))
+	if (!hexEq(static_md, y))
 		goto err;
 
-    ret = TRUE;
+	ret = TRUE;
 err:
-    EVP_MD_CTX_free(mdctx);
+	EVP_MD_CTX_free(mdctx);
 #if OPENSSL_VERSION_MAJOR >= 3
-    if (md)
-        EVP_MD_free(md);
+	if (md)
+		EVP_MD_free(md);
 #endif
-    return ret;
+	return ret;
 }
 
 /*

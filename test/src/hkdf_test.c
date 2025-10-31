@@ -4,7 +4,7 @@
 \brief Tests for HKDF function
 \project bee2evp/test
 \created 2025.10.17
-\version 2025.10.28
+\version 2025.10.31
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -41,138 +41,141 @@
 *******************************************************************************
 */
 
-bool_t kdf_test(
-    const char* name,
-    const char* md_name,               
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const unsigned char* i, 
-    int i_len,
-    const char* y,
-    const char* mode
-) {
-    bool_t ret = FALSE;
-    EVP_KDF *kdf = NULL;
-    EVP_KDF_CTX *kctx = NULL;
-    OSSL_PARAM params[6], *p = params;
-    octet out[128];
-    char* md = (char*) md_name;
-    char* _mode = (char*) mode;
-    unsigned char* _key = (unsigned char*) key;
-    unsigned char* _i = (unsigned char*) i;
-    unsigned char* _s = (unsigned char*) s;
+bool_t kdf_test(const char* name,
+	const char* md_name,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len,
+	const unsigned char* i,
+	int i_len,
+	const char* y,
+	const char* mode)
+{
+	bool_t ret = FALSE;
+	EVP_KDF* kdf = NULL;
+	EVP_KDF_CTX* kctx = NULL;
+	OSSL_PARAM params[6], *p = params;
+	octet out[128];
+	char* md = (char*)md_name;
+	char* _mode = (char*)mode;
+	unsigned char* _key = (unsigned char*)key;
+	unsigned char* _i = (unsigned char*)i;
+	unsigned char* _s = (unsigned char*)s;
 
-    kdf = EVP_KDF_fetch(NULL, name, NULL);
-    if (kdf == NULL) {
-        fprintf(stderr, "failed to get kdf (%s)\n", name);
-        return FALSE;
-    }
+	kdf = EVP_KDF_fetch(NULL, name, NULL);
+	if (kdf == NULL)
+	{
+		fprintf(stderr, "failed to get kdf (%s)\n", name);
+		return FALSE;
+	}
 
-    /* Create a context for the key derivation operation */
-    kctx = EVP_KDF_CTX_new(kdf);
-    if (kctx == NULL) {
-        fprintf(stderr, "failed to get kdf context (%s)\n", name);
-        EVP_KDF_free(kdf);
-        return FALSE;
-    }
+	/* Create a context for the key derivation operation */
+	kctx = EVP_KDF_CTX_new(kdf);
+	if (kctx == NULL)
+	{
+		fprintf(stderr, "failed to get kdf context (%s)\n", name);
+		EVP_KDF_free(kdf);
+		return FALSE;
+	}
 
-    /* Set the underlying hash function used to derive the key */
-    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, md, 0);
-    /* Set input keying material */
-    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, _key, key_len);
-    /* Set application specific information */
-    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, _i, i_len);
-    /* Set salt */
-    if (_s)
-        *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, _s, s_len);
-    /* Set mode */
-    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, _mode, 0);
-    *p = OSSL_PARAM_construct_end();
+	/* Set the underlying hash function used to derive the key */
+	*p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, md, 0);
+	/* Set input keying material */
+	*p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, _key, key_len);
+	/* Set application specific information */
+	*p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, _i, i_len);
+	/* Set salt */
+	if (_s)
+		*p++ =
+			OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, _s, s_len);
+	/* Set mode */
+	*p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, _mode, 0);
+	*p = OSSL_PARAM_construct_end();
 
-    /* Derive the key */
-    if (EVP_KDF_derive(kctx, out, strlen(y) / 2 , params) != 1) {
-        fprintf(stderr, "EVP_KDF_derive() failed\n");
-        goto err;
-    }
+	/* Derive the key */
+	if (EVP_KDF_derive(kctx, out, strlen(y) / 2, params) != 1)
+	{
+		fprintf(stderr, "EVP_KDF_derive() failed\n");
+		goto err;
+	}
 
-    if (!hexEq(out, y))
-    {
-        for (size_t i = 0; i < strlen(y)/2; i++) {
-            printf("%02X", out[i]);
-        }
-        printf("\n");
-        goto err;
-    }
-//		goto err;
-    ret = TRUE;
+	if (!hexEq(out, y))
+	{
+		for (size_t i = 0; i < strlen(y) / 2; i++)
+		{
+			printf("%02X", out[i]);
+		}
+		printf("\n");
+		goto err;
+	}
+	//		goto err;
+	ret = TRUE;
 err:
-    EVP_KDF_CTX_free(kctx);
-    EVP_KDF_free(kdf);
-    return ret;
+	EVP_KDF_CTX_free(kctx);
+	EVP_KDF_free(kdf);
+	return ret;
 }
 
 #else
 
 // HKDF only is supported for OpenSSL 1.1.1
-bool_t kdf_test(
-    const char* name,
-    const char* md_name,               
-    const unsigned char* key, 
-    int key_len,
-    const unsigned char* s,
-    int s_len,
-    const unsigned char* i, 
-    int i_len,
-    const char* y,
-    const char* mode
-) {
-    bool_t ret = FALSE;
-    octet out[128];
+bool_t kdf_test(const char* name,
+	const char* md_name,
+	const unsigned char* key,
+	int key_len,
+	const unsigned char* s,
+	int s_len,
+	const unsigned char* i,
+	int i_len,
+	const char* y,
+	const char* mode)
+{
+	bool_t ret = FALSE;
+	octet out[128];
 
-    EVP_PKEY_CTX *pctx;
-    const EVP_MD *evp_md = NULL;
-    size_t outlen = strlen(y) / 2;
-    int _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND;
-    if (!strcmp(mode, "EXTRACT_ONLY"))
-        _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY;
-    if (!strcmp(mode, "EXPAND_ONLY"))
-        _mode = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY;
+	EVP_PKEY_CTX* pctx;
+	const EVP_MD* evp_md = NULL;
+	size_t outlen = strlen(y) / 2;
+	int _mode = EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND;
+	if (!strcmp(mode, "EXTRACT_ONLY"))
+		_mode = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY;
+	if (!strcmp(mode, "EXPAND_ONLY"))
+		_mode = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY;
 
-    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+	pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
 
-    if (EVP_PKEY_derive_init(pctx) <= 0)
-        goto err;
+	if (EVP_PKEY_derive_init(pctx) <= 0)
+		goto err;
 
-    evp_md = EVP_get_digestbyname(md_name);
+	evp_md = EVP_get_digestbyname(md_name);
 
-    if (EVP_PKEY_CTX_set_hkdf_md(pctx, evp_md) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, s, s_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, key, key_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_add1_hkdf_info(pctx, i, i_len) <= 0)
-        goto err;
-    if (EVP_PKEY_CTX_hkdf_mode(pctx, _mode) <= 0)
-        goto err;
-    if (EVP_PKEY_derive(pctx, out, &outlen) <= 0)
-        goto err;
+	if (EVP_PKEY_CTX_set_hkdf_md(pctx, evp_md) <= 0)
+		goto err;
+	if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, s, s_len) <= 0)
+		goto err;
+	if (EVP_PKEY_CTX_set1_hkdf_key(pctx, key, key_len) <= 0)
+		goto err;
+	if (EVP_PKEY_CTX_add1_hkdf_info(pctx, i, i_len) <= 0)
+		goto err;
+	if (EVP_PKEY_CTX_hkdf_mode(pctx, _mode) <= 0)
+		goto err;
+	if (EVP_PKEY_derive(pctx, out, &outlen) <= 0)
+		goto err;
 
-    if (!hexEq(out, y))
-    {
-        for (size_t i = 0; i < strlen(y)/2; i++) {
-            printf("%02X", out[i]);
-        }
-        printf("\n");
-        goto err;
-    }
-//		goto err;
-    ret = TRUE;
+	if (!hexEq(out, y))
+	{
+		for (size_t i = 0; i < strlen(y) / 2; i++)
+		{
+			printf("%02X", out[i]);
+		}
+		printf("\n");
+		goto err;
+	}
+	ret = TRUE;
 err:
-    EVP_PKEY_CTX_free(pctx);
-    return ret;
+	EVP_PKEY_CTX_free(pctx);
+	return ret;
 }
 #endif // OPENSSL_VERSION_MAJOR >= 3
 
@@ -217,7 +220,7 @@ static unsigned char hkdf_okm[] = {
 
 bool_t HKDFTest()
 {
-    char key[128];
+	char key[128];
 
     // HKDF-Extract test
     hexFrom(key, hkdf_prk, sizeof(hkdf_prk));
@@ -261,8 +264,8 @@ bool_t HKDFTest()
 
 bool_t beltHKDFTest()
 {
-    unsigned char buf[32];
-    memSetZero(buf, 32);
+	unsigned char buf[32];
+	memSetZero(buf, 32);
 
     // HKDF-Extract test
     if (!kdf_test(
@@ -330,8 +333,8 @@ bool_t beltHKDFTest()
 
 bool_t bashHKDFTest()
 {
-    unsigned char buf[32];
-    memSetZero(buf, 32);
+	unsigned char buf[32];
+	memSetZero(buf, 32);
 
     // HKDF-Extract test
     if (!kdf_test(

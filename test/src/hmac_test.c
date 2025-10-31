@@ -4,7 +4,7 @@
 \brief Tests for HMAC function
 \project bee2evp/test
 \created 2025.10.17
-\version 2025.10.19
+\version 2025.10.31
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -35,37 +35,35 @@
 *******************************************************************************
 */
 
-bool_t mac_test(
-    const char* name,
-    const char* md_name,
-    const unsigned char* x, 
-    int x_len,                 
-    const unsigned char* key, 
-    int key_len,
-    const char* y
-) {
-    size_t len = 0;
-    static unsigned char static_md[EVP_MAX_MD_SIZE];
-    
-    EVP_MD *evp_md = EVP_MD_fetch(NULL, md_name, NULL); 
-    
-    if (!evp_md && !EVP_get_digestbyname(md_name)) 
-    {
-        fprintf(stderr, "failed to get digest (%s)\n", md_name);
-        return FALSE;
-    }
+bool_t mac_test(const char* name,
+	const char* md_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const char* y)
+{
+	size_t len = 0;
+	static unsigned char static_md[EVP_MAX_MD_SIZE];
 
-    if(!EVP_Q_mac(
-        NULL, "HMAC", NULL, md_name, NULL, key, key_len, x, x_len,
+	EVP_MD* evp_md = EVP_MD_fetch(NULL, md_name, NULL);
+
+	if (!evp_md && !EVP_get_digestbyname(md_name))
+	{
+		fprintf(stderr, "failed to get digest (%s)\n", md_name);
+		return FALSE;
+	}
+
+    if(!EVP_Q_mac(NULL, "HMAC", NULL, md_name, NULL, key, key_len, x, x_len,
         static_md, EVP_MAX_MD_SIZE, &len
     )) {
         fprintf(stderr, "failed to get mac (%s)\n", name);
         return FALSE;
     }
 
-    if (!hexEq(static_md, y))
+	if (!hexEq(static_md, y))
 		return FALSE;
-    return TRUE;
+	return TRUE;
 }
 
 
