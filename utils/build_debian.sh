@@ -172,7 +172,7 @@ build_bee2(){
   cmake -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
-    -DLIB_INSTALL_DIR=$lib_path $bee2
+    -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
   make -j$(nproc) && make install
   ls -la $lib_path/libbee2_static.a
 }
@@ -208,7 +208,7 @@ build_bee2evp(){
     -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$lib_path \
     -DOPENSSL_INCLUDE_DIRS=$local/include \
-    -DLIB_INSTALL_DIR=$lib_path \
+    -DCMAKE_INSTALL_LIBDIR=$lib_path \
     -DCMAKE_INSTALL_PREFIX=$local $bee2evp
   make -j$(nproc) && make install
   ls -la $lib_path/libbee2evp.so
