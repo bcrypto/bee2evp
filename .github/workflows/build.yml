@@ -52,6 +52,7 @@ jobs:
         lcov -c -i -d . -o coverage_base.info
         export PATH=${local}/bin:${PATH}
         export LD_LIBRARY_PATH="${local}/${{ matrix.openssl-config.lib_path }}:${LD_LIBRARY_PATH}"
+        bee2evp/test/testb2e
         python3 --version
         python3 test.py
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \

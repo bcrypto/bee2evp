@@ -291,18 +291,6 @@ bool_t beltHKDFTest()
         "EXTRACT_ONLY"                      // режим HKDF
     )) return FALSE;
 
-    // HKDF-Extract empty data test
-    if (!kdf_test(
-        "HKDF",                             // алгоритм выработки ключей
-        "belt-hash",                        // алгоритм хэширования
-        beltH() + 128, 32,                  // ключ  
-        buf, 32,                            // синхропосылка
-        beltH() + 64 + 16, 32,              // открытые данные
-        "45D2C34F2631D479B991CE7F425E2E69"
-		"F9CE5446F8633A23FCE73359C426F2BF", // новый ключ
-        "EXTRACT_ONLY"                      // режим HKDF
-    )) return FALSE;
-
     // HKDF-Expand test
     if (!kdf_test(
         "HKDF",                             // алгоритм выработки ключей
@@ -310,8 +298,11 @@ bool_t beltHKDFTest()
         beltH() + 128, 32,                  // ключ  
         beltH() + 192, 8,                   // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
-        "685DF00BE2A65410C5D2101C05F0A182AF"
-		"02242C27B59E7050D909EC8812BA6FE6", // новый ключ
+        "685DF00BE2A65410C5D2101C05F0A182"
+        "AF02242C27B59E7050D909EC8812BA6F"
+        "E649B22099FFAA3F561011AC2A3CCEC5"
+        "F2E8C6A8A95C5A3F5828000CEC26FF5B"
+        "DC1FAC71C59E30E449DF250A6B352D",   // новый ключ
         "EXPAND_ONLY"                       // режим HKDF
     )) return FALSE;
 
@@ -322,8 +313,11 @@ bool_t beltHKDFTest()
         beltH() + 128, 32,                  // ключ  
         beltH() + 192, 8,                   // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
-        "1B767BEBC9B6B1345DACE3783514AB5B00"
-		"6799E3AF836122DF19B9901E237777DC", // новый ключ
+        "1B767BEBC9B6B1345DACE3783514AB5B"
+        "006799E3AF836122DF19B9901E237777"
+        "DC438AB2C35431F85F7BFFDAEA1F3F8B"
+        "0FC24112297FB6B6A658C7DDA6161E2A"
+        "DA48BC217B90BF85AE4585517F502C",   // новый ключ
         "EXTRACT_AND_EXPAND"                // режим HKDF
     )) return FALSE;
 
@@ -353,18 +347,6 @@ bool_t bashHKDFTest()
         "HKDF",                             // алгоритм выработки ключей
         "bash256",                          // алгоритм хэширования
         beltH() + 128, 32,                  // ключ  
-        NULL, 0,                            // синхропосылка
-        beltH() + 64 + 16, 32,              // открытые данные
-        "718CE4875C2B298C89FA9EE6F9C51E3B"
-		"B58870517A67EC83E44A7F793A4478DD", // новый ключ
-        "EXTRACT_ONLY"                      // режим HKDF
-    )) return FALSE;
-
-    // HKDF-Extract empty data test
-    if (!kdf_test(
-        "HKDF",                             // алгоритм выработки ключей
-        "bash256",                          // алгоритм хэширования
-        beltH() + 128, 32,                  // ключ  
         buf, 32,                            // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
         "718CE4875C2B298C89FA9EE6F9C51E3B"
@@ -379,8 +361,11 @@ bool_t bashHKDFTest()
         beltH() + 128, 32,                  // ключ  
         beltH() + 192, 8,                   // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
-        "9C639341C14608EFD4D23D9FA8835DA6DD"
-		"26D79D71686C54D3D26E7DAB6F0E7ADE", // новый ключ
+        "9C639341C14608EFD4D23D9FA8835DA6"
+        "DD26D79D71686C54D3D26E7DAB6F0E7A"
+        "DEE8E68B30C382AFD6C105F0DF196794"
+        "4642AEDC7E1F12407496FCC13FAEC77E"
+        "195394DA45972C332D43208176FBB3",   // новый ключ
         "EXPAND_ONLY"                       // режим HKDF
     )) return FALSE;
 
@@ -391,8 +376,11 @@ bool_t bashHKDFTest()
         beltH() + 128, 32,                  // ключ  
         beltH() + 192, 8,                   // синхропосылка
         beltH() + 64 + 16, 32,              // открытые данные
-        "9AA16F1961462B9161B4EA673BD8B71923"
-		"6F264F746B6A106DD832B346D836C13E", // новый ключ
+        "9AA16F1961462B9161B4EA673BD8B719"
+        "236F264F746B6A106DD832B346D836C1"
+        "3E56336510FD14F534283564AF9A33DB"
+        "98A857F7C0E2DC36F231A9FDDE8A127A"
+        "8F3F825F5DFDCDD7511BD543A89AC2",   // новый ключ
         "EXTRACT_AND_EXPAND"                // режим HKDF
     )) return FALSE;
 
