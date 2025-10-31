@@ -108,7 +108,7 @@ if (NOT OPENSSL_INCLUDE_DIRS OR NOT OPENSSL_LIBRARY_DIRS)
     set(OPENSSL_LIBRARY_DIRS /usr/local/lib)
   endif()
 else()
-  set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY_DIRS}/libcrypto.so)
+  set(OPENSSL_LIBRARIES crypto)
 endif()
 
 message(STATUS OPENSSL_LIBRARY_DIRS=${OPENSSL_LIBRARY_DIRS})
@@ -131,6 +131,7 @@ add_subdirectory(include)
 
 set(src
   src/bee2evp.c
+  src/bash_cipher.c
   src/bash_md.c
   src/belt_ameth.c
   src/belt_cipher.c

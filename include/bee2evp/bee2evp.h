@@ -402,12 +402,82 @@ extern const char LN_belt_dwpt[];
 #define NID_belt_dwpt OBJ_sn2nid(SN_belt_dwpt)
 #endif
 
+/* bash-prg-ae2561 */
+extern const char OID_bash_prg_ae2561[];
+extern const char SN_bash_prg_ae2561[];
+extern const char LN_bash_prg_ae2561[];
+#define NID_bash_prg_ae2561 OBJ_sn2nid(SN_bash_prg_ae2561)
+
+/*!	\brief Описание алгоритмов bash-prg-ae2561
+
+	Возвращается описание алгоритмов bash-prg-ae2561.
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBashPrgAe2561();
+
 /*!	\brief Описание алгоритмов belt-dwpt
 
 	Возвращается описание алгоритмов belt-dwpt (редакция belt-dwp для TLS).
 	\return Описание алгоритмов.
 */
 const EVP_CIPHER* evpBeltDWPT();
+
+/* belt-che128 */
+extern const char OID_belt_che128[];
+extern const char SN_belt_che128[];
+extern const char LN_belt_che128[];
+#define NID_belt_che128 OBJ_sn2nid(SN_belt_che128)
+
+/*!	\brief Описание алгоритмов belt-che128
+
+	Возвращается описание алгоритмов belt-che128 (установка и снятие
+	защиты данных на 128-битовом ключе).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltCHE128();
+
+/* belt-che192 */
+extern const char OID_belt_che192[];
+extern const char SN_belt_che192[];
+extern const char LN_belt_che192[];
+#define NID_belt_che192 OBJ_sn2nid(SN_belt_che192)
+
+/*!	\brief Описание алгоритмов belt-che192
+
+	Возвращается описание алгоритмов belt-che192 (установка и снятие
+	защиты данных на 192-битовом ключе).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltCHE192();
+
+/* belt-che256 */
+extern const char OID_belt_che256[];
+extern const char SN_belt_che256[];
+extern const char LN_belt_che256[];
+#define NID_belt_che256 OBJ_sn2nid(SN_belt_che256)
+
+/*!	\brief Описание алгоритмов belt-che256
+
+	Возвращается описание алгоритмов belt-che256 (установка и снятие
+	защиты данных на 256-битовом ключе).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltCHE256();
+
+/* belt-chet */
+extern const char OID_belt_chet[];
+#ifndef NID_belt_chet
+extern const char SN_belt_chet[];
+extern const char LN_belt_chet[];
+#define NID_belt_chet OBJ_sn2nid(SN_belt_chet)
+#endif
+
+/*!	\brief Описание алгоритмов belt-chet
+
+	Возвращается описание алгоритмов belt-chet (редакция belt-che для TLS).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBeltCHET();
 
 /* belt-kwp128 */
 extern const char OID_belt_kwp128[];

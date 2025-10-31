@@ -97,6 +97,7 @@ int evpBign_asn1_i2o_pubkey(octet** out, const bign_key* key);
 *******************************************************************************
 */
 
+int evpBashCipher_bind(ENGINE* e);
 int evpBeltCipher_bind(ENGINE* e);
 int evpBeltMD_bind(ENGINE* e);
 int evpBelt_ameth_bind(ENGINE* e);
@@ -113,6 +114,7 @@ int evpBash_bind(ENGINE* e);
 *******************************************************************************
 */
 
+void evpBashCipher_finish();
 void evpBeltCipher_finish();
 void evpBeltMD_finish();
 void evpBelt_ameth_finish();
