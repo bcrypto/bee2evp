@@ -161,7 +161,7 @@ bool_t bignCertTest()
 		goto err;
 	ret = TRUE;
 err:
-	ERR_print_errors(bio_err);
+	//ERR_print_errors(bio_err);
 	BIO_free_all(bio_err);
 	if (pkey)
 		EVP_PKEY_free(pkey);

@@ -396,7 +396,7 @@ bool_t bignPubKeyTest()
 		goto err;
 	ret = TRUE;
 err:
-	ERR_print_errors(bio_err);
+	//ERR_print_errors(bio_err);
 	BIO_free_all(bio_err);
 	EVP_PKEY_free(pkey);
 	return ret;
