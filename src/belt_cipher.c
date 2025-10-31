@@ -1174,8 +1174,8 @@ static int evpBeltCipher_enum(
 	else if (nid == NID_belt_dwp128)
 		*cipher = EVP_belt_dwp128;
 	else if (nid == NID_belt_che128)
-		*cipher = EVP_belt_dwp128;
-	else if (nid == NID_belt_che128)
+		*cipher = EVP_belt_che128;
+	else if (nid == NID_belt_kwp128)
 		*cipher = EVP_belt_kwp128;
 	// .. средний ключ
 	else if (nid == NID_belt_cfb192)
