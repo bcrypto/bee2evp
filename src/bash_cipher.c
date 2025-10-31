@@ -11,7 +11,6 @@
 */
 
 #include <openssl/evp.h>
-#include <openssl/types.h>
 #include <openssl/engine.h>
 #include <bee2/core/blob.h>
 #include <bee2/core/mem.h>
