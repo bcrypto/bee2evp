@@ -85,6 +85,7 @@ static int bee2evp_init(ENGINE* e)
 
 static int bee2evp_finish(ENGINE* e)
 {
+	evpBashCipher_finish();
 	evpBeltCipher_finish();
 	evpBeltMD_finish();
 	evpBelt_pmeth_finish();
@@ -144,7 +145,7 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!ENGINE_set_ctrl_function(e, bee2evp_ctrl))
 		return 0;
 	// встроить модули
-	if (!evpBeltCipher_bind(e) || !evpBeltMD_bind(e) ||
+	if (!evpBashCipher_bind(e) || !evpBeltCipher_bind(e) || !evpBeltMD_bind(e) ||
 		!evpBelt_ameth_bind(e) || !evpBelt_pmeth_bind(e) ||
 		!evpBeltPBKDF_bind(e) || !evpBeltTLS_bind(e) ||
 		!evpBign_ameth_bind(e) || !evpBign_pmeth_bind(e) || !evpBash_bind(e))
