@@ -172,7 +172,7 @@ build_bee2(){
   cmake -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
-    -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
+    -DLIB_INSTALL_DIR=$lib_path $bee2
   make -j$(nproc) && make install
   ls -la $lib_path/libbee2_static.a
 }
