@@ -49,7 +49,7 @@ jobs:
       continue-on-error: true
       run: |
         cp -a ../test/. .
-        lcov -c -i -d . -o coverage_base.info
+        lcov -c -i -d src -o coverage_base.info
         export PATH=${local}/bin:${PATH}
         export LD_LIBRARY_PATH="${local}/${{ matrix.openssl-config.lib_path }}:${LD_LIBRARY_PATH}"
         bee2evp/test/testb2e
