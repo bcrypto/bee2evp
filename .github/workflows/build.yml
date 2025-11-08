@@ -60,7 +60,7 @@ jobs:
     - name: Upload coverage report to Codecov
       working-directory: ${{github.workspace}}/build
       run: |
-        lcov -c -d . -o coverage_test.info
+        lcov -c -d src -o coverage_test.info
         lcov -a coverage_base.info -a coverage_test.info -o coverage.info
         curl -Os https://uploader.codecov.io/latest/linux/codecov
         chmod +x codecov
