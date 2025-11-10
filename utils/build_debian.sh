@@ -22,6 +22,7 @@ usage() {
   echo "  --build-type    build type: |Debug|Release|Coverage|"
   echo "  -d, --debug     enable debug mode"
   echo "  -s,             setup"
+  echo "  -b,             build"
   echo "  -t,             test"
   echo "  -h, --help      display this help and exit"
   exit 1
@@ -41,6 +42,7 @@ is_openssl_3=false
 openssl_git_url=https://github.com/openssl/openssl.git
 btls_srcs_path=$bee2evp/btls/legacy
 enable_setup=false
+enable_build=false
 enable_test=false
 
 openssl_tag=""
@@ -67,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -s)
       enable_setup=true
+      shift
+      ;;
+    -b)
+      enable_build=true
       shift
       ;;
     -t)
@@ -166,7 +172,7 @@ build_bee2(){
   cmake -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
-    -DLIB_INSTALL_DIR=$lib_path $bee2
+    -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
   make -j$(nproc) && make install
   ls -la $lib_path/libbee2_static.a
 }
@@ -202,7 +208,7 @@ build_bee2evp(){
     -DBEE2_INCLUDE_DIRS=$local/include \
     -DOPENSSL_LIBRARY_DIRS=$lib_path \
     -DOPENSSL_INCLUDE_DIRS=$local/include \
-    -DLIB_INSTALL_DIR=$lib_path \
+    -DCMAKE_INSTALL_LIBDIR=$lib_path \
     -DCMAKE_INSTALL_PREFIX=$local $bee2evp
   make -j$(nproc) && make install
   ls -la $lib_path/libbee2evp.so
@@ -235,12 +241,14 @@ attach_bee2evp(){
 }
 
 test_bee2evp(){
-  green echo "[-] test bee2evp"
   cd $local || exit
   cp -a $bee2evp/test/. .
   export PATH=$local/bin:$PATH
   export OPENSSL_CONF=$local/openssl.cnf
   export LD_LIBRARY_PATH="$lib_path:${LD_LIBRARY_PATH}"
+  green echo "[-] test evp"
+  $build_bee2evp/test/testb2e
+  green echo "[-] test bee2evp"
   python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
     sed -e "s|$lib_path:||")
@@ -271,7 +279,9 @@ if $enable_setup; then
   setup
 fi
 
-build
+if $enable_build; then
+  build
+fi
 
 if $enable_test; then
   test_bee2evp

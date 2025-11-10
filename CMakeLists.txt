@@ -1,13 +1,16 @@
-cmake_minimum_required(VERSION 3.5...3.31)
+cmake_minimum_required(VERSION 3.5...4.0)
 project(BEE2EVP C)
 
+include(GNUInstallDirs)
+
 set(BEE2EVP_VERSION_MAJOR "1")
-set(BEE2EVP_VERSION_MINOR "0")
-set(BEE2EVP_VERSION_PATCH "9")
+set(BEE2EVP_VERSION_MINOR "1")
+set(BEE2EVP_VERSION_PATCH "0")
 set(BEE2EVP_VERSION
   "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
+option(BUILD_TESTS "Build tests." ON)
 option(INSTALL_HEADERS "Install headers." ON)
 
 if(CMAKE_BUILD_TYPE)
@@ -143,10 +146,6 @@ set(src
   src/bign_pmeth.c
 )
 
-if(NOT LIB_INSTALL_DIR)
-  set(LIB_INSTALL_DIR lib)
-endif()
-
 if(NOT BIN_INSTALL_DIR)
   set(BIN_INSTALL_DIR bin)
 endif()
@@ -158,11 +157,15 @@ set_target_properties(bee2evp PROPERTIES
   VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
 
 install(TARGETS bee2evp
-  DESTINATION ${LIB_INSTALL_DIR}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
 )
 
 if(BUILD_DOC)
   add_subdirectory(doc)
+endif()
+
+if(BUILD_TESTS)
+  add_subdirectory(test)
 endif()

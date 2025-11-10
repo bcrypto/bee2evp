@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Helpers
 # \created 2020.01.27
-# \version 2024.05.31
+# \version 2025.10.28
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -69,7 +69,7 @@ if platform.startswith('win32'):
 		SetConsoleTextAttribute(stdout_handle, bcolors.ENDC)
 
 else:
-	if platform.startswith('linux'):
+	if platform.startswith('linux') or platform.startswith('darwin'):
 		class bcolors:
 			OKGREEN = '\033[92m'
 			FAIL = '\033[91m'

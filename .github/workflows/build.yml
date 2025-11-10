@@ -27,13 +27,12 @@ jobs:
             lib_path: "lib64"
     env:
       BEE2_BRANCH: master
-      CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
       local: ${{github.workspace}}/build/local
     steps:
     - name: Setup packages
       run: |
         apt update
-        apt install -y git cmake lcov curl
+        apt install -y git cmake curl bash gpg
         git config --global --add safe.directory '*'
     - name: Get source
       uses: actions/checkout@v5
@@ -43,24 +42,23 @@ jobs:
         python-version: 3.12
     - name: Build
       run: |
-        bash ./utils/build_debian.sh -s --build-type=Coverage ${{ matrix.openssl-config.tag }}
+        bash ./utils/build_debian.sh -s -b --build-type=Coverage ${{ matrix.openssl-config.tag }}
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
         cp -a ../test/. .
-        lcov -c -i -d . -o coverage_base.info
         export PATH=${local}/bin:${PATH}
         export LD_LIBRARY_PATH="${local}/${{ matrix.openssl-config.lib_path }}:${LD_LIBRARY_PATH}"
+        bee2evp/test/testb2e
         python3 --version
         python3 test.py
         export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
           sed -e "s|${local}/${{ matrix.openssl-config.lib_path }}:||")
-    - name: Upload coverage report to Codecov
-      working-directory: ${{github.workspace}}/build
-      run: |
-        lcov -c -d . -o coverage_test.info
-        lcov -a coverage_base.info -a coverage_test.info -o coverage.info
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
-        ./codecov -t ${CODECOV_TOKEN}
+    - name: Upload report to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        directory: ${{github.workspace}}/build
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true

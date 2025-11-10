@@ -69,6 +69,7 @@
 .aux
 openssl
 build
+_build
 clear.cmd
 
 # Cache files
