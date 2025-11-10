@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 3.5...4.0)
-project(BEE2EVP C)
+project(BEE2EVP
+  VERSION 1.1.1
+  LANGUAGES C
+)
 
 include(GNUInstallDirs)
-
-set(BEE2EVP_VERSION_MAJOR "1")
-set(BEE2EVP_VERSION_MINOR "1")
-set(BEE2EVP_VERSION_PATCH "0")
-set(BEE2EVP_VERSION
-  "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 
 option(BUILD_DOC "Build documentation (doxygen required)." OFF)
 option(BUILD_TESTS "Build tests." ON)
@@ -38,7 +35,7 @@ string(COMPARE EQUAL "MSVC" "${CMAKE_C_COMPILER_ID}" CMAKE_COMPILER_IS_MSVC)
 
 set(CMAKE_C_WARNINGS "-Wall -Wextra -W -Wdeclaration-after-statement \
   -Wwrite-strings -Wno-parentheses -Wno-unused-parameter -Wno-strict-aliasing \
-  -Wno-xor-used-as-pow -Wno-deprecated-declarations")
+  -Wno-deprecated-declarations")
 
 if(CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_C_WARNINGS "${CMAKE_C_WARNINGS} -Wno-maybe-uninitialized")
@@ -47,9 +44,11 @@ if(CMAKE_COMPILER_IS_GNUCC)
     -fno-strict-aliasing")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
   set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_COVERAGE} -O0 -g3 -coverage")
-  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address \
+  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address,undefined \
+    -fno-sanitize=signed-integer-overflow -fno-sanitize-recover=all\
     -fno-common -O3 -fno-strict-aliasing")
-  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address \
+  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address,undefined \
+    -fno-sanitize=signed-integer-overflow -fno-sanitize-recover=all\
     -fno-common -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   set(CMAKE_C_FLAGS_CHECK "${CMAKE_C_FLAGS_CHECK} -Werror -O1 \
     -Wcast-qual -fanalyzer")
@@ -63,26 +62,21 @@ if(CMAKE_COMPILER_IS_CLANG)
     -fno-strict-aliasing")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
   set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_COVERAGE} -O0 -g3 -coverage")
-  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address \
-    -fno-common -fsanitize=undefined -fno-sanitize-recover -O3 \
-    -fno-strict-aliasing")
-  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address \
-    -fno-common -fsanitize=undefined -fno-sanitize-recover -O1 -g3 \
-    -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -fsanitize=address,undefined\
+    -fno-sanitize=signed-integer-overflow -fno-sanitize=unsigned-integer-overflow\
+    -fno-sanitize-recover=all\
+    -fno-common -O3 -fno-strict-aliasing")
+  set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -fsanitize=address,udefined \
+    -fno-sanitize=signed-integer-overflow -fno-sanitize=unsigned-integer-overflow\
+    -fno-sanitize-recover=all\
+    -fno-common -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   set(CMAKE_C_FLAGS_MEMSAN "${CMAKE_C_FLAGS_MEMSAN} -fsanitize=memory -O3 \
     -fno-strict-aliasing")
   set(CMAKE_C_FLAGS_MEMSANDBG "${CMAKE_C_FLAGS_MEMSANDBG} -fsanitize=memory \
-    -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls \
-    -fsanitize-memory-track-origins=2")
+    -fsanitize-memory-track-origins=2\ 
+    -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   set(CMAKE_C_FLAGS_CHECK "${CMAKE_C_FLAGS_CHECK} -Werror -O1 -Wcast-qual")
 endif(CMAKE_COMPILER_IS_CLANG)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
-      -fprofile-arcs -ftest-coverage")
-  endif()
-endif()
 
 ### Bee2
 # bee2_static must be built with -fPIC flag
