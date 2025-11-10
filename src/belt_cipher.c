@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2024.11.04
+\version 2024.11.10
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -638,11 +638,10 @@ const EVP_CIPHER* evpBeltDWP256()
 
 typedef struct belt_dwp_ctx
 {
-	octet block[8];	  /*< блок данных (ловим имитовставку) */
-	size_t block_len; /*< длина блока */
-	octet state[];	  /*< состояние beltDWP */
+	octet block[8];			/*< блок данных (ловим имитовставку) */
+	size_t block_len; 		/*< длина блока */
+	mem_align_t state[];	/*< состояние beltDWP */
 } belt_dwp_ctx;
-
 
 static int evpBeltDWP_init(
 	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
@@ -818,11 +817,10 @@ const EVP_CIPHER* evpBeltCHE256()
 
 typedef struct belt_che_ctx
 {
-	octet block[8];	  /*< блок данных (ловим имитовставку) */
-	size_t block_len; /*< длина блока */
-	octet state[];	  /*< состояние beltCHE */
+	octet block[8];			/*< блок данных (ловим имитовставку) */
+	size_t block_len; 		/*< длина блока */
+	mem_align_t state[];	/*< состояние beltCHE */
 } belt_che_ctx;
-
 
 static int evpBeltCHE_init(
 	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
@@ -997,8 +995,8 @@ const EVP_CIPHER* evpBeltKWP256()
 
 typedef struct belt_kwp_ctx
 {
-	octet header[16]; /*< заголовок (после снятия защиты) */
-	octet state[];	  /*< состояние beltKWP */
+	octet header[16];		/*< заголовок (после снятия защиты) */
+	mem_align_t state[];	/*< состояние beltKWP */
 } belt_kwp_ctx;
 
 static int evpBeltKWP_init(

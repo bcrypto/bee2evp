@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2021.07.08
+\version 2025.11.10
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -110,12 +110,12 @@ const EVP_CIPHER* evpBeltDWPT()
 
 typedef struct belt_dwpt_ctx
 {
-	octet key[32];	/*< ключ */
-	octet iv[16];	/*< синхропосылка */
-	octet aad[16];	/*< заголовок TLS */
-	size_t aad_len; /*< длина заголовка TLS */
-	octet tag[8];	/*< имитовставка */
-	octet state[];	/*< состояние beltDWP */
+	octet key[32];			/*< ключ */
+	octet iv[16];			/*< синхропосылка */
+	octet aad[16];			/*< заголовок TLS */
+	size_t aad_len; 		/*< длина заголовка TLS */
+	octet tag[8];			/*< имитовставка */
+	mem_align_t state[];	/*< состояние beltDWP */
 } belt_dwpt_ctx;
 
 static int evpBeltDWPT_init(
@@ -288,12 +288,12 @@ const EVP_CIPHER* evpBeltCHET()
 
 typedef struct belt_chet_ctx
 {
-	octet key[32];	/*< ключ */
-	octet iv[16];	/*< синхропосылка */
-	octet aad[16];	/*< заголовок TLS */
-	size_t aad_len; /*< длина заголовка TLS */
-	octet tag[8];	/*< имитовставка */
-	octet state[];	/*< состояние beltCHE */
+	octet key[32];			/*< ключ */
+	octet iv[16];			/*< синхропосылка */
+	octet aad[16];			/*< заголовок TLS */
+	size_t aad_len; 		/*< длина заголовка TLS */
+	octet tag[8];			/*< имитовставка */
+	mem_align_t state[];	/*< состояние beltCHE */
 } belt_chet_ctx;
 
 static int evpBeltCHET_init(
@@ -483,12 +483,12 @@ const EVP_CIPHER* evpBeltCTRT()
 
 typedef struct belt_ctrt_ctx
 {
-	octet ekey[32]; /*< ключ шифрования */
-	octet mkey[32]; /*< ключ имитозащиты */
-	octet iv[16];	/*< синхропосылка */
-	octet aad[16];	/*< заголовок TLS */
-	size_t aad_len; /*< длина заголовка TLS */
-	octet state[];	/*< состояние beltCTR + beltMAC */
+	octet ekey[32];			/*< ключ шифрования */
+	octet mkey[32];			/*< ключ имитозащиты */
+	octet iv[16];			/*< синхропосылка */
+	octet aad[16];			/*< заголовок TLS */
+	size_t aad_len; 		/*< длина заголовка TLS */
+	mem_align_t state[];	/*< состояние beltCTR + beltMAC */
 } belt_ctrt_ctx;
 
 static int evpBeltCTRT_init(

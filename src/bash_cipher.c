@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Bash encryption algorithms
 \created 2025.10.29
-\version 2025.10.29
+\version 2025.11.10
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -48,9 +48,8 @@ typedef struct bash_prg_ae_ctx
 	size_t key_len;
 	octet ann[60];
 	size_t ann_len;
-	octet state[];
+	mem_align_t state[];
 } bash_prg_ae_ctx;
-
 
 static int evpBashPrgAe_init(
 	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
@@ -138,7 +137,6 @@ static int evpBashPrgAe_cleanup(EVP_CIPHER_CTX* ctx)
 static int evpBashPrgAe_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 {
 	bash_prg_ae_ctx* state;
-
 
 	switch (type)
 	{
