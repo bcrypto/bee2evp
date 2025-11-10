@@ -17,8 +17,6 @@
 #include <bee2/core/rng.h>
 #include <bee2/core/util.h>
 #include <bee2/crypto/bash.h>
-#include <stddef.h>
-#include "bee2/defs.h"
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
 
@@ -52,7 +50,7 @@ typedef struct bash_prg_ae_ctx
 } bash_prg_ae_ctx;
 
 static int evpBashPrgAe_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc) 
 {
 	bash_prg_ae_ctx* state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 
@@ -103,7 +101,7 @@ static int evpBashPrgAe_cipher(
 	if (!in)
 	{
 		bashPrgSqueeze(out, state->tag_len, state->state);
-		return state->tag_len;
+		return (int)state->tag_len;
 	}
 
 	if (!out)
