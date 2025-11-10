@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\..\bee2evp\src\belt_pbkdf.c" />
     <ClCompile Include="..\..\..\bee2evp\src\bign_ameth.c" />
     <ClCompile Include="..\..\..\bee2evp\src\bign_pmeth.c" />
+    <ClCompile Include="..\..\src\bash_cipher.c" />
     <ClCompile Include="..\..\src\bash_md.c" />
     <ClCompile Include="..\..\src\belt_ameth.c" />
     <ClCompile Include="..\..\src\belt_pmeth.c" />

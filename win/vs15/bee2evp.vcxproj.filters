@@ -53,5 +53,8 @@
     <ClCompile Include="..\..\src\belt_tls.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\bash_cipher.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
