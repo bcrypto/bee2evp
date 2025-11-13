@@ -92,17 +92,23 @@ These patches support the following ciphersuites defined in STB 34.101.65
 - `DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT`;
 - `DHT-PSK-BIGN-WITH-BELT-DWP-HBELT`.
 
-## Build in Docker
+### Build script
+Bash script can be used for OpenSSL downloading, patching, configuring and
+building, Bee2 and Bee2evp building and tests running.
+```
+bash scripts/build.sh
+```
+The script requires GNU binutils and GNU sed to be available via PATH 
+environment variable (additional packages can be installed on MacOS).
+
+### Build in Docker
 ```
 # OpenSSL 1.1.1 + Bee2evp engine
-docker build --progress="plain" -f dockerfiles/focal.Dockerfile \
-   -t bcrypto/bee2evp:1.1.1 .
-# OpenSSL 1.1.1 + Bee2evp engine + BTLS
-docker build --progress="plain" -f dockerfiles/focal-btls.Dockerfile \
-   -t bcrypto/bee2evp:1.1.1-btls .
-# OpenSSL 3.0 + Bee2evp provider
-docker build --progress="plain" -f dockerfiles/noble.Dockerfile \
-   -t bcrypto/bee2evp:3.0 .  
+docker build --progress="plain" -f dockerfiles/debian.Dockerfile \
+   -t bcrypto/bee2evp:1.1.1 --build-arg OPENSSL_TAG=OpenSSL_1_1_1i .
+# OpenSSL 3.3.1 + Bee2evp engine
+docker build --progress="plain" -f dockerfiles/debian.Dockerfile \
+   -t bcrypto/bee2evp:3.3.1 --build-arg OPENSSL_TAG=openssl-3.3.1 . 
 ```
 Run bash on prepared docker image:
 ```
