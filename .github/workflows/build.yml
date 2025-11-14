@@ -21,10 +21,8 @@ jobs:
       matrix:
         openssl-config:
           - tag: "OpenSSL_1_1_1i"
-            lib_path: "lib"
 
           - tag: "openssl-3.3.1"
-            lib_path: "lib64"
     env:
       BEE2_BRANCH: master
       local: ${{github.workspace}}/build/local
@@ -42,19 +40,12 @@ jobs:
         python-version: 3.12
     - name: Build
       run: |
-        bash ./utils/build_debian.sh -s -b --build-type=Coverage ${{ matrix.openssl-config.tag }}
+        bash ./scripts/build.sh -s -b --build-type=Coverage ${{ matrix.openssl-config.tag }}
     - name: Test Bee2evp
       working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
-        cp -a ../test/. .
-        export PATH=${local}/bin:${PATH}
-        export LD_LIBRARY_PATH="${local}/${{ matrix.openssl-config.lib_path }}:${LD_LIBRARY_PATH}"
-        bee2evp/test/testb2e
-        python3 --version
-        python3 test.py
-        export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
-          sed -e "s|${local}/${{ matrix.openssl-config.lib_path }}:||")
+        bash ./scripts/build.sh -t ${{ matrix.openssl-config.tag }}
     - name: Upload report to Codecov
       uses: codecov/codecov-action@v5
       with:
