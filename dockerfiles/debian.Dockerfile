@@ -11,4 +11,4 @@ COPY . .
 
 ARG OPENSSL_TAG
 
-RUN bash ./utils/build_debian.sh -s -b -t ${OPENSSL_TAG}
+RUN bash ./scripts/build.sh -s -b -t ${OPENSSL_TAG}
