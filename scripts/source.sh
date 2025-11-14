@@ -4,7 +4,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Reusable script code
 # \created 2020.07.10
-# \version 2025.11.13
+# \version 2025.11.14
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -161,8 +161,8 @@ system_opt(){
       ;;
     CYGWIN*|MINGW*|MSYS*)
       # Windows via Cygwin/MSYS2/MinGW
-      lib_name=bee2evp.dll
-      ossl_config="mingw64"
+      lib_name=msys-bee2evp-1.0.dll
+      ossl_config="Cygwin-$arch"
       ;;
     *)
       # Fallback for unknown systems      
@@ -180,7 +180,7 @@ clean(){
 check_prereq(){
   set +e
   green echo "[-] check prereq"
-  for package in git gcc cmake python3
+  for package in git gcc cmake make python3
   do
     which $package &> /dev/null
     if [ $? -ne 0 ]; then
@@ -296,12 +296,14 @@ attach_bee2evp(){
 }
 
 test_bee2evp(){
-  green echo "[-] test bee2evp"
   cd $local || exit
   cp -a $bee2evp/test/. .
   export PATH=$local/bin:$PATH
   export OPENSSL_CONF=$local/openssl.cnf
   export LD_LIBRARY_PATH="$lib_path:${LD_LIBRARY_PATH}"
+  green echo "[-] test evp"
+  $build_bee2evp/test/testb2e
+  green echo "[-] test bee2evp"
   python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
     sed -e "s|$lib_path:||")

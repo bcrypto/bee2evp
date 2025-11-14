@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief Helpers
 # \created 2020.01.27
-# \version 2025.10.28
+# \version 2025.11.14
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -15,6 +15,12 @@ hex_encoder = codecs.getencoder('hex')
 b64_encoder = codecs.getencoder('base64')
 hex_decoder = codecs.getdecoder('hex')
 b64_decoder = codecs.getdecoder('base64')
+
+def has_prefix(name, prefixes):
+	for prefix in prefixes:
+		if name.startswith(prefix):
+			return True
+	return False
 
 if platform.startswith('win32'):
 	from ctypes import windll, Structure, c_short, c_ushort, byref
@@ -69,7 +75,7 @@ if platform.startswith('win32'):
 		SetConsoleTextAttribute(stdout_handle, bcolors.ENDC)
 
 else:
-	if platform.startswith('linux') or platform.startswith('darwin'):
+	if has_prefix(platform, ('linux', 'darwin' , 'cygwin')):
 		class bcolors:
 			OKGREEN = '\033[92m'
 			FAIL = '\033[91m'

@@ -17,8 +17,8 @@ as an OpenSSL engine.
 mkdir build
 cd build
 cmake [-DCMAKE_BUILD_TYPE={Release|Debug|Coverage|ASan|ASanDbg|MemSan|MemSanDbg|Check}] ..
-make
-[make install]
+cmake --build . [--config={Release|Debug}]
+[cmake --install .]
 ```
 
 Build types (Release by default):
@@ -96,8 +96,10 @@ These patches support the following ciphersuites defined in STB 34.101.65
 Bash script can be used for OpenSSL downloading, patching, configuring and
 building, Bee2 and Bee2evp building and tests running.
 ```
-bash scripts/build.sh
+bash scripts/build.sh [-s -b -t] <OPENSSL_TAG>
 ```
+Available values for `OPENSSL_TAG` are patch names in directory `btls/patch`.
+Supported OS are Linux, MacOS and Windows (via MSYS).
 The script requires GNU binutils and GNU sed to be available via PATH 
 environment variable (additional packages can be installed on MacOS).
 
