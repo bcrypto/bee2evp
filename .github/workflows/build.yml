@@ -42,7 +42,6 @@ jobs:
       run: |
         bash ./scripts/build.sh -s -b --build-type=Coverage ${{ matrix.openssl-config.tag }}
     - name: Test Bee2evp
-      working-directory: ${{github.workspace}}/build
       continue-on-error: true
       run: |
         bash ./scripts/build.sh -t ${{ matrix.openssl-config.tag }}
