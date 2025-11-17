@@ -17,6 +17,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
+#include <openssl/objects.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -120,7 +121,6 @@ err:
 	return ret;
 }
 
-
 bool_t aead_decrypt(const char* cipher_name,
 	const unsigned char* x,
 	int x_len,
@@ -209,14 +209,8 @@ bool_t aead_decrypt(const char* cipher_name,
 		fprintf(stderr, "failed to decrypt final(%s)\n", cipher_name);
 		goto err;
 	}
-	if (!hexEq(out, y)) {
-		char h[1000];
-		hexFrom(h, out, len + len2);
-		printf("Out %s def %s\n", h, y);
+	if (!hexEq(out, y)) 
 		goto err;
-
-	}
-	//	goto err;
 	ret = TRUE;
 err:
 	EVP_CIPHER_CTX_free(ctx);
@@ -225,7 +219,77 @@ err:
 
 /*
 *******************************************************************************
-Тестирование (точечные тесты)
+Функции проверки работы EVP-интерфейсов
+*******************************************************************************
+*/
+
+bool_t cipher_unittest(const char* cipher_name, const char* prf)
+{
+	bool_t ret = FALSE;
+	unsigned char key[EVP_MAX_KEY_LENGTH];
+	int key_len;
+	int prf_nid;
+	int nid;
+
+	const EVP_CIPHER* cipher;
+	EVP_CIPHER_CTX *ctx_temp = NULL;
+
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
+
+	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		goto err;
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+
+	key_len = EVP_CIPHER_CTX_key_length(ctx);
+	// Генерация ключа
+	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_RAND_KEY, key_len, key) <= 0) 
+	{
+		fprintf(stderr, "failed to generate key(%s)\n", cipher_name);
+		goto err;
+	}
+	ctx_temp = EVP_CIPHER_CTX_new();
+	// Копирование контекста
+	if (!EVP_CIPHER_CTX_copy(ctx_temp, ctx)) 
+	{
+		fprintf(stderr, "failed to copy context(%s)\n", cipher_name);
+		goto err;
+	}
+    
+    // Получение идентификатора функции для PBKDF2
+	nid = OBJ_sn2nid(prf);
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_PBE_PRF_NID, 0, &prf_nid) <= 0) {
+        printf("failed to get PRF NID: %d\n", prf_nid);
+        goto err;
+    }
+	if (prf_nid != nid)
+	{
+		goto err;
+	}
+	ret = TRUE;
+err:
+	if (ctx_temp)
+		EVP_CIPHER_CTX_free(ctx_temp);
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
+}
+
+/*
+*******************************************************************************
+Тестирование
 *******************************************************************************
 */
 
@@ -252,6 +316,13 @@ bool_t beltDWPTest()
         "DF181ED008A20F43DCBBB93650DAD34B", // критические данные
         "6A2C2C94C4150DC0"                  // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("belt-dwp256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-dwp192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-dwp128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -279,10 +350,16 @@ bool_t beltCHETest()
         "2BABF43EB37B5398A9068F31A3C758B762F44AA9", // критические данные
         "7D9D4F59D40D197D"                          // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("belt-che256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-che192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-che128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
-
 
 bool_t bashPrgTest()
 {
@@ -329,6 +406,9 @@ bool_t bashPrgTest()
         "CDE5AF6EF9A14B7D0C191B869A6343ED"
 		"6A4E9AAB4EE00A579E9E682D0EC051E3"  // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }

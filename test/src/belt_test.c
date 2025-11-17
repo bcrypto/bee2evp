@@ -22,6 +22,7 @@
 Функции проверки шифрования
 *******************************************************************************
 */
+bool_t cipher_unittest(const char* cipher_name, const char* prf);
 
 bool_t cipher_encrypt(const char* cipher_name,
 	const unsigned char* x,
@@ -169,6 +170,12 @@ bool_t beltECBTest()
 	// 	"E55A239F"                          // критические данные
 	// )) return FALSE;
 
+	if (!cipher_unittest("belt-ecb256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-ecb192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-ecb128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -216,6 +223,12 @@ bool_t beltCBCTest()
 	// 	"166646E4"                                  // критические данные
 	// )) return FALSE;
 
+	if (!cipher_unittest("belt-cbc256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-cbc192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-cbc128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -244,6 +257,12 @@ bool_t beltCFBTest()
 		"52244EB06842DD4C94AA4500774E40BB"          // критические данные
     )) return FALSE;
 
+	if (!cipher_unittest("belt-cfb256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-cfb192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-cfb128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -272,6 +291,12 @@ bool_t beltCTRTest()
 		"12F6333166456F169043CC5F"                  // критические данные
     )) return FALSE;
 
+	if (!cipher_unittest("belt-ctr256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-ctr192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-ctr128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -304,6 +329,12 @@ bool_t beltKWPTest()
         data                                        // критические данные
     )) return FALSE;
 
+	if (!cipher_unittest("belt-kwp256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-kwp192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-kwp128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
