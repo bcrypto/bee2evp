@@ -4,7 +4,7 @@
 \brief Tests for aead ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.31
+\version 2025.11.17
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -44,7 +44,7 @@ bool_t aead_encrypt(const char* cipher_name,
 	const char* t)
 {
 	bool_t ret = FALSE;
-	octet out[128];
+	octet out[256];
 	octet mac[128];
 	int len = 0;
 	const EVP_CIPHER* cipher;
@@ -62,8 +62,7 @@ bool_t aead_encrypt(const char* cipher_name,
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
 	}
-
-	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
@@ -75,6 +74,21 @@ bool_t aead_encrypt(const char* cipher_name,
 			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
 			goto err;
 		}
+	}
+	if (key_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
+			!= 1)
+		{
+			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
+		goto err;
 	}
 
 	if (i && i_len > 0)
@@ -120,7 +134,7 @@ bool_t aead_decrypt(const char* cipher_name,
 	const char* t)
 {
 	bool_t ret = FALSE;
-	octet out[128];
+	octet out[256];
 	octet mac[128];
 	int len = 0;
 	int len2 = 0;
@@ -141,9 +155,32 @@ bool_t aead_decrypt(const char* cipher_name,
 		goto err;
 	}
 
-	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	if (EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+	if (s_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
+		{
+			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+	if (key_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
+			!= 1)
+		{
+			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+
+	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
 	}
 
@@ -172,18 +209,23 @@ bool_t aead_decrypt(const char* cipher_name,
 		fprintf(stderr, "failed to decrypt final(%s)\n", cipher_name);
 		goto err;
 	}
-	if (!hexEq(out, y))
+	if (!hexEq(out, y)) {
+		char h[1000];
+		hexFrom(h, out, len + len2);
+		printf("Out %s def %s\n", h, y);
 		goto err;
+
+	}
+	//	goto err;
 	ret = TRUE;
 err:
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
 
-
 /*
 *******************************************************************************
-Тестирование
+Тестирование (точечные тесты)
 *******************************************************************************
 */
 
@@ -244,7 +286,7 @@ bool_t beltCHETest()
 
 bool_t bashPrgTest()
 {
-    octet buf[128];
+    octet buf[256];
     octet data[192];
     char zeros[512];
     const char str[] = 
@@ -266,7 +308,7 @@ bool_t bashPrgTest()
     if (!aead_encrypt(
         "bash-prg-ae2561",                  // шифр
         buf, 192,                           // критические данные
-        beltH() + 32, 32,                   // ключ  
+        beltH() + 32, 0,                    // ключ  
         beltH(), 16,                        // синхропосылка
         beltH() + 64, 49,                   // открытые данные
         str,                                // шифротекст
@@ -274,19 +316,18 @@ bool_t bashPrgTest()
 		"6A4E9AAB4EE00A579E9E682D0EC051E3"  // имитовставка
     )) return FALSE;
 
-
     // A.6.decr
     hexTo(data, str);
     hexFrom(zeros, buf, 192);
     if (!aead_decrypt(
-        "bash-prg-ae2561",                          // шифр
-        data, 192,                                  // шифротекст
-        beltH() + 128 + 32, 32,                     // ключ  
-        beltH() + 192 + 16, 8,                      // синхропосылка
-        beltH() + 64 + 16, 32,                      // открытые данные
-        zeros,                                      // критические данные
+        "bash-prg-ae2561",                  // шифр
+        data, 192,                          // шифротекст
+        beltH() + 32, 0,                    // ключ  
+        beltH(), 16,                        // синхропосылка
+        beltH() + 64, 49,                   // открытые данные
+        zeros,                              // критические данные
         "CDE5AF6EF9A14B7D0C191B869A6343ED"
-		"6A4E9AAB4EE00A579E9E682D0EC051E3"          // имитовставка
+		"6A4E9AAB4EE00A579E9E682D0EC051E3"  // имитовставка
     )) return FALSE;
 	// все нормально
 	return TRUE;
