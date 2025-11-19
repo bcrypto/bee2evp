@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.77 (bash) algorithms
 # \created 2019.12.09
-# \version 2024.06.02
+# \version 2025.11.19
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -13,7 +13,7 @@ from util import b64_encoder, hex_encoder, hex_decoder, process_result
 
 def bash256Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
+	prefix = 'echo "' + plain[:-1] + '" | python3 -m base64 -d |'
 	cmd = 'dgst -bash256'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
@@ -22,7 +22,7 @@ def bash256Hash(src):
 
 def bash384Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
+	prefix = 'echo "' + plain[:-1] + '" | python3 -m base64 -d |'
 	cmd = 'dgst -bash384'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
@@ -31,7 +31,7 @@ def bash384Hash(src):
 
 def bash512Hash(src):
 	plain = b64_encoder(src)[0].decode()
-	prefix = 'echo ' + plain[:-1] + ' | python3 -m base64 -d |'
+	prefix = 'echo "' + plain[:-1] + '" | python3 -m base64 -d |'
 	cmd = 'dgst -bash512'.format()
 	retcode, out, er__ = openssl(cmd, prefix)
 	hash_ = out.decode().split(' ')[1][:-1]
@@ -40,22 +40,159 @@ def bash512Hash(src):
 
 def bash_test():
 	# bash256
-	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	# A.3.1
+	src = hex_decoder('')[0]
 	hash_ = bash256Hash(bytes(src))
-	res = hex_encoder(hash_)[0].decode() != ''
-	process_result('bash256', res)
+	res1 = hex_encoder(hash_)[0].decode().upper() == (""
+		"114C3DFAE373D9BCBC3602D6386F2D6A"
+		"2059BA1BF9048DBAA5146A6CB775709D")
+	# A.3.2
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA7799EB23D31"
+		"3E98B56E27D3BCCF591E181F4C5AB7")[0]
+	hash_ = bash256Hash(bytes(src))
+	res2 = hex_encoder(hash_)[0].decode().upper() == (""
+		"3D7F4EFA00E9BA33FEED259986567DCF"
+		"5C6D12D51057A968F14F06CC0F905961")
+	# A.3.3
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA7799EB23D31"
+		"3E98B56E27D3BCCF591E181F4C5AB793")[0]
+	hash_ = bash256Hash(bytes(src))
+	res3 = hex_encoder(hash_)[0].decode().upper() == (""
+		"D7F428311254B8B2D00F7F9EEFBD8F30"
+		"25FA87C4BABD1BDDBE87E35B7AC80DD6")
+	# A.3.4
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA7799EB23D31"
+		"3E98B56E27D3BCCF591E181F4C5AB793"
+		"E9DEE72C8F0C0F")[0]
+	hash_ = bash256Hash(bytes(src))
+	res4 = hex_encoder(hash_)[0].decode().upper() == (""
+		"1393FA1B65172F2D18946AEAE576FA1C"
+		"F54FDD354A0CB2974A997DC4865D3100")
+	process_result('bash256', res1 and res2 and res3 and res4)
 
 	# bash384
-	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	# A.3.5
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C")[0]
 	hash_ = bash384Hash(bytes(src))
-	res = hex_encoder(hash_)[0].decode() != ''
-	process_result('bash384', res)
+	res1 = hex_encoder(hash_)[0].decode().upper() == (""
+		"64334AF830D33F63E9ACDFA184E32522"
+		"103FFF5C6860110A2CD369EDBC04387C"
+		"501D8F92F749AE4DE15A8305C353D64D")
+	# A.3.6
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F")[0]
+	hash_ = bash384Hash(bytes(src))
+	res2 = hex_encoder(hash_)[0].decode().upper() == (""
+		"D06EFBC16FD6C0880CBFC6A4E3D65AB1"
+		"01FA82826934190FAABEBFBFFEDE93B2"
+		"2B85EA72A7FB3147A133A5A8FEBD8320")
+	# A.3.7
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA779")[0]
+	hash_ = bash384Hash(bytes(src))
+	res3 = hex_encoder(hash_)[0].decode().upper() == (""
+		"FF763296571E2377E71A1538070CC0DE"
+		"88888606F32EEE6B082788D246686B00"
+		"FC05A17405C5517699DA44B7EF5F55AB")
+	process_result('bash384', res1 and res2 and res3)
 
 	# bash512
-	src = hex_decoder('b194bac80a08f53b366d008e584a5de4'
-					  '8504fa9d1bb6c7ac252e72c202fdce0d')[0]
+	# A.3.8
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F")[0]
 	hash_ = bash512Hash(bytes(src))
-	res = hex_encoder(hash_)[0].decode() != ''
-	process_result('bash512', res)
+	res1 = hex_encoder(hash_)[0].decode().upper() == (""
+		"2A66C87C189C12E255239406123BDEDB"
+		"F19955EAF0808B2AD705E249220845E2"
+		"0F4786FB6765D0B5C48984B1B16556EF"
+		"19EA8192B985E4233D9C09508D6339E7")
+	# A.3.9
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99")[0]
+	hash_ = bash512Hash(bytes(src))
+	res2 = hex_encoder(hash_)[0].decode().upper() == (""
+		"07ABBF8580E7E5A321E9B940F667AE20"
+		"9E2952CEF557978AE743DB086BAB4885"
+		"B708233C3F5541DF8AAFC3611482FDE4"
+		"98E58B3379A6622DAC2664C9C118A162")
+	# A.3.10
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA7799EB23D31"
+		"3E98B56E27D3BCCF591E181F4C5AB7")[0]
+	hash_ = bash512Hash(bytes(src))
+	res3 = hex_encoder(hash_)[0].decode().upper() == (""
+		"526073918F97928E9D15508385F42F03"
+		"ADE3211A23900A30131F8A1E3E1EE21C"
+		"C09D13CFF6981101235D895746A4643F"
+		"0AA62B0A7BC98A269E4507A257F0D4EE")
+	# A.3.11
+	src = hex_decoder(
+		"B194BAC80A08F53B366D008E584A5DE4"
+		"8504FA9D1BB6C7AC252E72C202FDCE0D"
+		"5BE3D61217B96181FE6786AD716B890B"
+		"5CB0C0FF33C356B835C405AED8E07F99"
+		"E12BDC1AE28257EC703FCCF095EE8DF1"
+		"C1AB76389FE678CAF7C6F860D5BB9C4F"
+		"F33C657B637C306ADD4EA7799EB23D31"
+		"3E98B56E27D3BCCF591E181F4C5AB793"
+		"E9DEE72C8F0C0FA62DDB49F46F739647"
+		"06075316ED247A3739CBA38303A98BF6"
+		"92BD9B1CE5D141015445FBC95E4D0EF2"
+		"682080AA227D642F2687F93490405511")[0]
+	hash_ = bash512Hash(bytes(src))
+	res4 = hex_encoder(hash_)[0].decode().upper() == (""
+		"8724C7FF8A2A83F22E38CB9763777B96"
+		"A70ABA3444F214C763D93CD6D19FCFDE"
+		"6C3D3931857C4FF6CCCD49BD99852FE9"
+		"EAA7495ECCDD96B571E0EDCF47F89768")
+	process_result('bash512', res1 and res2 and res3 and res4)
