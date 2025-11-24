@@ -49,7 +49,7 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
         goto err;
 
     
-    if (!EVP_PBE_find(EVP_PBE_TYPE_PRF, prf_nid, NULL, NULL, &keygen)) {
+    if (!EVP_PBE_find(EVP_PBE_TYPE_PRF, hmac_nid, NULL, NULL, &keygen)) {
         printf("EVP_PBE_find failed\n");
         goto err;
     }

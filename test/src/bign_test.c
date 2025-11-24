@@ -148,9 +148,60 @@ err:
 	return ret;
 }
 
+
+bool_t paramsPrintTest(const char* pem, const char* output)
+{
+	bool_t ret = FALSE;
+	EVP_PKEY* pkey_params = NULL;
+	EVP_PKEY_CTX* ctx = NULL;
+	void* content;
+	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
+	BIO* mem = BIO_new(BIO_s_mem());
+	if (!mem)
+		goto err;
+
+	pkey_params = PEM_read_bio_Parameters(in, NULL);
+	if (!pkey_params)
+	{
+		BIO_printf(bio_err, "Error reading parameters: %s\n", pem);
+		goto err;
+	}
+
+	if (EVP_PKEY_print_params(mem, pkey_params, 12, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing parameters\n");
+		goto err;
+	}
+
+	BIO_get_mem_ptr(mem, &content);
+	if (!memEq(content, output, sizeof(output)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, output);
+		goto err;
+	}
+
+	ret = TRUE;
+err:
+	ERR_print_errors(bio_err);
+	BIO_free_all(mem);
+	EVP_PKEY_free(pkey_params);
+	EVP_PKEY_CTX_free(ctx);
+	return ret;
+}
+
 bool_t bignParamsTest()
 {
 	bool_t ret = FALSE;
+	const char nostd_params[] = "-----BEGIN bign PARAMETERS-----\n"
+		"MIIBawIBATBPBgoqcAACACJlLQQBAkEA////////////////////////////////"
+		"///////////////////////////////////////////////////9xzCBjwRAxP3/"
+		"////////////////////////////////////////////////////////////////"
+		"/////////////////wRA23wZOp7neGYZMy/Nv/qlEqbvmcR9A7vOEfts0GEUz9UJ"
+		"CRIK4mpP8l9IBUZyRie44OgBTpDUXoQaV5zSUNeKZwMJAC6oAAAAAAAABECfZrjp"
+		"iKemqeKCkfublwIMHERKcaBL+oNP9d9ApLK5cIgIgfdvOfxxYh54ugylBr3gjiOh"
+		"rDm2HhmvM+z4testAkEA//////////////////////////////////////////6x"
+		"Sw0mWBqmLsn5Epi6Yj3VoGpOANaxGRXTA20KyDniAw=="
+		"\n-----END bign PARAMETERS-----\n";
 	bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
 
 	if (!paramsTest("bign-curve256v1", "BgoqcAACACJlLQMB"))
@@ -170,6 +221,12 @@ bool_t bignParamsTest()
 		BIO_puts(bio_err, "Parameters mismatch\n");
 		goto err;
 	}
+	// if (!paramsPrintTest(nostd_params, ""))
+	// {
+	// 	BIO_puts(bio_err, "Parameters output mismatch\n");
+	// 	goto err;
+	// }
+	
 	ret = TRUE;
 err:
 	ERR_print_errors(bio_err);
