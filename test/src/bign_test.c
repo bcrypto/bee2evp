@@ -155,6 +155,7 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 	EVP_PKEY* pkey_params = NULL;
 	EVP_PKEY_CTX* ctx = NULL;
 	void* content;
+	int content_len;
 	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
 	BIO* mem = BIO_new(BIO_s_mem());
 	if (!mem)
@@ -167,14 +168,14 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 		goto err;
 	}
 
-	if (EVP_PKEY_print_params(mem, pkey_params, 12, NULL) <= 0)
+	if (EVP_PKEY_print_params(mem, pkey_params, 4, NULL) <= 0)
 	{
 		BIO_printf(bio_err, "Error printing parameters\n");
 		goto err;
 	}
 
-	BIO_get_mem_ptr(mem, &content);
-	if (!memEq(content, output, sizeof(output)))
+	content_len = BIO_get_mem_data(mem, &content);
+	if (content_len < sizeof(output) || !memEq(content, output, sizeof(output)))
 	{
 		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, output);
 		goto err;
@@ -221,11 +222,36 @@ bool_t bignParamsTest()
 		BIO_puts(bio_err, "Parameters mismatch\n");
 		goto err;
 	}
-	// if (!paramsPrintTest(nostd_params, ""))
-	// {
-	// 	BIO_puts(bio_err, "Parameters output mismatch\n");
-	// 	goto err;
-	// }
+	if (!paramsPrintTest(nostd_params, 
+		"    p:    "
+		"c7fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"q:    "
+		"03e239c80a6d03d31519b1d6004e6aa0d53d62ba9812f9c92ea61a58260d4bb1"
+		"feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"a:    "
+		"c4fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"b:    "
+		"db7c193a9ee7786619332fcdbffaa512a6ef99c47d03bbce11fb6cd06114cfd5"
+		"0909120ae26a4ff25f480546724627b8e0e8014e90d45e841a579cd250d78a67\n"
+		"yG:   "
+		"9f66b8e988a7a6a9e28291fb9b97020c1c444a71a04bfa834ff5df40a4b2b970"
+		"880881f76f39fc71621e78ba0ca506bde08e23a1ac39b61e19af33ecf8b5eb2d\n"
+		"seed: 2ea8000000000000\n"))
+	{
+		BIO_puts(bio_err, "Parameters output mismatch\n");
+		goto err;
+	}
+
+	if (!paramsPrintTest("-----BEGIN bign PARAMETERS-----\n"
+		"BgoqcAACACJlLQMB"
+		"\n-----END bign PARAMETERS-----\n", 
+		"    Std Params: bign-curve256v1"))
+	{
+		BIO_puts(bio_err, "Parameters output mismatch\n");
+		goto err;
+	}
 	
 	ret = TRUE;
 err:
