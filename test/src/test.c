@@ -4,7 +4,7 @@
 \brief Bee2evp testing
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.31
+\version 2025.11.23
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -85,7 +85,7 @@ int testCiphers()
 
 /*
 *******************************************************************************
-Тестирование функций OpenSSL 3
+Тестирование функций OpenSSL
 *******************************************************************************
 */
 
@@ -95,6 +95,7 @@ extern bool_t HMACTest();
 extern bool_t HKDFTest();
 extern bool_t beltHKDFTest();
 extern bool_t bashHKDFTest();
+extern bool_t pbkdfTest();
 
 
 int testFunctions()
@@ -110,6 +111,8 @@ int testFunctions()
 	printf("HKDF(belt-hash): %s\n", (code = beltHKDFTest()) ? "OK" : "Err");
 	ret |= !code;
 	printf("HKDF(bash256): %s\n", (code = bashHKDFTest()) ? "OK" : "Err");
+	ret |= !code;
+	printf("belt-pbkdf: %s\n", (code = pbkdfTest()) ? "OK" : "Err");
 	ret |= !code;
 
 	return ret;

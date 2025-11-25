@@ -148,9 +148,59 @@ err:
 	return ret;
 }
 
+
+bool_t paramsPrintTest(const char* pem, const char* output)
+{
+	bool_t ret = FALSE;
+	EVP_PKEY* pkey_params = NULL;
+	void* content;
+	size_t len;
+	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
+	BIO* mem = BIO_new(BIO_s_mem());
+	if (!mem)
+		goto err;
+
+	pkey_params = PEM_read_bio_Parameters(in, NULL);
+	if (!pkey_params)
+	{
+		BIO_printf(bio_err, "Error reading parameters: %s\n", pem);
+		goto err;
+	}
+
+	if (EVP_PKEY_print_params(mem, pkey_params, 4, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing parameters\n");
+		goto err;
+	}
+
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(output) || !memEq(content, output, sizeof(output)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, output);
+		goto err;
+	}
+
+	ret = TRUE;
+err:
+	ERR_print_errors(bio_err);
+	BIO_free_all(mem);
+	EVP_PKEY_free(pkey_params);
+	return ret;
+}
+
 bool_t bignParamsTest()
 {
 	bool_t ret = FALSE;
+	const char nostd_params[] = "-----BEGIN bign PARAMETERS-----\n"
+		"MIIBawIBATBPBgoqcAACACJlLQQBAkEA////////////////////////////////"
+		"///////////////////////////////////////////////////9xzCBjwRAxP3/"
+		"////////////////////////////////////////////////////////////////"
+		"/////////////////wRA23wZOp7neGYZMy/Nv/qlEqbvmcR9A7vOEfts0GEUz9UJ"
+		"CRIK4mpP8l9IBUZyRie44OgBTpDUXoQaV5zSUNeKZwMJAC6oAAAAAAAABECfZrjp"
+		"iKemqeKCkfublwIMHERKcaBL+oNP9d9ApLK5cIgIgfdvOfxxYh54ugylBr3gjiOh"
+		"rDm2HhmvM+z4testAkEA//////////////////////////////////////////6x"
+		"Sw0mWBqmLsn5Epi6Yj3VoGpOANaxGRXTA20KyDniAw=="
+		"\n-----END bign PARAMETERS-----\n";
 	bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
 
 	if (!paramsTest("bign-curve256v1", "BgoqcAACACJlLQMB"))
@@ -170,6 +220,37 @@ bool_t bignParamsTest()
 		BIO_puts(bio_err, "Parameters mismatch\n");
 		goto err;
 	}
+	if (!paramsPrintTest(nostd_params, 
+		"    p:    "
+		"c7fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"q:    "
+		"03e239c80a6d03d31519b1d6004e6aa0d53d62ba9812f9c92ea61a58260d4bb1"
+		"feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"a:    "
+		"c4fdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\n"
+		"b:    "
+		"db7c193a9ee7786619332fcdbffaa512a6ef99c47d03bbce11fb6cd06114cfd5"
+		"0909120ae26a4ff25f480546724627b8e0e8014e90d45e841a579cd250d78a67\n"
+		"yG:   "
+		"9f66b8e988a7a6a9e28291fb9b97020c1c444a71a04bfa834ff5df40a4b2b970"
+		"880881f76f39fc71621e78ba0ca506bde08e23a1ac39b61e19af33ecf8b5eb2d\n"
+		"seed: 2ea8000000000000\n"))
+	{
+		BIO_puts(bio_err, "Parameters output mismatch\n");
+		goto err;
+	}
+
+	if (!paramsPrintTest("-----BEGIN bign PARAMETERS-----\n"
+		"BgoqcAACACJlLQMB"
+		"\n-----END bign PARAMETERS-----\n", 
+		"    Std Params: bign-curve256v1"))
+	{
+		BIO_puts(bio_err, "Parameters output mismatch\n");
+		goto err;
+	}
+	
 	ret = TRUE;
 err:
 	ERR_print_errors(bio_err);
@@ -374,6 +455,61 @@ err:
 	return pkey;
 }
 
+bool_t checkKey(EVP_PKEY* pkey) 
+{
+	bool_t ret = FALSE;
+	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if (!EVP_PKEY_param_check(pctx))
+		goto err;
+	if (!EVP_PKEY_public_check(pctx))
+		goto err;
+	if (!EVP_PKEY_check(pctx))
+		goto err;
+	ret = TRUE;
+err:
+	EVP_PKEY_CTX_free(pctx);
+	return ret;
+}
+
+bool_t keyPrintTest(EVP_PKEY* key, const char* privkey, const char* pubkey)
+{
+	bool_t ret = FALSE;
+	void* content;
+	size_t len;
+	BIO* mem = BIO_new(BIO_s_mem());
+	if (!mem)
+		goto err;
+
+	if (EVP_PKEY_print_private(mem, key, 4, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing private key\n");
+		goto err;
+	}
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(privkey) || !memEq(content + 13, privkey, sizeof(privkey)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, privkey);
+		goto err;
+	}
+	BIO_reset(mem);
+	if (EVP_PKEY_print_public(mem, key, 4, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing public key\n");
+		goto err;
+	}
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(pubkey) || !memEq(content + 13, pubkey, sizeof(pubkey)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, pubkey);
+		goto err;
+	}
+	ret = TRUE;
+err:
+	ERR_print_errors(bio_err);
+	BIO_free_all(mem);
+	return ret;
+}
+
 bool_t bignPubKeyTest()
 {
 	bool_t ret = FALSE;
@@ -393,6 +529,12 @@ bool_t bignPubKeyTest()
 	if (!EVP_PKEY_get_raw_public_key(pkey, buf, &len))
 		goto err;
 	if (!hexEq(buf, zed_pubkey))
+		goto err;
+	if (!checkKey(pkey))
+		goto err;
+	if (!keyPrintTest(pkey, 
+		"0100000000000000000000000000000000000000000000000000000000000000", 
+		zed_pubkey))
 		goto err;
 	ret = TRUE;
 err:
