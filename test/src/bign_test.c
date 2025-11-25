@@ -153,9 +153,8 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 {
 	bool_t ret = FALSE;
 	EVP_PKEY* pkey_params = NULL;
-	EVP_PKEY_CTX* ctx = NULL;
 	void* content;
-	size_t content_len;
+	size_t len;
 	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
 	BIO* mem = BIO_new(BIO_s_mem());
 	if (!mem)
@@ -174,8 +173,8 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 		goto err;
 	}
 
-	content_len = BIO_get_mem_data(mem, &content);
-	if (content_len < sizeof(output) || !memEq(content, output, sizeof(output)))
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(output) || !memEq(content, output, sizeof(output)))
 	{
 		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, output);
 		goto err;
@@ -186,7 +185,6 @@ err:
 	ERR_print_errors(bio_err);
 	BIO_free_all(mem);
 	EVP_PKEY_free(pkey_params);
-	EVP_PKEY_CTX_free(ctx);
 	return ret;
 }
 
@@ -457,6 +455,61 @@ err:
 	return pkey;
 }
 
+bool_t checkKey(EVP_PKEY* pkey) 
+{
+	bool_t ret = FALSE;
+	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if (!EVP_PKEY_param_check(pctx))
+		goto err;
+	if (!EVP_PKEY_public_check(pctx))
+		goto err;
+	if (!EVP_PKEY_check(pctx))
+		goto err;
+	ret = TRUE;
+err:
+	EVP_PKEY_CTX_free(pctx);
+	return ret;
+}
+
+bool_t keyPrintTest(EVP_PKEY* key, const char* privkey, const char* pubkey)
+{
+	bool_t ret = FALSE;
+	void* content;
+	size_t len;
+	BIO* mem = BIO_new(BIO_s_mem());
+	if (!mem)
+		goto err;
+
+	if (EVP_PKEY_print_private(mem, key, 4, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing private key\n");
+		goto err;
+	}
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(privkey) || !memEq(content + 13, privkey, sizeof(privkey)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, privkey);
+		goto err;
+	}
+	BIO_reset(mem);
+	if (EVP_PKEY_print_public(mem, key, 4, NULL) <= 0)
+	{
+		BIO_printf(bio_err, "Error printing public key\n");
+		goto err;
+	}
+	len = BIO_get_mem_data(mem, &content);
+	if (len < sizeof(pubkey) || !memEq(content + 13, pubkey, sizeof(pubkey)))
+	{
+		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, pubkey);
+		goto err;
+	}
+	ret = TRUE;
+err:
+	ERR_print_errors(bio_err);
+	BIO_free_all(mem);
+	return ret;
+}
+
 bool_t bignPubKeyTest()
 {
 	bool_t ret = FALSE;
@@ -476,6 +529,12 @@ bool_t bignPubKeyTest()
 	if (!EVP_PKEY_get_raw_public_key(pkey, buf, &len))
 		goto err;
 	if (!hexEq(buf, zed_pubkey))
+		goto err;
+	if (!checkKey(pkey))
+		goto err;
+	if (!keyPrintTest(pkey, 
+		"0100000000000000000000000000000000000000000000000000000000000000", 
+		zed_pubkey))
 		goto err;
 	ret = TRUE;
 err:
