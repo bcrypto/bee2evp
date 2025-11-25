@@ -155,7 +155,7 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 	EVP_PKEY* pkey_params = NULL;
 	EVP_PKEY_CTX* ctx = NULL;
 	void* content;
-	int content_len;
+	size_t content_len;
 	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
 	BIO* mem = BIO_new(BIO_s_mem());
 	if (!mem)

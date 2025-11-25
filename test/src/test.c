@@ -112,8 +112,8 @@ int testFunctions()
 	ret |= !code;
 	printf("HKDF(bash256): %s\n", (code = bashHKDFTest()) ? "OK" : "Err");
 	ret |= !code;
-	//printf("belt-pbkdf: %s\n", (code = pbkdfTest()) ? "OK" : "Err");
-	//ret |= !code;
+	printf("belt-pbkdf: %s\n", (code = pbkdfTest()) ? "OK" : "Err");
+	ret |= !code;
 
 	return ret;
 }

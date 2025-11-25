@@ -22,6 +22,7 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
     int salt_len, const char* key) 
 {
     int ret = FALSE;
+    const EVP_CIPHER* cipher = NULL;
     EVP_CIPHER_CTX* ctx = NULL;
     X509_ALGOR *algor = NULL;
     const char* prf = "belt-pbkdf";
@@ -34,17 +35,22 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
         printf("EVP_PBE algorithm is not found\n");
         goto err;
     }
-    if(!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, hmac_nid, -1, hash_nid, 0)) 
+
+    cipher = EVP_get_cipherbyname("belt-ecb256");
+    if (!cipher) 
     {
-        printf("EVP_PBE algorithm is not set\n");
+        printf("Cipher algorithm is not found\n");
         goto err;
     }
 
     ctx = EVP_CIPHER_CTX_new();
     if (!ctx)
         goto err;
+    
+    if (!EVP_EncryptInit(ctx, cipher, beltH(), salt))
+        goto err;
 
-    algor = PKCS5_pbe_set(prf_nid, iter, salt, salt_len);
+    algor = PKCS5_pbkdf2_set(iter, salt, salt_len, hmac_nid, 32);
     if (!algor)
         goto err;
 
@@ -60,7 +66,7 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
     // Use the found keygen function as PRF (password-based key derivation)
     if (!keygen(ctx, pwd, pwd_len, algor->parameter, NULL, NULL, 0)) {
         printf("Custom PRF calculation failed\n");
-        goto err;;
+        goto err;
     }
 
     ret = TRUE;
