@@ -48,21 +48,30 @@ bool_t aead_encrypt(const char* cipher_name,
 	octet out[256];
 	octet mac[128];
 	int len = 0;
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		goto err;
+	}
+
+	ctx = EVP_CIPHER_CTX_new();
 	if (!ctx)
 	{
 		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
 		return FALSE;
 	}
 
-	cipher = EVP_get_cipherbyname(cipher_name);
-	if (!cipher)
-	{
-		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
-		goto err;
-	}
 	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
@@ -117,6 +126,10 @@ bool_t aead_encrypt(const char* cipher_name,
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
@@ -139,20 +152,28 @@ bool_t aead_decrypt(const char* cipher_name,
 	int len = 0;
 	int len2 = 0;
 	int mac_len = 0;
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx)
-	{
-		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-		return FALSE;
-	}
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
-	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
+	}
+	
+	ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
 	}
 
 	if (EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
@@ -213,6 +234,10 @@ bool_t aead_decrypt(const char* cipher_name,
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
@@ -231,21 +256,29 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 	int prf_nid;
 	int nid;
 
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
 	EVP_CIPHER_CTX *ctx_temp = NULL;
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx)
-	{
-		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-		return FALSE;
-	}
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
-	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
+	}
+	
+	ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
 	}
 
 	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
@@ -281,6 +314,10 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 	}
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	if (ctx_temp)
 		EVP_CIPHER_CTX_free(ctx_temp);
 	EVP_CIPHER_CTX_free(ctx);

@@ -39,17 +39,25 @@ bool_t cipher_encrypt(const char* cipher_name,
 	const EVP_CIPHER* cipher;
 
 	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx)
-	{
-		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-		return FALSE;
-	}
 
-	cipher = EVP_get_cipherbyname(cipher_name);
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
+	}
+
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
 	}
 
 	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
@@ -67,6 +75,10 @@ bool_t cipher_encrypt(const char* cipher_name,
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
@@ -87,17 +99,25 @@ bool_t cipher_decrypt(const char* cipher_name,
 	const EVP_CIPHER* cipher;
 
 	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx)
-	{
-		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-		return FALSE;
-	}
 
-	cipher = EVP_get_cipherbyname(cipher_name);
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
+	}
+
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
 	}
 
 	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
@@ -116,6 +136,10 @@ bool_t cipher_decrypt(const char* cipher_name,
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
