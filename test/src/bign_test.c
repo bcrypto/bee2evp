@@ -4,7 +4,7 @@
 \brief Tests for BIGN keys
 \project bee2evp/test
 \created 2025.10.21
-\version 2025.10.31
+\version 2025.12.03
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -27,12 +27,34 @@
 
 static BIO* bio_err = NULL;
 
+int get_engine_pkey_id(const char *algname, ENGINE *e)
+{
+    const EVP_PKEY_ASN1_METHOD *ameth;
+    ENGINE *tmpeng = NULL;
+    int pkey_id = NID_undef;
+
+    ERR_set_mark();
+    ameth = EVP_PKEY_asn1_find_str(&tmpeng, algname, -1);
+
+#if !defined(OPENSSL_NO_ENGINE)
+    ENGINE_finish(tmpeng);
+
+    if (ameth == NULL && e != NULL)
+        ameth = ENGINE_get_pkey_asn1_meth_str(e, algname, -1);
+    else
+#endif
+
+	if (!ameth)
+		return NID_undef;
+    ERR_pop_to_mark();
+    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
+    return pkey_id;
+}
+
 int init_gen_str(
 	EVP_PKEY_CTX** pctx, const char* algname, ENGINE* e, int do_param)
 {
 	EVP_PKEY_CTX* ctx = NULL;
-	const EVP_PKEY_ASN1_METHOD* ameth;
-	ENGINE* tmpeng = NULL;
 	int pkey_id;
 
 	if (*pctx)
@@ -41,29 +63,18 @@ int init_gen_str(
 		return 0;
 	}
 
-	ameth = EVP_PKEY_asn1_find_str(&tmpeng, algname, -1);
-
-#ifndef OPENSSL_NO_ENGINE
-	if (!ameth && e)
-		ameth = ENGINE_get_pkey_asn1_meth_str(e, algname, -1);
-#endif
-
-	if (!ameth)
+	pkey_id = get_engine_pkey_id(algname, e);
+	if (pkey_id != NID_undef)
+		ctx = EVP_PKEY_CTX_new_id(pkey_id, e);
+#if OPENSSL_VERSION_MAJOR >= 3
+	else
+		ctx = EVP_PKEY_CTX_new_from_name(NULL, algname, NULL);
+#endif // OPENSSL_VERSION_MAJOR >= 3
+	if (!ctx)
 	{
 		BIO_printf(bio_err, "Algorithm %s not found\n", algname);
-		return 0;
-	}
-
-	ERR_clear_error();
-
-	EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
-#ifndef OPENSSL_NO_ENGINE
-	ENGINE_finish(tmpeng);
-#endif
-	ctx = EVP_PKEY_CTX_new_id(pkey_id, e);
-
-	if (!ctx)
 		goto err;
+	}
 	if (do_param)
 	{
 		if (EVP_PKEY_paramgen_init(ctx) <= 0)
@@ -119,6 +130,7 @@ bool_t paramsTest(const char* curve, const char* pem)
 	EVP_PKEY* pkey_params = NULL;
 	ENGINE* e = NULL;
 	EVP_PKEY_CTX* ctx = NULL;
+	ERR_clear_error();
 
 	if (!init_gen_str(&ctx, "bign", e, 1))
 		goto err;
