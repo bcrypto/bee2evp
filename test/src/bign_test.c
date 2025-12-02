@@ -153,7 +153,7 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 {
 	bool_t ret = FALSE;
 	EVP_PKEY* pkey_params = NULL;
-	void* content;
+	char* content;
 	size_t len;
 	BIO* in = BIO_new_mem_buf(pem, strlen(pem) + 1);
 	BIO* mem = BIO_new(BIO_s_mem());
@@ -474,7 +474,7 @@ err:
 bool_t keyPrintTest(EVP_PKEY* key, const char* privkey, const char* pubkey)
 {
 	bool_t ret = FALSE;
-	void* content;
+	char* content;
 	size_t len;
 	BIO* mem = BIO_new(BIO_s_mem());
 	if (!mem)

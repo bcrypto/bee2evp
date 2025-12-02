@@ -36,7 +36,7 @@ bool_t cipher_encrypt(const char* cipher_name,
 	bool_t ret = FALSE;
 	octet out[128];
 	int len = 0;
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
 
 	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
 
@@ -97,17 +97,21 @@ bool_t cipher_decrypt(const char* cipher_name,
 	octet out[128];
 	int len = 0;
 	const EVP_CIPHER* cipher;
-
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER* ciph = NULL;
-	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
-	cipher = ciph;
 #endif // OPENSSL_VERSION_MAJOR >= 3
 
-	if (!cipher)
-		cipher = EVP_get_cipherbyname(cipher_name);
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+	cipher = EVP_get_cipherbyname(cipher_name);
+
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (!cipher) 
+	{
+		ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+		cipher = ciph;
+	}
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);

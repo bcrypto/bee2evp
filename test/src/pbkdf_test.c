@@ -26,9 +26,9 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
     EVP_CIPHER_CTX* ctx = NULL;
     X509_ALGOR *algor = NULL;
     const char* prf = "belt-pbkdf";
+    unsigned char* psalt = (unsigned char*) salt;
     EVP_PBE_KEYGEN* keygen = NULL;
     int prf_nid = OBJ_sn2nid(prf);
-    int hash_nid = OBJ_sn2nid("belt-hash");
     int hmac_nid = OBJ_sn2nid("belt-hmac");
     if (prf_nid == NID_undef) 
     {
@@ -50,7 +50,7 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
     if (!EVP_EncryptInit(ctx, cipher, beltH(), salt))
         goto err;
 
-    algor = PKCS5_pbkdf2_set(iter, salt, salt_len, hmac_nid, 32);
+    algor = PKCS5_pbkdf2_set(iter, psalt, salt_len, hmac_nid, 32);
     if (!algor)
         goto err;
 
