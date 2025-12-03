@@ -336,6 +336,9 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 	int iter = 10000;
 	X509_ALGOR* pbe;
 	const char* p8pass = "password";
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
 	BIO* mem = BIO_new(BIO_s_mem());
 	if (!mem)
@@ -343,6 +346,13 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 
 	/// PKCS8 export
 	cipher = EVP_get_cipherbyname("belt-kwp256");
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (!cipher)
+	{
+		ciph = EVP_CIPHER_fetch(NULL, "belt-kwp256", NULL);
+		cipher = ciph;
+	}
+#endif // OPENSSL_VERSION_MAJOR >= 3
 	if (!cipher)
 	{
 		BIO_printf(bio_err, "Unrecognized algorithm belt-kwp256\n");
@@ -389,6 +399,10 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	X509_SIG_free(p8);
 	PKCS8_PRIV_KEY_INFO_free(p8inf);
 	BIO_free(mem);
