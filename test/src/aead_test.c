@@ -255,6 +255,7 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 	int key_len;
 	int prf_nid;
 	int nid;
+	int is_eng = 1;
 
 	const EVP_CIPHER* cipher = NULL;
 	EVP_CIPHER_CTX* ctx = NULL; 
@@ -262,12 +263,18 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER* ciph = NULL;
-	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
-	cipher = ciph;
 #endif // OPENSSL_VERSION_MAJOR >= 3
 
+
+	cipher = EVP_get_cipherbyname(cipher_name);
+#if OPENSSL_VERSION_MAJOR >= 3
 	if (!cipher)
-		cipher = EVP_get_cipherbyname(cipher_name);
+	{
+		ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+		cipher = ciph;
+		is_eng = 0;
+	}
+#endif // OPENSSL_VERSION_MAJOR >= 3
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
@@ -303,14 +310,16 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 	}
     
     // Получение идентификатора функции для PBKDF2
-	nid = OBJ_sn2nid(prf);
-    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_PBE_PRF_NID, 0, &prf_nid) <= 0) {
-        printf("failed to get PRF NID: %d\n", prf_nid);
-        goto err;
-    }
-	if (prf_nid != nid)
+	if (is_eng)
 	{
-		goto err;
+		nid = OBJ_sn2nid(prf);
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_PBE_PRF_NID, 0, &prf_nid) <= 0) 
+		{
+			printf("failed to get PRF NID: %d\n", prf_nid);
+			goto err;
+		}
+		if (prf_nid != nid)
+			goto err;
 	}
 	ret = TRUE;
 err:
