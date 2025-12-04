@@ -25,18 +25,21 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
     const EVP_CIPHER* cipher = NULL;
     EVP_CIPHER_CTX* ctx = NULL;
     X509_ALGOR *algor = NULL;
-    const char* prf = "belt-pbkdf";
     unsigned char* psalt = (unsigned char*) salt;
     EVP_PBE_KEYGEN* keygen = NULL;
-    int prf_nid = OBJ_sn2nid(prf);
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+#endif // OPENSSL_VERSION_MAJOR >= 3
     int hmac_nid = OBJ_sn2nid("belt-hmac");
-    if (prf_nid == NID_undef) 
-    {
-        printf("EVP_PBE algorithm is not found\n");
-        goto err;
-    }
 
     cipher = EVP_get_cipherbyname("belt-ecb256");
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (!cipher)
+	{
+		ciph = EVP_CIPHER_fetch(NULL, "belt-ecb256", NULL);
+		cipher = ciph;
+	}
+#endif // OPENSSL_VERSION_MAJOR >= 3
     if (!cipher) 
     {
         printf("Cipher algorithm is not found\n");
@@ -71,6 +74,10 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
 
     ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
     EVP_CIPHER_CTX_free(ctx);
     X509_ALGOR_free(algor);
     return ret;

@@ -403,6 +403,7 @@ err:
 	if (ciph)
 		EVP_CIPHER_free(ciph);
 #endif
+	ERR_print_errors(bio_err);
 	X509_SIG_free(p8);
 	PKCS8_PRIV_KEY_INFO_free(p8inf);
 	BIO_free(mem);
@@ -471,7 +472,9 @@ EVP_PKEY* loadBignPrivKey(const char* key, const char* pass)
 	p8inf = PKCS8_decrypt(p8, pass, strlen(pass));
 	if (!p8inf)
 		goto err;
+	ERR_set_mark();
 	pkey = EVP_PKCS82PKEY(p8inf);
+	ERR_pop_to_mark();
 err:
 	if (p8inf)
 		PKCS8_PRIV_KEY_INFO_free(p8inf);
@@ -564,7 +567,7 @@ bool_t bignPubKeyTest()
 		goto err;
 	ret = TRUE;
 err:
-	//ERR_print_errors(bio_err);
+	ERR_print_errors(bio_err);
 	BIO_free_all(bio_err);
 	EVP_PKEY_free(pkey);
 	return ret;
