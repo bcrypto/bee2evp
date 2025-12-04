@@ -63,7 +63,7 @@ bool_t pbkdf(const char* pwd, int pwd_len, int iter, const octet* salt,
         goto err;
     }
 
-    if(keygen(NULL, NULL, 0, NULL, NULL, NULL, 0))
+    if (keygen(NULL, NULL, 0, NULL, NULL, NULL, 0))
         goto err;
     
     // Use the found keygen function as PRF (password-based key derivation)

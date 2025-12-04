@@ -329,12 +329,9 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 	int len;
 	bool_t ret = FALSE;
 	char* p;
-	PKCS8_PRIV_KEY_INFO* p8inf = NULL;
-	X509_SIG* p8 = NULL;
 	const EVP_CIPHER* cipher = NULL;
 	int pbe_nid = -1;
 	int iter = 10000;
-	X509_ALGOR* pbe;
 	const char* p8pass = "password";
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER* ciph = NULL;
@@ -358,36 +355,13 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 		BIO_printf(bio_err, "Unrecognized algorithm belt-kwp256\n");
 		goto err;
 	}
-	pbe_nid = OBJ_txt2nid("belt-hmac");
-	if (!EVP_PBE_find(EVP_PBE_TYPE_PRF, pbe_nid, NULL, NULL, 0))
+	if (!PEM_write_bio_PKCS8PrivateKey(mem, pkey, cipher, p8pass, strlen(p8pass),
+        NULL, NULL))
 	{
-		BIO_printf(bio_err, "Unknown PRF algorithm %s\n", "belt-hmac");
+		BIO_printf(bio_err, "Private key is not written\n");
 		goto err;
 	}
-	if ((p8inf = EVP_PKEY2PKCS8(pkey)) == NULL)
-	{
-		BIO_printf(bio_err, "Error converting key\n");
-		ERR_print_errors(bio_err);
-		goto err;
-	}
-	pbe = PKCS5_pbe2_set_iv(cipher, iter, NULL, 0, NULL, pbe_nid);
-	if (pbe == NULL)
-	{
-		BIO_printf(bio_err, "Error setting PBE algorithm\n");
-		ERR_print_errors(bio_err);
-		goto err;
-	}
-
-	p8 = PKCS8_set0_pbe(p8pass, strlen(p8pass), p8inf, pbe);
-	if (p8 == NULL)
-	{
-		X509_ALGOR_free(pbe);
-		BIO_printf(bio_err, "Error encrypting key\n");
-		ERR_print_errors(bio_err);
-		goto err;
-	}
-	PEM_write_bio_PKCS8(mem, p8);
-
+	
 	len = BIO_get_mem_data(mem, &p);
 	// printf("PEM (%d):%s\n", len, p);
 	if (len < 38 + 36)
@@ -404,8 +378,6 @@ err:
 		EVP_CIPHER_free(ciph);
 #endif
 	ERR_print_errors(bio_err);
-	X509_SIG_free(p8);
-	PKCS8_PRIV_KEY_INFO_free(p8inf);
 	BIO_free(mem);
 	return ret;
 }
@@ -520,7 +492,8 @@ bool_t keyPrintTest(EVP_PKEY* key, const char* privkey, const char* pubkey)
 		BIO_printf(bio_err, "Output %s mismatch to %s\n", content, privkey);
 		goto err;
 	}
-	BIO_reset(mem);
+	if (!BIO_reset(mem))
+		goto err;
 	if (EVP_PKEY_print_public(mem, key, 4, NULL) <= 0)
 	{
 		BIO_printf(bio_err, "Error printing public key\n");
