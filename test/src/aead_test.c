@@ -4,7 +4,7 @@
 \brief Tests for aead ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.31
+\version 2025.11.17
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -17,6 +17,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
+#include <openssl/objects.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -44,26 +45,34 @@ bool_t aead_encrypt(const char* cipher_name,
 	const char* t)
 {
 	bool_t ret = FALSE;
-	octet out[128];
+	octet out[256];
 	octet mac[128];
 	int len = 0;
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx)
-	{
-		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
-		return FALSE;
-	}
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
-	cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
 	{
 		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
 		goto err;
 	}
 
-	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
@@ -75,6 +84,21 @@ bool_t aead_encrypt(const char* cipher_name,
 			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
 			goto err;
 		}
+	}
+	if (key_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
+			!= 1)
+		{
+			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	{
+		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
+		goto err;
 	}
 
 	if (i && i_len > 0)
@@ -102,10 +126,13 @@ bool_t aead_encrypt(const char* cipher_name,
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
-
 
 bool_t aead_decrypt(const char* cipher_name,
 	const unsigned char* x,
@@ -120,30 +147,61 @@ bool_t aead_decrypt(const char* cipher_name,
 	const char* t)
 {
 	bool_t ret = FALSE;
-	octet out[128];
+	octet out[256];
 	octet mac[128];
 	int len = 0;
 	int len2 = 0;
 	int mac_len = 0;
-	const EVP_CIPHER* cipher;
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+	cipher = ciph;
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
+	if (!cipher)
+		cipher = EVP_get_cipherbyname(cipher_name);
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		goto err;
+	}
+	
+	ctx = EVP_CIPHER_CTX_new();
 	if (!ctx)
 	{
 		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
 		return FALSE;
 	}
 
-	cipher = EVP_get_cipherbyname(cipher_name);
-	if (!cipher)
+	if (EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
 	{
-		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
+	}
+	if (s_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
+		{
+			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
+			goto err;
+		}
+	}
+	if (key_len)
+	{
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
+			!= 1)
+		{
+			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
+			goto err;
+		}
 	}
 
 	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
 	{
-		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
 	}
 
@@ -172,14 +230,108 @@ bool_t aead_decrypt(const char* cipher_name,
 		fprintf(stderr, "failed to decrypt final(%s)\n", cipher_name);
 		goto err;
 	}
-	if (!hexEq(out, y))
+	if (!hexEq(out, y)) 
 		goto err;
 	ret = TRUE;
 err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
 	EVP_CIPHER_CTX_free(ctx);
 	return ret;
 }
 
+/*
+*******************************************************************************
+Функции проверки работы EVP-интерфейсов
+*******************************************************************************
+*/
+
+bool_t cipher_unittest(const char* cipher_name, const char* prf)
+{
+	bool_t ret = FALSE;
+	unsigned char key[EVP_MAX_KEY_LENGTH];
+	int key_len;
+	int prf_nid;
+	int nid;
+	int is_eng = 1;
+
+	const EVP_CIPHER* cipher = NULL;
+	EVP_CIPHER_CTX* ctx = NULL; 
+	EVP_CIPHER_CTX *ctx_temp = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER* ciph = NULL;
+#endif // OPENSSL_VERSION_MAJOR >= 3
+
+
+	cipher = EVP_get_cipherbyname(cipher_name);
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (!cipher)
+	{
+		ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
+		cipher = ciph;
+		is_eng = 0;
+	}
+#endif // OPENSSL_VERSION_MAJOR >= 3
+	if (!cipher)
+	{
+		fprintf(stderr, "failed to get cipher(%s)\n", cipher_name);
+		goto err;
+	}
+	
+	ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+	{
+		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
+		return FALSE;
+	}
+
+	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
+	{
+		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+
+	key_len = EVP_CIPHER_CTX_key_length(ctx);
+	// Генерация ключа
+	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_RAND_KEY, key_len, key) <= 0) 
+	{
+		fprintf(stderr, "failed to generate key(%s)\n", cipher_name);
+		goto err;
+	}
+	ctx_temp = EVP_CIPHER_CTX_new();
+	// Копирование контекста
+	if (!EVP_CIPHER_CTX_copy(ctx_temp, ctx)) 
+	{
+		fprintf(stderr, "failed to copy context(%s)\n", cipher_name);
+		goto err;
+	}
+    
+    // Получение идентификатора функции для PBKDF2
+	if (is_eng)
+	{
+		nid = OBJ_sn2nid(prf);
+		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_PBE_PRF_NID, 0, &prf_nid) <= 0) 
+		{
+			printf("failed to get PRF NID: %d\n", prf_nid);
+			goto err;
+		}
+		if (prf_nid != nid)
+			goto err;
+	}
+	ret = TRUE;
+err:
+#if OPENSSL_VERSION_MAJOR >= 3
+	if (ciph)
+		EVP_CIPHER_free(ciph);
+#endif
+	if (ctx_temp)
+		EVP_CIPHER_CTX_free(ctx_temp);
+	EVP_CIPHER_CTX_free(ctx);
+	return ret;
+}
 
 /*
 *******************************************************************************
@@ -210,6 +362,13 @@ bool_t beltDWPTest()
         "DF181ED008A20F43DCBBB93650DAD34B", // критические данные
         "6A2C2C94C4150DC0"                  // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("belt-dwp256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-dwp192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-dwp128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -237,14 +396,20 @@ bool_t beltCHETest()
         "2BABF43EB37B5398A9068F31A3C758B762F44AA9", // критические данные
         "7D9D4F59D40D197D"                          // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("belt-che256", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-che192", "belt-hmac"))
+		return FALSE;
+	if (!cipher_unittest("belt-che128", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
 
-
 bool_t bashPrgTest()
 {
-    octet buf[128];
+    octet buf[256];
     octet data[192];
     char zeros[512];
     const char str[] = 
@@ -266,7 +431,7 @@ bool_t bashPrgTest()
     if (!aead_encrypt(
         "bash-prg-ae2561",                  // шифр
         buf, 192,                           // критические данные
-        beltH() + 32, 32,                   // ключ  
+        beltH() + 32, 0,                    // ключ  
         beltH(), 16,                        // синхропосылка
         beltH() + 64, 49,                   // открытые данные
         str,                                // шифротекст
@@ -274,20 +439,22 @@ bool_t bashPrgTest()
 		"6A4E9AAB4EE00A579E9E682D0EC051E3"  // имитовставка
     )) return FALSE;
 
-
     // A.6.decr
     hexTo(data, str);
     hexFrom(zeros, buf, 192);
     if (!aead_decrypt(
-        "bash-prg-ae2561",                          // шифр
-        data, 192,                                  // шифротекст
-        beltH() + 128 + 32, 32,                     // ключ  
-        beltH() + 192 + 16, 8,                      // синхропосылка
-        beltH() + 64 + 16, 32,                      // открытые данные
-        zeros,                                      // критические данные
+        "bash-prg-ae2561",                  // шифр
+        data, 192,                          // шифротекст
+        beltH() + 32, 0,                    // ключ  
+        beltH(), 16,                        // синхропосылка
+        beltH() + 64, 49,                   // открытые данные
+        zeros,                              // критические данные
         "CDE5AF6EF9A14B7D0C191B869A6343ED"
-		"6A4E9AAB4EE00A579E9E682D0EC051E3"          // имитовставка
+		"6A4E9AAB4EE00A579E9E682D0EC051E3"  // имитовставка
     )) return FALSE;
+
+	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
+		return FALSE;
 	// все нормально
 	return TRUE;
 }
