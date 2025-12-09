@@ -22,10 +22,14 @@ def btls_issue_cert(cert, privkey):
 		 -new -key {} -nodes -out {}'.format(privkey, cert))
 	openssl(cmd)
 
-def btls_server(tmpdir, suite, curve, cert, psk):
+def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
 	assert cert or psk
 	# prepare cmd
-	cmd = 's_server -engine bee2evp -tls1_2 -rev'
+	if is_tls13:
+		cmd = 's_server -engine bee2evp -tls1_3 -ciphersuites {}'.format(suite)
+	else:
+		cmd = 's_server -engine bee2evp -tls1_2 -rev'.format(suite)
+
 	if cert:
 		privkey = os.path.join(tmpdir, suite + curve + '.sk')
 		cert = os.path.join(tmpdir, suite + curve + '.cert')
@@ -43,10 +47,14 @@ def btls_server(tmpdir, suite, curve, cert, psk):
 	global g_server
 	g_server = openssl2(cmd)
 
-def btls_client(tmpdir, suite, curve, cert, psk):
+def btls_client(tmpdir, suite, is_tls13, curve, cert, psk):
 	assert cert or psk
 	# prepare cmd
-	cmd = 's_client -engine bee2evp -tls1_2 -cipher {}'.format(suite)
+	if is_tls13:
+		cmd = 's_client -engine bee2evp -tls1_3 -ciphersuites {}'.format(suite)
+	else:
+		cmd = 's_client -engine bee2evp -tls1_2 -cipher {}'.format(suite)
+
 	if psk:
 		cmd = cmd + ' -psk 123456'
 	if not cert and curve != 'NULL':
@@ -62,7 +70,7 @@ def btls_client(tmpdir, suite, curve, cert, psk):
 		echo2 = f.read()
 	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
 
-def btls_test(openssl_version_major):
+def btls12_test():
 	tmpdir = tempfile.mkdtemp()
 
 	ciphersuites = [
@@ -98,7 +106,7 @@ def btls_test(openssl_version_major):
 		# run over curves
 		for curve in curves:
 			# prepare args
-			args = (tmpdir, suite, curve, cert, psk)
+			args = (tmpdir, suite, False, curve, cert, psk)
 			# run server
 			server = threading.Thread(target=btls_server, args=args)
 			server.run()
@@ -110,3 +118,35 @@ def btls_test(openssl_version_major):
 			os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
 
 	shutil.rmtree(tmpdir)
+
+def btls13_test():
+	tmpdir = tempfile.mkdtemp()
+
+	ciphersuites = [
+		'BTLS_BASH_PRG_AE256_BASH256',
+		'BTLS_BELT_CHE256_BELT_HASH']
+
+	curves = [
+		'bign-curve256v1', 'bign-curve384v1', 'bign-curve512v1'
+	]
+
+	for suite in ciphersuites:
+		# run over curves
+		for curve in curves:
+			# prepare args
+			args = (tmpdir, suite, True, curve, True, False)
+			# run server
+			server = threading.Thread(target=btls_server, args=args)
+			server.run()
+			# run client
+			time.sleep(1)
+			client = threading.Thread(target=btls_client, args=args)
+			client.run()
+			# kill server
+			os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+
+	shutil.rmtree(tmpdir)
+
+def btls_test():
+	btls12_test()
+	btls13_test()

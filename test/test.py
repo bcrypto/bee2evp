@@ -34,11 +34,11 @@ def engine_test():
 	print(out.decode())
 
 if __name__ == '__main__':
-	openssl_version_major = int(version_test())
+	version_test()
 	engine_test()
 	bash_test()
 	belt_test()
 	bign_test()
-	btls_test(openssl_version_major)
+	btls_test()
 	if fail:
 		sys.exit(1)

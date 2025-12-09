@@ -291,8 +291,7 @@ typedef struct belt_chet_ctx
 {
 	octet key[32];
 	octet iv[16];
-	octet aad[16];
-	size_t aad_len;
+	octet aad[5];
 	octet tag[8];
 	mem_align_t state[];
 } belt_chet_ctx;
@@ -301,16 +300,16 @@ static int evpBeltCHET_init(
 	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-	if (iv)
-	{
-		memCopy(state->iv, iv, 8);
-		memSet(state->iv + 8, 0xFF, 8);
-	}
 	if (key)
 	{
 		memCopy(state->key, key, 32);
 	}
-	state->aad_len = 0;
+
+	if (iv)
+	{
+		memCopy(state->iv, iv, 16);
+	}
+
 	return 1;
 }
 
@@ -320,23 +319,11 @@ static int evpBeltCHET_cipher(
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	int enc = EVP_CIPHER_CTX_encrypting(ctx);
 
-	// if (!out && in && len == 5)
-	// {
-	// 	memCopy(state->ann, state->iv, 16); // S
-	// 	memCopy(state->ann + 16, in, 5);	// I
-	// 	memSet(state->ann + 21, 0, 3);		// 0^24
-
-	// 	state->ann_len = 24;
-
-	// 	return 1;
-	// }
-
 	if (out == NULL)
 	{
-		if (in)
+		if (in && len == 5)
 		{
 			memCopy(state->aad, in, len);
-			state->aad_len = len;
 			return len;
 		}
 		else
@@ -350,15 +337,10 @@ static int evpBeltCHET_cipher(
 		if (enc)
 		{
 			memMove(out, in, len);
-			memCopy(state->iv + 8, state->aad, 8);
-		}
-		else
-		{
-			memCopy(state->iv + 8, state->aad, 8);
 		}
 
 		beltCHEStart(state->state, state->key, 32, state->iv);
-		beltCHEStepI(state->aad, state->aad_len, state->state);
+		beltCHEStepI(state->aad, 5, state->state);
 	}
 
 	if (in)
@@ -415,15 +397,15 @@ static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 			return 0;
 		break;
 	case EVP_CTRL_GET_IVLEN:
-		*(int*)p2 = 8;
+		*(int*)p2 = 16;
 		return 1;
 	case EVP_CTRL_AEAD_SET_IVLEN:
-		return p1 == 8 ? 1 : 0;
+		return p1 == 16 ? 1 : 0;
 	case EVP_CTRL_AEAD_SET_IV_FIXED:
-		if (p1 != 8)
+		if (p1 != 16)
 			return 0;
 		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-		memCopy(state->iv, p2, 8);
+		memCopy(state->iv, p2, 16);
 		return 1;
 	case EVP_CTRL_AEAD_SET_TAG:
 		if (p1 != 8)
@@ -449,7 +431,7 @@ static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 
 /*
 *******************************************************************************
-Алгоритмы bash-prg-ae-tls: belt-che для TLS
+Алгоритмы bash-prg-ae-tls: bash-prg-ae для TLS
 *******************************************************************************
 */
 
@@ -589,12 +571,10 @@ static int evpBashPrgAET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 			return 0;
 		break;
 	case EVP_CTRL_GET_IVLEN:
-		*(int*)p2 = 0;
+		*(int*)p2 = 16;
 		return 1;
 	case EVP_CTRL_AEAD_SET_IVLEN:
-		state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-		state->ann_len = (size_t)p1;
-		return 1;
+		return p1 == 16 ? 1 : 0;
 	case EVP_CTRL_AEAD_SET_TAG:
 		if (p1 != 32)
 			return 0;
@@ -894,7 +874,7 @@ int evpBeltTLS_bind(ENGINE* e)
 	BELT_TLS_DESCR(belt_chet,
 		1,
 		32,
-		8,
+		16,
 		FLAGS_belt_chet,
 		evpBeltCHET_init,
 		evpBeltCHET_cipher,
