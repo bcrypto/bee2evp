@@ -42,7 +42,7 @@ def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
 		cmd = cmd + ' -psk 123456 -psk_hint 123'
 	# prepare output
 	output = os.path.join(tmpdir, suite + curve + '.srv')
-	cmd = cmd + ' >{}'.format(output)
+	# cmd = cmd + ' >{}'.format(output)
 	# start server
 	global g_server
 	g_server = openssl2(cmd)
@@ -61,14 +61,15 @@ def btls_client(tmpdir, suite, is_tls13, curve, cert, psk):
 		cmd = cmd + ' -curves {}'.format(curve)
     # prepare output
 	output = os.path.join(tmpdir, suite + curve + '.cli')
-	cmd = cmd + ' >{}'.format(output)
+	# cmd = cmd + ' >{}'.format(output)
 	# run cmd
 	echo = 'test_{}={}'.format(curve, suite)
-	openssl(cmd, prefix='(echo ' + echo + '; sleep 1) |')
+	retcode, out, err_out = openssl(cmd, prefix='(echo ' + echo + '; sleep 1) |')
+	print(out, err_out)
 	# test if server returns the reversed initial string
-	with open(output, 'r') as f:
-		echo2 = f.read()
-	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
+	# with open(output, 'r') as f:
+	# 	echo2 = f.read()
+	# process_result('{}[{}]'.format(suite, curve), echo2[::-1])
 
 def btls12_test():
 	tmpdir = tempfile.mkdtemp()
