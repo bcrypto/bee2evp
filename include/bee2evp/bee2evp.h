@@ -415,6 +415,21 @@ extern const char LN_bash_prg_ae2561[];
 */
 const EVP_CIPHER* evpBashPrgAe2561();
 
+/* bash-prg-aet */
+extern const char OID_bash_prg_aet[];
+#ifndef NID_bash_prg_aet
+extern const char SN_bash_prg_aet[];
+extern const char LN_bash_prg_aet[];
+#define NID_bash_prg_aet OBJ_sn2nid(SN_bash_prg_aet)
+#endif
+
+/*!	\brief Описание алгоритмов belt-chet
+
+	Возвращается описание алгоритмов belt-chet (редакция belt-che для TLS).
+	\return Описание алгоритмов.
+*/
+const EVP_CIPHER* evpBashPrgAET();
+
 /*!	\brief Описание алгоритмов belt-dwpt
 
 	Возвращается описание алгоритмов belt-dwpt (редакция belt-dwp для TLS).

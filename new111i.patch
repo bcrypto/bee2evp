@@ -1,0 +1,304 @@
+diff --git a/bee2 b/bee2
+--- a/bee2
++++ b/bee2
+@@ -1 +1 @@
+-Subproject commit fff3273aa9d020280f101a240a9989dfafb14d3a
++Subproject commit fff3273aa9d020280f101a240a9989dfafb14d3a-dirty
+diff --git a/scripts/source.sh b/scripts/source.sh
+index 58a6006..b19b40c 100644
+--- a/scripts/source.sh
++++ b/scripts/source.sh
+@@ -22,7 +22,7 @@ usage() {
+   echo "  -s,             setup"
+   echo "  -b,             build (=bb+bo+be)"
+   echo "  -bb,             build Bee2"
+-  echo "  -bo,             build OpenSSL" 
++  echo "  -bo,             build OpenSSL"
+   echo "  -be,             build Bee2evp"
+   echo "  -t,             test"
+   echo "  -h, --help      display this help and exit"
+@@ -148,7 +148,7 @@ system_opt(){
+   arch=$(uname -m)
+ 
+   echo "System detection: OS=$os_name, Arch=$arch"
+-    
++
+   case "$os_name" in
+     Linux)
+       # Linux distribution detection
+@@ -165,7 +165,7 @@ system_opt(){
+       ossl_config="Cygwin-$arch"
+       ;;
+     *)
+-      # Fallback for unknown systems      
++      # Fallback for unknown systems
+       echo "Unknown system. Default settings are used."
+       ;;
+   esac
+@@ -212,7 +212,7 @@ patch_openssl(){
+   then
+     btls_srcs_path=$bee2evp/btls
+     cat $btls_srcs_path/objects.txt >> $openssl/crypto/objects/objects.txt
+-  else  
++  else
+     btls_srcs_path=$bee2evp/btls/legacy
+   fi
+   cp $btls_srcs_path/btls.c ./ssl/
+@@ -223,7 +223,7 @@ patch_openssl(){
+ build_bee2(){
+   green echo "[-] build bee2"
+   mkdir -p $build_bee2 && cd $build_bee2
+-  cmake -DCMAKE_BUILD_TYPE=Release \
++  cmake -DCMAKE_BUILD_TYPE=$build_type \
+     -DBUILD_PIC=ON \
+     -DCMAKE_INSTALL_PREFIX=$local \
+     -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
+@@ -309,15 +309,15 @@ test_bee2evp(){
+     sed -e "s|$lib_path:||")
+ }
+ 
+-setup(){
+-  green echo "Setup..."
+-  clean
+-  check_prereq
+-  check_openssl_tag
+-  update_repos
+-  patch_openssl
+-  green echo "Setup ended"
+-}
++# setup(){
++#   green echo "Setup..."
++#   clean
++#   check_prereq
++#   check_openssl_tag
++#   update_repos
++#   patch_openssl
++#   green echo "Setup ended"
++# }
+ 
+ build(){
+   green echo "Building..."
+@@ -330,6 +330,6 @@ build(){
+   if $enable_bee2evp; then
+     build_bee2evp
+     attach_bee2evp
+-  fi  
++  fi
+   green echo "Build ended"
+ }
+diff --git a/src/belt_tls.c b/src/belt_tls.c
+index 2513b26..48387d7 100644
+--- a/src/belt_tls.c
++++ b/src/belt_tls.c
+@@ -317,50 +317,149 @@ static int evpBeltCHET_cipher(
+ 	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+ {
+ 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+-	// выполняются соглашения libssl?
+-	if (out != in || !state->aad_len || len < 8 + 8)
+-		return -1;
+-	// обработать явную синхропосылку
+-	if (EVP_CIPHER_CTX_encrypting(ctx))
+-	{
+-		// записать синхропосылку в начало фрагмента
+-		memMove(out + 8, in, len);
+-		ASSERT(!memEq(state->aad, state->iv + 8, 8));
+-		memCopy(out, state->aad, 8);
+-		memCopy(state->iv + 8, state->aad, 8);
++	// size_t outlen = 0;
++	int enc = EVP_CIPHER_CTX_encrypting(ctx);
++
++	if (out == NULL) {
++		if (in) {
++			memCopy(state->aad, in, len);
++			state->aad_len = len;
++			return len;
++		} else {
++			return 0;
++		}
+ 	}
+-	else
+-		// прочитать синхропосылку из начала фрагмента
+-		memCopy(state->iv + 8, out, 8);
+-	in += 8, out += 8, len -= 8;
+-	// запустить шифр
+-	beltCHEStart(state->state, state->key, 32, state->iv);
+-	// обработать открытые (ассоциированные) данные
+-	beltCHEStepI(state->aad, state->aad_len, state->state);
+-	// обработать фрагмент (без имитовставки)
+-	len -= 8;
+-	if (EVP_CIPHER_CTX_encrypting(ctx))
+-	{
+-		beltCHEStepE(out, len, state->state);
+-		beltCHEStepA(out, len, state->state);
+-		beltCHEStepG(out + len, state->state);
+-		len += 8 + 8;
++
++	if (out && in) {
++		if (enc) {
++			memMove(out, in, len);
++			// memCopy(out, state->aad, 8);
++			memCopy(state->iv + 8, state->aad, 8);
++		} else {
++			memCopy(state->iv + 8, state->aad, 8);
++		}
++
++		beltCHEStart(state->state, state->key, 32, state->iv);
++		beltCHEStepI(state->aad, state->aad_len, state->state);
+ 	}
+-	else
+-	{
+-		beltCHEStepA(out, len, state->state);
+-		if (!beltCHEStepV(out + len, state->state))
+-		{
+-			memWipe(out, len);
+-			return -1;
++
++	if (in) {
++		if (enc) {
++			beltCHEStepE(out, len, state->state);
++			beltCHEStepA(out, len, state->state);
++			beltCHEStepG(out + len, state->state);
++			memCopy(state->tag, out + len, 8);
++			// len += 8;
++		} else {
++			// beltCHEStepA(out, len, state->state);
++			// beltCHEStepA(out, len, state->state);
++			beltCHEStepA(out, len, state->state);
++			// beltCHEStepG(out + len, state->state);
++
++			if (!beltCHEStepV(state->tag, state->state))
++			{
++				memWipe(out, len);
++				return -1;
++			}
++			// if (!memEq(state->tag, out + len, 8))
++			// {
++			// 	memWipe(out, len);
++			// 	return -1;
++			// }
++
++			beltCHEStepD(out, len, state->state);
++			// memMove(out - 8, out, len);
+ 		}
+-		beltCHEStepD(out, len, state->state);
+-		memMove(out - 8, out, len);
++		return len;
++	} else {
++		// // Final.
++		// if (enc) {
++		// 	beltCHEStepG(out + 8 + len, state->state);
++		// 	memCopy(state->tag, out + 8 + len, 8);
++		// } else {
++		// 	if (!beltCHEStepV(out + 8 + len, state->state)) {
++		// 		return -1;
++		// 	}
++		// }
++		return 0;
+ 	}
+-	// число октетов, записанных в out
+-	return (int)len;
+ }
+ 
++// static int evpBeltCHET_cipher(
++// 	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
++// {
++// 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
++// 	size_t outlen = 0;
++// 	// завершение?
++// 	if (!in)
++// 	{
++// 		if (EVP_CIPHER_CTX_encrypting(ctx))
++// 		{
++// 			// вычислить и отправить имитовставку
++// 			beltCHEStepG(out, state->state);
++// 			return 8;
++// 		}
++// 		// проверить имитовставку
++// 		if (state->block_len != 8 || !beltCHEStepV(state->block, state->state))
++// 			return -1;
++// 		return 0;
++// 	}
++// 	// открытые данные?
++// 	if (!out)
++// 	{
++// 		beltCHEStepI(in, inlen, state->state);
++// 		return 0;
++// 	}
++// 	// установить защиту
++// 	if (EVP_CIPHER_CTX_encrypting(ctx))
++// 	{
++// 		// обработать критические данные
++// 		memMove(out, in, inlen);
++// 		beltCHEStepE(out, inlen, state->state);
++// 		beltCHEStepA(out, inlen, state->state);
++// 		outlen = inlen;
++// 	}
++// 	// снять защиту
++// 	else
++// 	{
++// 		// есть что обрабатывать?
++// 		if (state->block_len + inlen > 8)
++// 		{
++// 			// сколько всего обработать октетов
++// 			size_t l = state->block_len + inlen - 8;
++// 			// сколько обработать октетов block
++// 			size_t lb = MIN2(state->block_len, l);
++// 			// обработать октеты block
++// 			memCopy(out, state->block, lb);
++// 			beltCHEStepA(out, lb, state->state);
++// 			beltCHEStepD(out, lb, state->state);
++// 			out += lb, outlen += lb;
++// 			// обработать октеты in
++// 			memMove(out, in, l - lb);
++// 			beltCHEStepA(out, l - lb, state->state);
++// 			beltCHEStepD(out, l - lb, state->state);
++// 			out += l - lb, outlen += l - lb;
++// 			// обновить block
++// 			if (lb < state->block_len)
++// 			{
++// 				memMove(state->block, state->block + lb, state->block_len - lb);
++// 				memCopy(state->block + lb, in, 8 - state->block_len + lb);
++// 			}
++// 			else
++// 				memCopy(state->block, in + inlen - 8, 8);
++// 			state->block_len = 8;
++// 		}
++// 		// обрабатывать нечего, просто расширить блок
++// 		else
++// 		{
++// 			memCopy(state->block + state->block_len, in, inlen);
++// 			state->block_len += inlen;
++// 		}
++// 	}
++// 	return (int)outlen;
++// }
++
++
+ static int evpBeltCHET_cleanup(EVP_CIPHER_CTX* ctx)
+ {
+ 	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+@@ -400,7 +499,9 @@ static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
+ 		if (p1 != 8)
+ 			return 0;
+ 		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+-		memCopy(state->tag, p2, 8);
++		if (p2 != NULL) {
++			memCopy(state->tag, p2, 8);
++		}
+ 		return 1;
+ 	case EVP_CTRL_AEAD_GET_TAG:
+ 		if (p1 != 8)
+diff --git a/utils/build_debian.sh b/utils/build_debian.sh
+index 24b79c1..6bc7bc5 100644
+--- a/utils/build_debian.sh
++++ b/utils/build_debian.sh
+@@ -169,7 +169,7 @@ patch_openssl(){
+ build_bee2(){
+   green echo "[-] build bee2"
+   mkdir -p $build_bee2 && cd $build_bee2
+-  cmake -DCMAKE_BUILD_TYPE=Release \
++  cmake -DCMAKE_BUILD_TYPE=Debug \
+     -DBUILD_PIC=ON \
+     -DCMAKE_INSTALL_PREFIX=$local \
+     -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2

@@ -22,7 +22,7 @@ usage() {
   echo "  -s,             setup"
   echo "  -b,             build (=bb+bo+be)"
   echo "  -bb,             build Bee2"
-  echo "  -bo,             build OpenSSL" 
+  echo "  -bo,             build OpenSSL"
   echo "  -be,             build Bee2evp"
   echo "  -t,             test"
   echo "  -h, --help      display this help and exit"
@@ -148,7 +148,7 @@ system_opt(){
   arch=$(uname -m)
 
   echo "System detection: OS=$os_name, Arch=$arch"
-    
+
   case "$os_name" in
     Linux)
       # Linux distribution detection
@@ -165,7 +165,7 @@ system_opt(){
       ossl_config="Cygwin-$arch"
       ;;
     *)
-      # Fallback for unknown systems      
+      # Fallback for unknown systems
       echo "Unknown system. Default settings are used."
       ;;
   esac
@@ -212,7 +212,7 @@ patch_openssl(){
   then
     btls_srcs_path=$bee2evp/btls
     cat $btls_srcs_path/objects.txt >> $openssl/crypto/objects/objects.txt
-  else  
+  else
     btls_srcs_path=$bee2evp/btls/legacy
   fi
   cp $btls_srcs_path/btls.c ./ssl/
@@ -223,7 +223,7 @@ patch_openssl(){
 build_bee2(){
   green echo "[-] build bee2"
   mkdir -p $build_bee2 && cd $build_bee2
-  cmake -DCMAKE_BUILD_TYPE=Release \
+  cmake -DCMAKE_BUILD_TYPE=$build_type \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
     -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
@@ -330,6 +330,6 @@ build(){
   if $enable_bee2evp; then
     build_bee2evp
     attach_bee2evp
-  fi  
+  fi
   green echo "Build ended"
 }

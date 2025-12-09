@@ -169,7 +169,7 @@ patch_openssl(){
 build_bee2(){
   green echo "[-] build bee2"
   mkdir -p $build_bee2 && cd $build_bee2
-  cmake -DCMAKE_BUILD_TYPE=Release \
+  cmake -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_PIC=ON \
     -DCMAKE_INSTALL_PREFIX=$local \
     -DCMAKE_INSTALL_LIBDIR=$lib_path $bee2
