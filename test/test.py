@@ -36,9 +36,9 @@ def engine_test():
 if __name__ == '__main__':
 	version_test()
 	engine_test()
-	# bash_test()
-	# belt_test()
-	# bign_test()
+	bash_test()
+	belt_test()
+	bign_test()
 	btls_test()
 	if fail:
 		sys.exit(1)

@@ -1,3 +1,17 @@
+diff --git a/crypto/pem/pem_pkey.c b/crypto/pem/pem_pkey.c
+index 4deee46..52233ae 100644
+--- a/crypto/pem/pem_pkey.c
++++ b/crypto/pem/pem_pkey.c
+@@ -182,8 +182,7 @@ static EVP_PKEY *pem_read_bio_key_legacy(BIO *bp, EVP_PKEY **x,
+                && (selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0) {
+         /* Trying legacy PUBKEY decoding only if we do not want private key. */
+         ret = ossl_d2i_PUBKEY_legacy(x, &p, len);
+-    } else if ((selection & EVP_PKEY_KEYPAIR) == 0
+-               && (slen = ossl_pem_check_suffix(nm, "PARAMETERS")) > 0) {
++    } else if ((slen = ossl_pem_check_suffix(nm, "PARAMETERS")) > 0) {
+         /* Trying legacy params decoding only if we do not want a key. */
+         ret = EVP_PKEY_new();
+         if (ret == NULL)
 diff --git a/include/openssl/ssl3.h b/include/openssl/ssl3.h
 index 4f076c6..c031c07 100644
 --- a/include/openssl/ssl3.h
@@ -24,6 +38,30 @@ index 7e3d1a7..f4fca39 100644
 
  # if defined(SSL3_CT_NUMBER)
  #  if TLS_CT_NUMBER != SSL3_CT_NUMBER
+ diff --git a/providers/common/capabilities.c b/providers/common/capabilities.c
+index f723461..b55f44f 100644
+--- a/providers/common/capabilities.c
++++ b/providers/common/capabilities.c
+@@ -95,6 +95,9 @@ static const TLS_GROUP_CONSTANTS group_list[] = {
+     { OSSL_TLS_GROUP_ID_ffdhe4096, 128, TLS1_3_VERSION, 0, -1, -1 },
+     { OSSL_TLS_GROUP_ID_ffdhe6144, 128, TLS1_3_VERSION, 0, -1, -1 },
+     { OSSL_TLS_GROUP_ID_ffdhe8192, 192, TLS1_3_VERSION, 0, -1, -1 },
++	{ 0x0200, 128, TLS1_2_VERSION, TLS1_2_VERSION, DTLS1_VERSION, DTLS1_2_VERSION},
++	{ 0x0201, 192, TLS1_2_VERSION, TLS1_2_VERSION, -1, -1},
++	{ 0x0202, 256, TLS1_2_VERSION, TLS1_2_VERSION, -1, -1},
+ };
+
+ #define TLS_GROUP_ENTRY(tlsname, realname, algorithm, idx) \
+@@ -206,6 +209,9 @@ static const OSSL_PARAM param_group_list[][10] = {
+     TLS_GROUP_ENTRY("ffdhe6144", "ffdhe6144", "DH", 36),
+     TLS_GROUP_ENTRY("ffdhe8192", "ffdhe8192", "DH", 37),
+ # endif
++    TLS_GROUP_ENTRY("bign-curve256v1", "bign-curve256v1", "EC", 38),
++    TLS_GROUP_ENTRY("bign-curve384v1", "bign-curve384v1", "EC", 39),
++    TLS_GROUP_ENTRY("bign-curve512v1", "bign-curve512v1", "EC", 40),
+ };
+ #endif /* !defined(OPENSSL_NO_EC) || !defined(OPENSSL_NO_DH) */
+
 diff --git a/ssl/build.info b/ssl/build.info
 index de28a07..4acb3bd 100644
 --- a/ssl/build.info
