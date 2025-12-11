@@ -100,6 +100,23 @@ def btls_test():
 		'bign-curve256v1:bign-curve512v1'
 	]
 
+	for suite in tls13_ciphersuites:
+		# determine a list of curves
+		curves = curves_shortlist
+		# run over curves
+		for curve in curves:
+			# prepare args
+			args = (tmpdir, suite, True, curve, False, True)
+			# run server
+			server = threading.Thread(target=btls_server, args=args)
+			server.run()
+			# run client
+			time.sleep(1)
+			client = threading.Thread(target=btls_client, args=args)
+			client.run()
+			# kill server
+			os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+
 	for suite in ciphersuites:
 		# psk?
 		psk = suite.find('PSK') != -1
