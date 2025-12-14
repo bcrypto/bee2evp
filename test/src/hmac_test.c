@@ -4,30 +4,30 @@
 \brief Tests for HMAC function
 \project bee2evp/test
 \created 2025.10.17
-\version 2025.10.31
+\version 2025.12.12
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
 */
+#include <stdio.h>
+#include <string.h>
 
+#include <openssl/evp.h>
 #include <openssl/opensslv.h>
+
+#include <bee2/defs.h>
+#include <bee2/core/hex.h>
+#include <bee2/core/mem.h>
+#include <bee2/crypto/belt.h>
 
 #if OPENSSL_VERSION_MAJOR >= 3
 
-#include <openssl/evp.h>
 #include <openssl/engine.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/obj_mac.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <bee2/defs.h>
-#include <bee2/core/hex.h>
-#include <bee2/core/mem.h>
-#include <bee2/crypto/belt.h>
 
 /*
 *******************************************************************************
@@ -66,6 +66,44 @@ bool_t mac_test(const char* name,
 	return TRUE;
 }
 
+#else
+
+#include <openssl/hmac.h>
+
+bool_t mac_test(const char* name,
+	const char* md_name,
+	const unsigned char* x,
+	int x_len,
+	const unsigned char* key,
+	int key_len,
+	const char* y)
+{
+    bool_t ret = FALSE;
+    unsigned char hmac[32];  // SHA256 output size
+    unsigned int hmac_len;
+    const EVP_MD* evp_md = NULL;
+    evp_md = EVP_get_digestbyname(md_name);
+    if (evp_md == NULL)
+	{
+		fprintf(stderr, "failed to get md (%s)\n", md_name);
+		return FALSE;
+	}
+
+    HMAC(evp_md, key, key_len, x, x_len, hmac, &hmac_len);
+    if (!hexEq(hmac, y))
+	{
+		for (size_t i = 0; i < strlen(y) / 2; i++)
+		{
+			printf("%02X", hmac[i]);
+		}
+		printf("\n%u\n", hmac_len);
+		goto err;
+	}
+    ret = TRUE;
+err:
+    return ret;
+}
+#endif // OPENSSL_VERSION_MAJOR >= 3
 
 /*
 *******************************************************************************
@@ -108,5 +146,3 @@ bool_t HMACTest()
 	// все нормально
 	return TRUE;
 }
-
-#endif // OPENSSL_VERSION_MAJOR >= 3

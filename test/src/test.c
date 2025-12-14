@@ -4,7 +4,7 @@
 \brief Bee2evp testing
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.11.23
+\version 2025.12.12
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -89,9 +89,7 @@ int testCiphers()
 *******************************************************************************
 */
 
-#if OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HMACTest();
-#endif // OPENSSL_VERSION_MAJOR >= 3
 extern bool_t HKDFTest();
 extern bool_t beltHKDFTest();
 extern bool_t bashHKDFTest();
@@ -102,10 +100,8 @@ int testFunctions()
 {
 	int ret = 0;
 	bool_t code;
-#if OPENSSL_VERSION_MAJOR >= 3
 	printf("HMAC(belt-hash): %s\n", (code = HMACTest()) ? "OK" : "Err");
 	ret |= !code;
-#endif // OPENSSL_VERSION_MAJOR >= 3
 	printf("HKDF(SHA256): %s\n", (code = HKDFTest()) ? "OK" : "Err");
 	ret |= !code;
 	printf("HKDF(belt-hash): %s\n", (code = beltHKDFTest()) ? "OK" : "Err");
