@@ -35,17 +35,19 @@ extern "C" {
 #define NID_bash512				(NUM_NID + 3)
 #define NID_belt_dwpt			(NUM_NID + 4)
 #define NID_belt_ctrt	 		(NUM_NID + 5)
-#define NID_belt_mac256			(NUM_NID + 6)
-#define NID_bign_with_hbelt 	(NUM_NID + 7)
-#define NID_bign_with_bash384	(NUM_NID + 8)
-#define NID_bign_with_bash512	(NUM_NID + 9)
-#define NID_bign_curve256v1 	(NUM_NID + 10)
-#define NID_bign_curve384v1 	(NUM_NID + 11)
-#define NID_bign_curve512v1 	(NUM_NID + 12)
-#define NID_kxbdhe				(NUM_NID + 13)
-#define NID_kxbdht				(NUM_NID + 14)
-#define NID_kxbdhe_psk			(NUM_NID + 15)
-#define NID_kxbdht_psk			(NUM_NID + 16)
+#define NID_belt_chet			(NUM_NID + 6)
+#define NID_bash_prg_aet		(NUM_NID + 7)
+#define NID_belt_mac256			(NUM_NID + 8)
+#define NID_bign_with_hbelt 	(NUM_NID + 9)
+#define NID_bign_with_bash384	(NUM_NID + 10)
+#define NID_bign_with_bash512	(NUM_NID + 11)
+#define NID_bign_curve256v1 	(NUM_NID + 12)
+#define NID_bign_curve384v1 	(NUM_NID + 13)
+#define NID_bign_curve512v1 	(NUM_NID + 14)
+#define NID_kxbdhe				(NUM_NID + 15)
+#define NID_kxbdht				(NUM_NID + 16)
+#define NID_kxbdhe_psk			(NUM_NID + 17)
+#define NID_kxbdht_psk			(NUM_NID + 18)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
@@ -57,6 +59,8 @@ extern "C" {
 
 #define SSL_BELTCTR             0x00400000U
 #define SSL_BELTDWP				0x00800000U
+#define SSL_BELTCHE				0x01000000U
+#define SSL_BASHPRGAE			0x02000000U
 
 #define SSL_BELTMAC             0x00000400U
 #define SSL_HBELT               0x00000800U
@@ -88,6 +92,11 @@ extern "C" {
 #define SSL_TXT_BELTCTR "BELTCTR"
 #define SSL_TXT_BELTMAC "BELTMAC"
 #define SSL_TXT_BELTDWP "BELTDWP"
+#define SSL_TXT_BELTCHE "BELTCHE"
+#define SSL_TXT_BASHPRGAE "BASHPRGAE"
+
+# define EVP_BELTCHE_TLS_TAG_LEN                      8
+# define EVP_BASHPRGAE_TLS_TAG_LEN                    32
 
 /* tls1.h */
 # define TLS_CT_BIGN_SIGN      231
@@ -128,6 +137,17 @@ extern "C" {
 # define BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT\
 	"DHT-PSK-BIGN-WITH-BELT-DWP-HBELT"
 
+# define BTLS1_RFC_BELT_CHE256_BELT_HASH\
+	"BTLS_BELT_CHE256_BELT_HASH"
+# define BTLS1_TXT_BELT_CHE256_BELT_HASH\
+	"BTLS_BELT_CHE256_BELT_HASH"
+# define BTLS1_3_CK_BELT_CHE256_BELT_HASH 0x0300ff1d
+
+# define BTLS1_RFC_BASH_PRG_AE256_BASH256\
+	"BTLS_BASH_PRG_AE256_BASH256"
+# define BTLS1_TXT_BASH_PRG_AE256_BASH256\
+	"BTLS_BASH_PRG_AE256_BASH256"
+# define BTLS1_3_CK_BASH_PRG_AE256_BASH256 0x0300ff1e
 /* t1_lib.c */
 
 #define BIGN_CURVE256V1_ID 31 /* indices in TLS_GROUP_INFO nid_list[] */

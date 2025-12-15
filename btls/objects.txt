@@ -5,6 +5,7 @@
 1 2 112 0 2 0 34 101 77 13 : bash512 : bash512
 1 2 112 0 2 0 34 101 31 67 : belt-dwpt : belt-dwpt
 1 2 112 0 2 0 34 101 31 68 : belt-chet : belt-chet
+1 2 112 0 2 0 34 101 31 37 : bash-prg-aet : bash-prg-aet
 1 2 112 0 2 0 34 101 31 44 : belt-ctrt : belt-ctrt
 1 2 112 0 2 0 34 101 31 53 : belt-mac256 : belt-mac256
 1 2 112 0 2 0 34 101 45 12 : bign-with-hbelt : bign-with-hbelt

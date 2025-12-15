@@ -17,6 +17,7 @@
 #include <bee2/core/rng.h>
 #include <bee2/core/util.h>
 #include <bee2/crypto/belt.h>
+#include <bee2/crypto/bash.h>
 #include "bee2evp/bee2evp.h"
 #include "bee2evp_lcl.h"
 
@@ -110,12 +111,12 @@ const EVP_CIPHER* evpBeltDWPT()
 
 typedef struct belt_dwpt_ctx
 {
-	octet key[32];			/*< ключ */
-	octet iv[16];			/*< синхропосылка */
-	octet aad[16];			/*< заголовок TLS */
-	size_t aad_len; 		/*< длина заголовка TLS */
-	octet tag[8];			/*< имитовставка */
-	mem_align_t state[];	/*< состояние beltDWP */
+	octet key[32];		 /*< ключ */
+	octet iv[16];		 /*< синхропосылка */
+	octet aad[16];		 /*< заголовок TLS */
+	size_t aad_len;		 /*< длина заголовка TLS */
+	octet tag[8];		 /*< имитовставка */
+	mem_align_t state[]; /*< состояние beltDWP */
 } belt_dwpt_ctx;
 
 static int evpBeltDWPT_init(
@@ -288,28 +289,27 @@ const EVP_CIPHER* evpBeltCHET()
 
 typedef struct belt_chet_ctx
 {
-	octet key[32];			/*< ключ */
-	octet iv[16];			/*< синхропосылка */
-	octet aad[16];			/*< заголовок TLS */
-	size_t aad_len; 		/*< длина заголовка TLS */
-	octet tag[8];			/*< имитовставка */
-	mem_align_t state[];	/*< состояние beltCHE */
+	octet key[32];
+	octet iv[16];
+	octet aad[5];
+	octet tag[8];
+	mem_align_t state[];
 } belt_chet_ctx;
 
 static int evpBeltCHET_init(
 	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-	if (iv)
-	{
-		memCopy(state->iv, iv, 8);
-		memSet(state->iv + 8, 0xFF, 8);
-	}
 	if (key)
 	{
 		memCopy(state->key, key, 32);
 	}
-	state->aad_len = 0;
+
+	if (iv)
+	{
+		memCopy(state->iv, iv, 16);
+	}
+
 	return 1;
 }
 
@@ -317,48 +317,59 @@ static int evpBeltCHET_cipher(
 	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
 {
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-	// выполняются соглашения libssl?
-	if (out != in || !state->aad_len || len < 8 + 8)
-		return -1;
-	// обработать явную синхропосылку
-	if (EVP_CIPHER_CTX_encrypting(ctx))
+	int enc = EVP_CIPHER_CTX_encrypting(ctx);
+
+	if (out == NULL)
 	{
-		// записать синхропосылку в начало фрагмента
-		memMove(out + 8, in, len);
-		ASSERT(!memEq(state->aad, state->iv + 8, 8));
-		memCopy(out, state->aad, 8);
-		memCopy(state->iv + 8, state->aad, 8);
-	}
-	else
-		// прочитать синхропосылку из начала фрагмента
-		memCopy(state->iv + 8, out, 8);
-	in += 8, out += 8, len -= 8;
-	// запустить шифр
-	beltCHEStart(state->state, state->key, 32, state->iv);
-	// обработать открытые (ассоциированные) данные
-	beltCHEStepI(state->aad, state->aad_len, state->state);
-	// обработать фрагмент (без имитовставки)
-	len -= 8;
-	if (EVP_CIPHER_CTX_encrypting(ctx))
-	{
-		beltCHEStepE(out, len, state->state);
-		beltCHEStepA(out, len, state->state);
-		beltCHEStepG(out + len, state->state);
-		len += 8 + 8;
-	}
-	else
-	{
-		beltCHEStepA(out, len, state->state);
-		if (!beltCHEStepV(out + len, state->state))
+		if (in && len == 5)
 		{
-			memWipe(out, len);
-			return -1;
+			memCopy(state->aad, in, len);
+			return len;
 		}
-		beltCHEStepD(out, len, state->state);
-		memMove(out - 8, out, len);
+		else
+		{
+			return 0;
+		}
 	}
-	// число октетов, записанных в out
-	return (int)len;
+
+	if (out && in)
+	{
+		if (enc)
+		{
+			memMove(out, in, len);
+		}
+
+		beltCHEStart(state->state, state->key, 32, state->iv);
+		beltCHEStepI(state->aad, 5, state->state);
+	}
+
+	if (in)
+	{
+		if (enc)
+		{
+			beltCHEStepE(out, len, state->state);
+			beltCHEStepA(out, len, state->state);
+			beltCHEStepG(out + len, state->state);
+			memCopy(state->tag, out + len, 8);
+		}
+		else
+		{
+			beltCHEStepA(out, len, state->state);
+
+			if (!beltCHEStepV(state->tag, state->state))
+			{
+				memWipe(out, len);
+				return -1;
+			}
+
+			beltCHEStepD(out, len, state->state);
+		}
+		return len;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 static int evpBeltCHET_cleanup(EVP_CIPHER_CTX* ctx)
@@ -386,21 +397,24 @@ static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 			return 0;
 		break;
 	case EVP_CTRL_GET_IVLEN:
-		*(int*)p2 = 8;
+		*(int*)p2 = 16;
 		return 1;
 	case EVP_CTRL_AEAD_SET_IVLEN:
-		return p1 == 8 ? 1 : 0;
+		return p1 == 16 ? 1 : 0;
 	case EVP_CTRL_AEAD_SET_IV_FIXED:
-		if (p1 != 8)
+		if (p1 != 16)
 			return 0;
 		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-		memCopy(state->iv, p2, 8);
+		memCopy(state->iv, p2, 16);
 		return 1;
 	case EVP_CTRL_AEAD_SET_TAG:
 		if (p1 != 8)
 			return 0;
 		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-		memCopy(state->tag, p2, 8);
+		if (p2 != NULL)
+		{
+			memCopy(state->tag, p2, 8);
+		}
 		return 1;
 	case EVP_CTRL_AEAD_GET_TAG:
 		if (p1 != 8)
@@ -408,38 +422,180 @@ static int evpBeltCHET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		memCopy(p2, state->tag, 8);
 		return 1;
-	case EVP_CTRL_AEAD_TLS1_AAD:
-	{
-		size_t len;
-		state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
-		// сохранить заголовок фрагмента
-		if (p1 != EVP_AEAD_TLS1_AAD_LEN)
-			return 0;
-		ASSERT(sizeof(state->aad) >= EVP_AEAD_TLS1_AAD_LEN);
-		memCopy(state->aad, p2, state->aad_len = EVP_AEAD_TLS1_AAD_LEN);
-		// определить длину фрагмента
-		len = state->aad[state->aad_len - 2], len <<= 8;
-		len += state->aad[state->aad_len - 1];
-		// защита снимается?
-		if (!EVP_CIPHER_CTX_encrypting(ctx))
-		{
-			// уменьшить длину фрагмента на длину явной
-			// синхропосылки и имитовставки
-			if (len < 8 + 8)
-				return 0;
-			len -= 8 + 8;
-		}
-		// сохранить уточненную длину
-		state->aad[state->aad_len - 2] = (octet)(len >> 8);
-		state->aad[state->aad_len - 1] = (octet)len;
-		// возвратить поправку длины
-		return 8 + 8;
-	}
 	default:
 		return -1;
 	}
 	return 1;
 }
+
+
+/*
+*******************************************************************************
+Алгоритмы bash-prg-ae-tls: bash-prg-ae для TLS
+*******************************************************************************
+*/
+
+const char OID_bash_prg_aet[] = "1.2.112.0.2.0.34.101.77.37";
+#ifndef SN_bash_prg_aet
+const char SN_bash_prg_aet[] = "bash-prg-ae-tls";
+const char LN_bash_prg_aet[] = "bash-prg-ae-tls";
+#endif
+
+#define FLAGS_bash_prg_aet                                                     \
+	(EVP_CIPH_FLAG_AEAD_CIPHER | EVP_CIPH_CTRL_INIT |                          \
+		EVP_CIPH_ALWAYS_CALL_INIT | EVP_CIPH_FLAG_CUSTOM_CIPHER |              \
+		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_CUSTOM_IV | EVP_CIPH_VARIABLE_LENGTH)
+
+static EVP_CIPHER* EVP_bash_prg_aet;
+const EVP_CIPHER* evpBashPrgAET()
+{
+	return EVP_bash_prg_aet;
+}
+
+typedef struct bash_prg_aet_ctx
+{
+	size_t d;
+	octet iv[16];
+	octet tag[32];
+	octet key[32];
+	octet ann[24];
+	size_t ann_len;
+	mem_align_t state[];
+} bash_prg_aet_ctx;
+
+static int evpBashPrgAET_init(
+	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+{
+	bash_prg_aet_ctx* state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+
+	if (!key & !iv)
+	{
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+		int cipher_nid = EVP_CIPHER_CTX_get_nid(ctx);
+#else
+		int cipher_nid = EVP_CIPHER_CTX_nid(ctx);
+#endif
+		if (cipher_nid == NID_bash_prg_aet)
+		{
+			state->d = 1;
+		}
+
+		return 1;
+	}
+
+	if (key)
+	{
+		memCopy(state->key, key, 32);
+	}
+
+	if (iv)
+	{
+		memCopy(state->ann, iv, 16);
+	}
+
+	return 1;
+}
+
+static int evpBashPrgAET_cipher(
+	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+{
+	bash_prg_aet_ctx* state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+
+	if (!out && in && len == 5)
+	{
+		memCopy(state->ann, state->iv, 16); // S
+		memCopy(state->ann + 16, in, 5);	// I
+		memSet(state->ann + 21, 0, 3);		// 0^24
+
+		state->ann_len = 24;
+
+		bashPrgStart(state->state,
+			256,
+			state->d,
+			state->ann,
+			state->ann_len,
+			state->key,
+			32);
+
+		return 1;
+	}
+
+	if (!in && out)
+	{
+		bashPrgSqueeze(out, 32, state->state);
+		memCopy(state->tag, out, 32);
+		return len;
+	}
+
+	if (!out && in)
+	{
+		bashPrgAbsorb(in, len, state->state);
+		return 0;
+	}
+
+	if (EVP_CIPHER_CTX_encrypting(ctx))
+	{
+		memMove(out, in, len);
+		bashPrgEncr(out, len, state->state);
+	}
+	else
+	{
+		memMove(out, in, len);
+		bashPrgDecr(out, len, state->state);
+	}
+	return (int)len;
+}
+
+static int evpBashPrgAET_cleanup(EVP_CIPHER_CTX* ctx)
+{
+	blobClose(EVP_CIPHER_CTX_get_blob(ctx));
+	EVP_CIPHER_CTX_set_blob(ctx, 0);
+	return 1;
+}
+
+static int evpBashPrgAET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
+{
+	bash_prg_aet_ctx* state;
+	switch (type)
+	{
+	case EVP_CTRL_INIT:
+	{
+		blob_t blob = blobCreate(sizeof(bash_prg_aet_ctx) + beltCHE_keep());
+		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
+			break;
+		blobClose(blob);
+		return 0;
+	}
+	case EVP_CTRL_COPY:
+		if (!EVP_CIPHER_CTX_copy_blob((EVP_CIPHER_CTX*)p2, ctx))
+			return 0;
+		break;
+	case EVP_CTRL_GET_IVLEN:
+		*(int*)p2 = 16;
+		return 1;
+	case EVP_CTRL_AEAD_SET_IVLEN:
+		return p1 == 16 ? 1 : 0;
+	case EVP_CTRL_AEAD_SET_TAG:
+		if (p1 != 32)
+			return 0;
+		state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		if (p2 != NULL)
+		{
+			memCopy(state->tag, p2, 32);
+		}
+		return 1;
+	case EVP_CTRL_AEAD_GET_TAG:
+		if (p1 != 32)
+			return 0;
+		state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		memCopy(p2, state->tag, 32);
+		return 1;
+	default:
+		return -1;
+	}
+	return 1;
+}
+
 
 /*
 *******************************************************************************
@@ -483,12 +639,12 @@ const EVP_CIPHER* evpBeltCTRT()
 
 typedef struct belt_ctrt_ctx
 {
-	octet ekey[32];			/*< ключ шифрования */
-	octet mkey[32];			/*< ключ имитозащиты */
-	octet iv[16];			/*< синхропосылка */
-	octet aad[16];			/*< заголовок TLS */
-	size_t aad_len; 		/*< длина заголовка TLS */
-	mem_align_t state[];	/*< состояние beltCTR + beltMAC */
+	octet ekey[32];		 /*< ключ шифрования */
+	octet mkey[32];		 /*< ключ имитозащиты */
+	octet iv[16];		 /*< синхропосылка */
+	octet aad[16];		 /*< заголовок TLS */
+	size_t aad_len;		 /*< длина заголовка TLS */
+	mem_align_t state[]; /*< состояние beltCTR + beltMAC */
 } belt_ctrt_ctx;
 
 static int evpBeltCTRT_init(
@@ -653,6 +809,8 @@ static int evpBeltTLS_enum(
 		*cipher = EVP_belt_chet;
 	else if (nid == NID_belt_ctrt)
 		*cipher = EVP_belt_ctrt;
+	else if (nid == NID_bash_prg_aet)
+		*cipher = EVP_bash_prg_aet;
 	else if (prev_enum && prev_enum != evpBeltTLS_enum)
 		return prev_enum(e, cipher, nids, nid);
 	else
@@ -698,6 +856,7 @@ int evpBeltTLS_bind(ENGINE* e)
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (BELT_TLS_REG(belt_dwpt, tmp) == NID_undef ||
 		BELT_TLS_REG(belt_chet, tmp) == NID_undef ||
+		BELT_TLS_REG(bash_prg_aet, tmp) == NID_undef ||
 		BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
@@ -715,7 +874,7 @@ int evpBeltTLS_bind(ENGINE* e)
 	BELT_TLS_DESCR(belt_chet,
 		1,
 		32,
-		8,
+		16,
 		FLAGS_belt_chet,
 		evpBeltCHET_init,
 		evpBeltCHET_cipher,
@@ -723,6 +882,17 @@ int evpBeltTLS_bind(ENGINE* e)
 		0,
 		0,
 		evpBeltCHET_ctrl);
+	BELT_TLS_DESCR(bash_prg_aet,
+		1,
+		32,
+		16,
+		FLAGS_bash_prg_aet,
+		evpBashPrgAET_init,
+		evpBashPrgAET_cipher,
+		evpBashPrgAET_cleanup,
+		0,
+		0,
+		evpBashPrgAET_ctrl);
 	BELT_TLS_DESCR(belt_ctrt,
 		1,
 		32,
@@ -740,13 +910,16 @@ int evpBeltTLS_bind(ENGINE* e)
 		return 0;
 	// зарегистрировать алгоритмы
 	return ENGINE_register_ciphers(e) && EVP_add_cipher(EVP_belt_dwpt) &&
-		EVP_add_cipher(EVP_belt_chet) && EVP_add_cipher(EVP_belt_ctrt);
+		EVP_add_cipher(EVP_belt_chet) && EVP_add_cipher(EVP_bash_prg_aet) &&
+		EVP_add_cipher(EVP_belt_ctrt);
 }
 
 void evpBeltTLS_finish()
 {
 	EVP_CIPHER_meth_free(EVP_belt_ctrt);
 	EVP_belt_ctrt = 0;
+	EVP_CIPHER_meth_free(EVP_bash_prg_aet);
+	EVP_bash_prg_aet = 0;
 	EVP_CIPHER_meth_free(EVP_belt_chet);
 	EVP_belt_chet = 0;
 	EVP_CIPHER_meth_free(EVP_belt_dwpt);
