@@ -744,19 +744,19 @@ static int evpBign_pkey_ctrl_str(
 	if (strEq(type, "enc_params"))
 	{
 		if (strEq(value, "specified"))
-			return evpBign_pkey_set_enc_flags(
-				ctx, EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
+			return evpBign_pkey_set_enc_flags(ctx,
+				EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED);
 		if (strEq(value, "cofactor"))
-			return evpBign_pkey_set_enc_flags(
-				ctx, EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
+			return evpBign_pkey_set_enc_flags(ctx,
+				EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR);
 		return -2;
 	}
 	// опции ЭЦП
 	if (strEq(type, "sig"))
 	{
 		if (strEq(value, "deterministic"))
-			return evpBign_pkey_set_sig_flags(
-				ctx, EVP_BIGN_PKEY_SIG_DETERMINISTIC);
+			return evpBign_pkey_set_sig_flags(ctx,
+				EVP_BIGN_PKEY_SIG_DETERMINISTIC);
 		return -2;
 	}
 	// опции kdf
@@ -779,8 +779,7 @@ static int evpBign_pkey_init256(EVP_PKEY_CTX* ctx)
 {
 	if (!evpBign_pkey_init(ctx) ||
 		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
-		NID_bign_curve256v1, NULL)
-	)
+			NID_bign_curve256v1, NULL))
 		return 0;
 	return 1;
 }
@@ -789,8 +788,7 @@ static int evpBign_pkey_init384(EVP_PKEY_CTX* ctx)
 {
 	if (!evpBign_pkey_init(ctx) ||
 		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
-		NID_bign_curve384v1, NULL)
-	)
+			NID_bign_curve384v1, NULL))
 		return 0;
 	return 1;
 }
@@ -799,8 +797,7 @@ static int evpBign_pkey_init512(EVP_PKEY_CTX* ctx)
 {
 	if (!evpBign_pkey_init(ctx) ||
 		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
-		NID_bign_curve512v1, NULL)
-	)
+			NID_bign_curve512v1, NULL))
 		return 0;
 	return 1;
 }

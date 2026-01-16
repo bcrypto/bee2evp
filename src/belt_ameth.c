@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for belt-macXXX and belt-hmac (hmac-hbelt)
 \created 2013.07.01
-\version 2021.02.18
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -133,8 +133,8 @@ static int belt_ameth_count;
 
 static ENGINE_PKEY_ASN1_METHS_PTR prev_enum;
 
-static int evpBelt_ameth_enum(
-	ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, const int** nids, int nid)
+static int evpBelt_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!ameth)
@@ -147,8 +147,8 @@ static int evpBelt_ameth_enum(
 				return 0;
 			if (belt_ameth_count + nid >= (int)COUNT_OF(belt_ameth_nids))
 				return 0;
-			memCopy(
-				belt_ameth_nids + belt_ameth_count, *nids, nid * sizeof(int));
+			memCopy(belt_ameth_nids + belt_ameth_count, *nids,
+				nid * sizeof(int));
 			*nids = belt_ameth_nids;
 			return belt_ameth_count + nid;
 		}
@@ -193,36 +193,36 @@ int evpBelt_ameth_bind(ENGINE* e)
 		BELT_AMETH_REG(belt_hmac, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатель belt_mac128
-	EVP_belt_mac128_ameth = EVP_PKEY_asn1_new(
-		NID_belt_mac128, 0, "belt-mac128", "OpenSSL belt-mac128 method");
+	EVP_belt_mac128_ameth = EVP_PKEY_asn1_new(NID_belt_mac128, 0, "belt-mac128",
+		"OpenSSL belt-mac128 method");
 	if (EVP_belt_mac128_ameth == 0)
 		return 0;
 	EVP_PKEY_asn1_set_public(
 		EVP_belt_mac128_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac128_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac192
-	EVP_belt_mac192_ameth = EVP_PKEY_asn1_new(
-		NID_belt_mac192, 0, "belt-mac192", "OpenSSL belt-mac192 method");
+	EVP_belt_mac192_ameth = EVP_PKEY_asn1_new(NID_belt_mac192, 0, "belt-mac192",
+		"OpenSSL belt-mac192 method");
 	if (EVP_belt_mac192_ameth == 0)
 		return 0;
 	EVP_PKEY_asn1_set_public(
 		EVP_belt_mac192_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac192_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac256
-	EVP_belt_mac256_ameth = EVP_PKEY_asn1_new(
-		NID_belt_mac256, 0, "belt-mac256", "OpenSSL belt-mac256 method");
+	EVP_belt_mac256_ameth = EVP_PKEY_asn1_new(NID_belt_mac256, 0, "belt-mac256",
+		"OpenSSL belt-mac256 method");
 	if (EVP_belt_mac256_ameth == 0)
 		return 0;
 	EVP_PKEY_asn1_set_public(
 		EVP_belt_mac256_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac256_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_hmac
-	EVP_belt_hmac_ameth = EVP_PKEY_asn1_new(
-		NID_belt_hmac, 0, "belt-hmac", "OpenSSL belt-hmac method");
+	EVP_belt_hmac_ameth = EVP_PKEY_asn1_new(NID_belt_hmac, 0, "belt-hmac",
+		"OpenSSL belt-hmac method");
 	if (EVP_belt_hmac_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(
-		EVP_belt_hmac_ameth, 0, 0, 0, 0, evpBeltHMAC_size, 0);
+	EVP_PKEY_asn1_set_public(EVP_belt_hmac_ameth, 0, 0, 0, 0, evpBeltHMAC_size, 
+		0);
 	EVP_PKEY_asn1_set_free(EVP_belt_hmac_ameth, evpBeltHMAC_key_free);
 	EVP_PKEY_asn1_set_ctrl(EVP_belt_hmac_ameth, evpBeltHMAC_key_ctrl);
 	// задать перечислитель

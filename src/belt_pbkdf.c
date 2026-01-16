@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt-based PBKDF
 \created 2015.01.19
-\version 2021.02.18
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -117,12 +117,8 @@ int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx,
 	key = blobCreate(32);
 	if (!key)
 		goto err;
-	if (beltPBKDF2((octet*)key,
-			(const octet*)pass,
-			passlen,
-			(size_t)iter,
-			salt,
-			salt_len) != ERR_OK)
+	if (beltPBKDF2((octet*)key, (const octet*)pass, passlen, (size_t)iter,
+			salt, salt_len) != ERR_OK)
 		goto err;
 	// задать ключ
 	ret = EVP_CipherInit_ex(ctx, 0, 0, (const octet*)key, 0, en_de);

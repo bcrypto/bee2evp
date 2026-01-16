@@ -5,6 +5,7 @@ UseTab: Always
 
 Language: C
 AlignAfterOpenBracket: DontAlign
+PenaltyBreakOpenParenthesis: 160
 ColumnLimit: 80
 PointerAlignment: Left
 SpaceBeforeParens: ControlStatements

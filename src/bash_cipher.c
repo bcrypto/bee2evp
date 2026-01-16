@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Bash encryption algorithms
 \created 2025.10.29
-\version 2025.11.10
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -51,8 +51,8 @@ typedef struct bash_prg_ae_ctx
 	mem_align_t state[];
 } bash_prg_ae_ctx;
 
-static int evpBashPrgAe_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBashPrgAe_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	bash_prg_ae_ctx* state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 
@@ -94,8 +94,8 @@ static int evpBashPrgAe_init(
 	return 1;
 }
 
-static int evpBashPrgAe_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBashPrgAe_cipher(EVP_CIPHER_CTX* ctx, octet* out, 
+	const octet* in, size_t inlen)
 {
 	bash_prg_ae_ctx* state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
@@ -194,8 +194,8 @@ static int bash_cipher_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBashCipher_enum(
-	ENGINE* e, const EVP_CIPHER** cipher, const int** nids, int nid)
+static int evpBashCipher_enum(ENGINE* e, const EVP_CIPHER** cipher, 
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!cipher)

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt hashing algorithm (belt-hash)
 \created 2013.08.14
-\version 2021.03.02
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -85,8 +85,8 @@ static int belt_md_count;
 
 static ENGINE_DIGESTS_PTR prev_enum;
 
-static int evpBeltMD_enum(
-	ENGINE* e, const EVP_MD** md, const int** nids, int nid)
+static int evpBeltMD_enum(ENGINE* e, const EVP_MD** md, const int** nids, 
+	int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!md)

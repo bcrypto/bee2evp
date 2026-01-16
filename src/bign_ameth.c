@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2025.03.26
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -128,8 +128,8 @@ static int evpBign_param_cmp(const EVP_PKEY* a, const EVP_PKEY* b)
 		memEq(keya->params->yG, keyb->params->yG, len);
 }
 
-static int evpBign_param_print(
-	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
+static int evpBign_param_print(BIO* bp, const EVP_PKEY* pkey, int indent, 
+	ASN1_PCTX* ctx)
 {
 	const bign_key* key;
 	int nid;
@@ -192,8 +192,8 @@ AlgorithmIdentifier, реализована в bign_asn1.c.
 *******************************************************************************
 */
 
-static int evpBign_pub_encode0(
-	void** params, int* params_type, const bign_key* key)
+static int evpBign_pub_encode0(void** params, int* params_type, 
+	const bign_key* key)
 {
 	octet* out = 0;
 	int out_len;
@@ -263,8 +263,8 @@ err:
 	return 0;
 }
 
-static int evpBign_pub_decode0(
-	bign_key* key, int params_type, const void* params)
+static int evpBign_pub_decode0(bign_key* key, int params_type, 
+	const void* params)
 {
 	// параметры заданы явно?
 	if (params_type == V_ASN1_SEQUENCE)
@@ -326,8 +326,8 @@ static int evpBign_pub_cmp(const EVP_PKEY* a, const EVP_PKEY* b)
 	return memEq(keya->pubkey, keyb->pubkey, O_OF_B(keya->params->l) * 4);
 }
 
-static int evpBign_pub_print(
-	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
+static int evpBign_pub_print(BIO* bp, const EVP_PKEY* pkey, int indent, 
+	ASN1_PCTX* ctx)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
 	size_t len = O_OF_B(key->params->l) * 4;
@@ -438,8 +438,8 @@ err:
 	return 0;
 }
 
-static int evpBign_priv_print(
-	BIO* bp, const EVP_PKEY* pkey, int indent, ASN1_PCTX* ctx)
+static int evpBign_priv_print(BIO* bp, const EVP_PKEY* pkey, int indent, 
+	ASN1_PCTX* ctx)
 {
 	const bign_key* key = (const bign_key*)EVP_PKEY_get0(pkey);
 	size_t len = O_OF_B(key->params->l) * 2;
@@ -535,22 +535,20 @@ static int evpBign_cms_sign(CMS_SignerInfo* si)
 	// hnid -> snid \in {bign_with_hbelt, bign_with_bashXXX}
 	hnid = OBJ_obj2nid(alg1->algorithm);
 	if (hnid == NID_belt_hash)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_hbelt), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hbelt), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash256)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash256), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash256), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash384)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash384), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash384), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash512)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash512), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash512), 
+			V_ASN1_NULL, 0);
 	// hnid -> bign_with_hspec
-	return X509_ALGOR_set0(alg2,
-		OBJ_nid2obj(NID_bign_with_hspec),
-		V_ASN1_OBJECT,
-		OBJ_dup(alg1->algorithm));
+	return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hspec),
+		V_ASN1_OBJECT, OBJ_dup(alg1->algorithm));
 }
 
 static int evpBign_cms_verify(CMS_SignerInfo* si)
@@ -603,22 +601,20 @@ static int evpBign_pkcs7_sign(PKCS7_SIGNER_INFO* si)
 	// hnid -> snid \in {bign_with_hbelt, bign_with_bashXXX}
 	hnid = OBJ_obj2nid(alg1->algorithm);
 	if (hnid == NID_belt_hash)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_hbelt), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hbelt), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash256)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash256), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash256), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash384)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash384), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash384), 
+			V_ASN1_NULL, 0);
 	if (hnid == NID_bash512)
-		return X509_ALGOR_set0(
-			alg2, OBJ_nid2obj(NID_bign_with_bash512), V_ASN1_NULL, 0);
+		return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_bash512), 
+			V_ASN1_NULL, 0);
 	// hnid -> bign_with_hspec
-	return X509_ALGOR_set0(alg2,
-		OBJ_nid2obj(NID_bign_with_hspec),
-		V_ASN1_OBJECT,
-		OBJ_dup(alg1->algorithm));
+	return X509_ALGOR_set0(alg2, OBJ_nid2obj(NID_bign_with_hspec),
+		V_ASN1_OBJECT, OBJ_dup(alg1->algorithm));
 }
 
 static int evpBign_pkcs7_verify(PKCS7_SIGNER_INFO* si)
@@ -685,8 +681,8 @@ static int evpBign_cms_encrypt(CMS_RecipientInfo* ri)
 	X509_ALGOR* alg;
 	if (!CMS_RecipientInfo_ktri_get0_algs(ri, 0, 0, &alg))
 		return 0;
-	return X509_ALGOR_set0(
-		alg, OBJ_nid2obj(NID_bign_keytransport), V_ASN1_NULL, 0);
+	return X509_ALGOR_set0(alg, OBJ_nid2obj(NID_bign_keytransport), 
+		V_ASN1_NULL, 0);
 }
 
 static int evpBign_cms_decrypt(CMS_RecipientInfo* ri)
@@ -718,8 +714,8 @@ static int evpBign_pkcs7_encrypt(PKCS7_RECIP_INFO* ri)
 {
 	X509_ALGOR* alg;
 	PKCS7_RECIP_INFO_get0_alg(ri, &alg);
-	return X509_ALGOR_set0(
-		alg, OBJ_nid2obj(NID_bign_keytransport), V_ASN1_NULL, 0);
+	return X509_ALGOR_set0(alg, OBJ_nid2obj(NID_bign_keytransport), 
+		V_ASN1_NULL, 0);
 }
 
 /*
@@ -862,12 +858,8 @@ https://github.com/openssl/openssl/issues/20955.
 *******************************************************************************
 */
 
-int evpBign_item_verify(EVP_MD_CTX* ctx,
-	const ASN1_ITEM* it,
-	CONST3 void* asn,
-	CONST3 X509_ALGOR* alg,
-	CONST3 ASN1_BIT_STRING* sig,
-	EVP_PKEY* pkey)
+int evpBign_item_verify(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
+	CONST3 X509_ALGOR* alg, CONST3 ASN1_BIT_STRING* sig, EVP_PKEY* pkey)
 {
 	const ASN1_OBJECT* sobj;
 	int snid;
@@ -920,12 +912,8 @@ int evpBign_item_verify(EVP_MD_CTX* ctx,
 	return 2;
 }
 
-int evpBign_item_sign(EVP_MD_CTX* ctx,
-	const ASN1_ITEM* it,
-	CONST3 void* asn,
-	X509_ALGOR* alg1,
-	X509_ALGOR* alg2,
-	ASN1_BIT_STRING* sig)
+int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
+	X509_ALGOR* alg1, X509_ALGOR* alg2, ASN1_BIT_STRING* sig)
 {
 	int hnid = EVP_MD_type(EVP_MD_CTX_md(ctx));
 	int snid = 0;

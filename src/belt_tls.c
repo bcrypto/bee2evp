@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2025.11.10
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -119,8 +119,8 @@ typedef struct belt_dwpt_ctx
 	mem_align_t state[]; /*< состояние beltDWP */
 } belt_dwpt_ctx;
 
-static int evpBeltDWPT_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltDWPT_init(EVP_CIPHER_CTX* ctx, const octet* key,
+	const octet* iv, int enc)
 {
 	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
@@ -136,8 +136,8 @@ static int evpBeltDWPT_init(
 	return 1;
 }
 
-static int evpBeltDWPT_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+static int evpBeltDWPT_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
+	size_t len)
 {
 	belt_dwpt_ctx* state = (belt_dwpt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// выполняются соглашения libssl?
@@ -296,8 +296,8 @@ typedef struct belt_chet_ctx
 	mem_align_t state[];
 } belt_chet_ctx;
 
-static int evpBeltCHET_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCHET_init(EVP_CIPHER_CTX* ctx, const octet* key,
+	const octet* iv, int enc)
 {
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
@@ -313,8 +313,8 @@ static int evpBeltCHET_init(
 	return 1;
 }
 
-static int evpBeltCHET_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+static int evpBeltCHET_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
+	size_t len)
 {
 	belt_chet_ctx* state = (belt_chet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	int enc = EVP_CIPHER_CTX_encrypting(ctx);
@@ -463,8 +463,8 @@ typedef struct bash_prg_aet_ctx
 	mem_align_t state[];
 } bash_prg_aet_ctx;
 
-static int evpBashPrgAET_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBashPrgAET_init(EVP_CIPHER_CTX* ctx, const octet* key,
+	const octet* iv, int enc)
 {
 	bash_prg_aet_ctx* state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 
@@ -496,8 +496,8 @@ static int evpBashPrgAET_init(
 	return 1;
 }
 
-static int evpBashPrgAET_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+static int evpBashPrgAET_cipher(EVP_CIPHER_CTX* ctx, octet* out,
+	const octet* in, size_t len)
 {
 	bash_prg_aet_ctx* state = (bash_prg_aet_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 
@@ -647,8 +647,8 @@ typedef struct belt_ctrt_ctx
 	mem_align_t state[]; /*< состояние beltCTR + beltMAC */
 } belt_ctrt_ctx;
 
-static int evpBeltCTRT_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCTRT_init(EVP_CIPHER_CTX* ctx, const octet* key,
+	const octet* iv, int enc)
 {
 	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
@@ -657,8 +657,8 @@ static int evpBeltCTRT_init(
 	return 1;
 }
 
-static int evpBeltCTRT_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t len)
+static int evpBeltCTRT_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in, 
+	size_t len)
 {
 	belt_ctrt_ctx* state = (belt_ctrt_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// выполняются соглашения libssl?
@@ -780,8 +780,8 @@ static int belt_tls_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBeltTLS_enum(
-	ENGINE* e, const EVP_CIPHER** cipher, const int** nids, int nid)
+static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher, 
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!cipher)

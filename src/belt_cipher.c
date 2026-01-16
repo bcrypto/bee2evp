@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2024.11.10
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -203,8 +203,8 @@ const EVP_CIPHER* evpBeltECB256()
 	return EVP_belt_ecb256;
 }
 
-static int evpBeltECB_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltECB_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
@@ -212,8 +212,8 @@ static int evpBeltECB_init(
 	return 1;
 }
 
-static int evpBeltECB_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltECB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
@@ -312,20 +312,24 @@ const EVP_CIPHER* evpBeltCBC256()
 	return EVP_belt_cbc256;
 }
 
-static int evpBeltCBC_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int
+evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
-		beltCBCStart(
-			state, key, EVP_CIPHER_CTX_key_length(ctx), EVP_CIPHER_CTX_iv(ctx));
+		beltCBCStart(state,
+			key,
+			EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
 }
 
-static int evpBeltCBC_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx,
+	octet* out,
+	const octet* in,
+	size_t inlen)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
@@ -413,20 +417,20 @@ const EVP_CIPHER* evpBeltCFB256()
 	return EVP_belt_cfb256;
 }
 
-static int evpBeltCFB_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
-		beltCFBStart(
-			state, key, EVP_CIPHER_CTX_key_length(ctx), EVP_CIPHER_CTX_iv(ctx));
+		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
 }
 
-static int evpBeltCFB_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltCFB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
@@ -519,8 +523,8 @@ const EVP_CIPHER* evpBeltCTR256()
 	return EVP_belt_ctr256;
 }
 
-static int evpBeltCTR_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
@@ -530,14 +534,14 @@ static int evpBeltCTR_init(
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
 			EVP_CIPHER_CTX_original_iv(ctx),
 			16);
-		beltCTRStart(
-			state, key, EVP_CIPHER_CTX_key_length(ctx), EVP_CIPHER_CTX_iv(ctx));
+		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
 }
 
-static int evpBeltCTR_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltCTR_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
@@ -638,13 +642,13 @@ const EVP_CIPHER* evpBeltDWP256()
 
 typedef struct belt_dwp_ctx
 {
-	octet block[8];			/*< блок данных (ловим имитовставку) */
-	size_t block_len; 		/*< длина блока */
-	mem_align_t state[];	/*< состояние beltDWP */
+	octet block[8];		 /*< блок данных (ловим имитовставку) */
+	size_t block_len;	 /*< длина блока */
+	mem_align_t state[]; /*< состояние beltDWP */
 } belt_dwp_ctx;
 
-static int evpBeltDWP_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
@@ -662,8 +666,8 @@ static int evpBeltDWP_init(
 	return 1;
 }
 
-static int evpBeltDWP_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
@@ -817,13 +821,13 @@ const EVP_CIPHER* evpBeltCHE256()
 
 typedef struct belt_che_ctx
 {
-	octet block[8];			/*< блок данных (ловим имитовставку) */
-	size_t block_len; 		/*< длина блока */
-	mem_align_t state[];	/*< состояние beltCHE */
+	octet block[8];		 /*< блок данных (ловим имитовставку) */
+	size_t block_len;	 /*< длина блока */
+	mem_align_t state[]; /*< состояние beltCHE */
 } belt_che_ctx;
 
-static int evpBeltCHE_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
@@ -841,8 +845,8 @@ static int evpBeltCHE_init(
 	return 1;
 }
 
-static int evpBeltCHE_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltCHE_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
@@ -995,12 +999,12 @@ const EVP_CIPHER* evpBeltKWP256()
 
 typedef struct belt_kwp_ctx
 {
-	octet header[16];		/*< заголовок (после снятия защиты) */
-	mem_align_t state[];	/*< состояние beltKWP */
+	octet header[16];	 /*< заголовок (после снятия защиты) */
+	mem_align_t state[]; /*< состояние beltKWP */
 } belt_kwp_ctx;
 
-static int evpBeltKWP_init(
-	EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltKWP_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc)
 {
 	belt_kwp_ctx* state = (belt_kwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
@@ -1008,8 +1012,8 @@ static int evpBeltKWP_init(
 	return 1;
 }
 
-static int evpBeltKWP_cipher(
-	EVP_CIPHER_CTX* ctx, octet* out, const octet* in, size_t inlen)
+static int evpBeltKWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
+	size_t inlen)
 {
 	belt_kwp_ctx* state = (belt_kwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	// завершение, возвратить число дополнительных октетов
@@ -1121,8 +1125,10 @@ static int belt_cipher_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBeltCipher_enum(
-	ENGINE* e, const EVP_CIPHER** cipher, const int** nids, int nid)
+static int evpBeltCipher_enum(ENGINE* e,
+	const EVP_CIPHER** cipher,
+	const int** nids,
+	int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!cipher)
@@ -1135,8 +1141,8 @@ static int evpBeltCipher_enum(
 				return 0;
 			if (belt_cipher_count + nid >= (int)COUNT_OF(belt_cipher_nids))
 				return 0;
-			memCopy(
-				belt_cipher_nids + belt_cipher_count, *nids, nid * sizeof(int));
+			memCopy(belt_cipher_nids + belt_cipher_count, *nids,
+				nid * sizeof(int));
 			*nids = belt_cipher_nids;
 			return belt_cipher_count + nid;
 		}

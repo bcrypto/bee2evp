@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for belt-macXXX and belt-hmac (hmac-hbelt) keys
 \created 2014.09.16
-\version 2025.10.16
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -131,8 +131,8 @@ static int evpBeltMAC256_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 	return EVP_PKEY_assign(pkey, NID_belt_mac256, state);
 }
 
-static int evpBeltMAC_pkey_int_update(
-	EVP_MD_CTX* ctx, const void* data, size_t count)
+static int evpBeltMAC_pkey_int_update(EVP_MD_CTX* ctx, const void* data, 
+	size_t count)
 {
 	beltMACStepA(data, count, EVP_PKEY_CTX_get_data(EVP_MD_CTX_pkey_ctx(ctx)));
 	return 1;
@@ -145,8 +145,8 @@ static int evpBeltMAC_signctx_init(EVP_PKEY_CTX* ctx, EVP_MD_CTX* mctx)
 	return 1;
 }
 
-static int evpBeltMAC_signctx(
-	EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen, EVP_MD_CTX* mctx)
+static int evpBeltMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
+	EVP_MD_CTX* mctx)
 {
 	if (!siglen)
 		return 0;
@@ -163,8 +163,8 @@ static int evpBeltMAC_signctx(
 	return 1;
 }
 
-static int evpBeltMAC128_pkey_ctrl(
-	EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
+static int evpBeltMAC128_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, 
+	void* p2)
 {
 	EVP_PKEY* pkey;
 	switch (type)
@@ -176,8 +176,7 @@ static int evpBeltMAC128_pkey_ctrl(
 		break;
 	case EVP_PKEY_CTRL_MD:
 		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx),
-				EVP_PKEY_get0(pkey),
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey),
 				beltMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
@@ -188,8 +187,8 @@ static int evpBeltMAC128_pkey_ctrl(
 	return 1;
 }
 
-static int evpBeltMAC192_pkey_ctrl(
-	EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
+static int evpBeltMAC192_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, 
+	void* p2)
 {
 	EVP_PKEY* pkey;
 	switch (type)
@@ -213,8 +212,8 @@ static int evpBeltMAC192_pkey_ctrl(
 	return 1;
 }
 
-static int evpBeltMAC256_pkey_ctrl(
-	EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
+static int evpBeltMAC256_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, 
+	void* p2)
 {
 	EVP_PKEY* pkey;
 	switch (type)
@@ -240,8 +239,8 @@ static int evpBeltMAC256_pkey_ctrl(
 	return 1;
 }
 
-static int evpBeltMAC128_pkey_ctrl_str(
-	EVP_PKEY_CTX* ctx, const char* type, const char* value)
+static int evpBeltMAC128_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
+	const char* value)
 {
 	if (!value)
 		return 0;
@@ -262,8 +261,8 @@ static int evpBeltMAC128_pkey_ctrl_str(
 	return -2;
 }
 
-static int evpBeltMAC192_pkey_ctrl_str(
-	EVP_PKEY_CTX* ctx, const char* type, const char* value)
+static int evpBeltMAC192_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
+	const char* value)
 {
 	if (!value)
 		return 0;
@@ -284,8 +283,8 @@ static int evpBeltMAC192_pkey_ctrl_str(
 	return -2;
 }
 
-static int evpBeltMAC256_pkey_ctrl_str(
-	EVP_PKEY_CTX* ctx, const char* type, const char* value)
+static int evpBeltMAC256_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
+	const char* value)
 {
 	if (!value)
 		return 0;
@@ -385,8 +384,8 @@ static int evpBeltHMAC_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 	return EVP_PKEY_assign(pkey, NID_belt_hmac, state);
 }
 
-static int evpBeltHMAC_pkey_int_update(
-	EVP_MD_CTX* ctx, const void* data, size_t count)
+static int
+evpBeltHMAC_pkey_int_update(EVP_MD_CTX* ctx, const void* data, size_t count)
 {
 	beltHMACStepA(data, count, EVP_PKEY_CTX_get_data(EVP_MD_CTX_pkey_ctx(ctx)));
 	return 1;
@@ -399,8 +398,8 @@ static int evpBeltHMAC_signctx_init(EVP_PKEY_CTX* ctx, EVP_MD_CTX* mctx)
 	return 1;
 }
 
-static int evpBeltHMAC_signctx(
-	EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen, EVP_MD_CTX* mctx)
+static int evpBeltHMAC_signctx(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
+	EVP_MD_CTX* mctx)
 {
 	if (!sig)
 	{
@@ -437,8 +436,8 @@ static int evpBeltHMAC_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 	return 1;
 }
 
-static int evpBeltHMAC_pkey_ctrl_str(
-	EVP_PKEY_CTX* ctx, const char* type, const char* value)
+static int evpBeltHMAC_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type,
+	const char* value)
 {
 	if (!value)
 		return 0;
@@ -453,8 +452,8 @@ static int evpBeltHMAC_pkey_ctrl_str(
 		if (!(key = blobCreate(len)))
 			return 0;
 		hexTo(key, value);
-		ret = evpBeltHMAC_pkey_ctrl(
-			ctx, EVP_PKEY_CTRL_SET_MAC_KEY, (int)len, key);
+		ret = evpBeltHMAC_pkey_ctrl(ctx, EVP_PKEY_CTRL_SET_MAC_KEY, (int)len,
+			key);
 		blobClose(key);
 		return ret;
 	}
@@ -505,8 +504,8 @@ static int belt_pmeth_count;
 
 static ENGINE_PKEY_METHS_PTR prev_enum;
 
-static int evpBelt_pmeth_enum(
-	ENGINE* e, EVP_PKEY_METHOD** pmeth, const int** nids, int nid)
+static int evpBelt_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth,
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!pmeth)
@@ -519,8 +518,8 @@ static int evpBelt_pmeth_enum(
 				return 0;
 			if (belt_pmeth_count + nid >= (int)COUNT_OF(belt_pmeth_nids))
 				return 0;
-			memCopy(
-				belt_pmeth_nids + belt_pmeth_count, *nids, nid * sizeof(int));
+			memCopy(belt_pmeth_nids + belt_pmeth_count, *nids,
+				nid * sizeof(int));
 			*nids = belt_pmeth_nids;
 			return nid + belt_pmeth_count;
 		}
@@ -572,12 +571,11 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_init(EVP_belt_mac128_pmeth, evpBeltMAC_pkey_init);
 	EVP_PKEY_meth_set_copy(EVP_belt_mac128_pmeth, evpBeltMAC_pkey_copy);
 	EVP_PKEY_meth_set_cleanup(EVP_belt_mac128_pmeth, evpBeltMAC_pkey_cleanup);
-	EVP_PKEY_meth_set_keygen(
-		EVP_belt_mac128_pmeth, 0, evpBeltMAC128_pkey_keygen);
-	EVP_PKEY_meth_set_signctx(
-		EVP_belt_mac128_pmeth, evpBeltMAC_signctx_init, evpBeltMAC_signctx);
-	EVP_PKEY_meth_set_ctrl(EVP_belt_mac128_pmeth,
-		evpBeltMAC128_pkey_ctrl,
+	EVP_PKEY_meth_set_keygen(EVP_belt_mac128_pmeth, 0,
+		evpBeltMAC128_pkey_keygen);
+	EVP_PKEY_meth_set_signctx(EVP_belt_mac128_pmeth, evpBeltMAC_signctx_init,
+		evpBeltMAC_signctx);
+	EVP_PKEY_meth_set_ctrl(EVP_belt_mac128_pmeth, evpBeltMAC128_pkey_ctrl,
 		evpBeltMAC128_pkey_ctrl_str);
 	// создать и настроить описатель belt_mac192
 	EVP_belt_mac192_pmeth =
@@ -587,12 +585,11 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_init(EVP_belt_mac192_pmeth, evpBeltMAC_pkey_init);
 	EVP_PKEY_meth_set_copy(EVP_belt_mac192_pmeth, evpBeltMAC_pkey_copy);
 	EVP_PKEY_meth_set_cleanup(EVP_belt_mac192_pmeth, evpBeltMAC_pkey_cleanup);
-	EVP_PKEY_meth_set_keygen(
-		EVP_belt_mac192_pmeth, 0, evpBeltMAC192_pkey_keygen);
-	EVP_PKEY_meth_set_signctx(
-		EVP_belt_mac192_pmeth, evpBeltMAC_signctx_init, evpBeltMAC_signctx);
-	EVP_PKEY_meth_set_ctrl(EVP_belt_mac192_pmeth,
-		evpBeltMAC192_pkey_ctrl,
+	EVP_PKEY_meth_set_keygen(EVP_belt_mac192_pmeth, 0,
+		evpBeltMAC192_pkey_keygen);
+	EVP_PKEY_meth_set_signctx(EVP_belt_mac192_pmeth, evpBeltMAC_signctx_init,
+		evpBeltMAC_signctx);
+	EVP_PKEY_meth_set_ctrl(EVP_belt_mac192_pmeth, evpBeltMAC192_pkey_ctrl,
 		evpBeltMAC192_pkey_ctrl_str);
 	// создать и настроить описатель belt_mac256
 	EVP_belt_mac256_pmeth =
@@ -602,12 +599,11 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_init(EVP_belt_mac256_pmeth, evpBeltMAC_pkey_init);
 	EVP_PKEY_meth_set_copy(EVP_belt_mac256_pmeth, evpBeltMAC_pkey_copy);
 	EVP_PKEY_meth_set_cleanup(EVP_belt_mac256_pmeth, evpBeltMAC_pkey_cleanup);
-	EVP_PKEY_meth_set_keygen(
-		EVP_belt_mac256_pmeth, 0, evpBeltMAC256_pkey_keygen);
-	EVP_PKEY_meth_set_signctx(
-		EVP_belt_mac256_pmeth, evpBeltMAC_signctx_init, evpBeltMAC_signctx);
-	EVP_PKEY_meth_set_ctrl(EVP_belt_mac256_pmeth,
-		evpBeltMAC256_pkey_ctrl,
+	EVP_PKEY_meth_set_keygen(EVP_belt_mac256_pmeth, 0,
+		evpBeltMAC256_pkey_keygen);
+	EVP_PKEY_meth_set_signctx(EVP_belt_mac256_pmeth, evpBeltMAC_signctx_init,
+		evpBeltMAC_signctx);
+	EVP_PKEY_meth_set_ctrl(EVP_belt_mac256_pmeth, evpBeltMAC256_pkey_ctrl,
 		evpBeltMAC256_pkey_ctrl_str);
 	// ...belt_hmac
 	EVP_belt_hmac_pmeth =
@@ -618,10 +614,10 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_copy(EVP_belt_hmac_pmeth, evpBeltHMAC_pkey_copy);
 	EVP_PKEY_meth_set_cleanup(EVP_belt_hmac_pmeth, evpBeltHMAC_pkey_cleanup);
 	EVP_PKEY_meth_set_keygen(EVP_belt_hmac_pmeth, 0, evpBeltHMAC_pkey_keygen);
-	EVP_PKEY_meth_set_signctx(
-		EVP_belt_hmac_pmeth, evpBeltHMAC_signctx_init, evpBeltHMAC_signctx);
-	EVP_PKEY_meth_set_ctrl(
-		EVP_belt_hmac_pmeth, evpBeltHMAC_pkey_ctrl, evpBeltHMAC_pkey_ctrl_str);
+	EVP_PKEY_meth_set_signctx(EVP_belt_hmac_pmeth, evpBeltHMAC_signctx_init,
+		evpBeltHMAC_signctx);
+	EVP_PKEY_meth_set_ctrl(EVP_belt_hmac_pmeth, evpBeltHMAC_pkey_ctrl,
+		evpBeltHMAC_pkey_ctrl_str);
 	// задать перечислитель и зарегистрировать алгоритмы
 	prev_enum = ENGINE_get_pkey_meths(e);
 	return ENGINE_set_pkey_meths(e, evpBelt_pmeth_enum);
