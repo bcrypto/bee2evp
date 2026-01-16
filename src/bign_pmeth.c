@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2025.10.16
+\version 2026.01.16
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -771,11 +771,50 @@ static int evpBign_pkey_ctrl_str(
 
 /*
 *******************************************************************************
+Описание методов кривых
+*******************************************************************************
+*/
+
+static int evpBign_pkey_init256(EVP_PKEY_CTX* ctx)
+{
+	if (!evpBign_pkey_init(ctx) ||
+		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
+		NID_bign_curve256v1, NULL)
+	)
+		return 0;
+	return 1;
+}
+
+static int evpBign_pkey_init384(EVP_PKEY_CTX* ctx)
+{
+	if (!evpBign_pkey_init(ctx) ||
+		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
+		NID_bign_curve384v1, NULL)
+	)
+		return 0;
+	return 1;
+}
+
+static int evpBign_pkey_init512(EVP_PKEY_CTX* ctx)
+{
+	if (!evpBign_pkey_init(ctx) ||
+		!evpBign_pkey_ctrl(ctx, EVP_BIGN_PKEY_CTRL_SET_PARAMS, 
+		NID_bign_curve512v1, NULL)
+	)
+		return 0;
+	return 1;
+}
+
+/*
+*******************************************************************************
 Описание методов ключа
 *******************************************************************************
 */
 
 static EVP_PKEY_METHOD* EVP_bign_pmeth;
+static EVP_PKEY_METHOD* EVP_bign_pmeth256;
+static EVP_PKEY_METHOD* EVP_bign_pmeth384;
+static EVP_PKEY_METHOD* EVP_bign_pmeth512;
 
 const EVP_PKEY_METHOD* evpBign_pmeth()
 {
@@ -835,6 +874,12 @@ static int evpBign_pmeth_enum(
 	// обработать запрос
 	if (nid == NID_bign_pubkey)
 		*pmeth = EVP_bign_pmeth;
+	else if (nid == NID_bign_curve256v1)
+		*pmeth = EVP_bign_pmeth256;
+	else if (nid == NID_bign_curve384v1)
+		*pmeth = EVP_bign_pmeth384;
+	else if (nid == NID_bign_curve512v1)
+		*pmeth = EVP_bign_pmeth512;
 	else if (prev_enum && prev_enum != evpBign_pmeth_enum)
 		return prev_enum(e, pmeth, nids, nid);
 	else
@@ -852,6 +897,20 @@ static int evpBign_pmeth_enum(
 к ошибке.
 *******************************************************************************
 */
+void set_pmeth_methods(EVP_PKEY_METHOD* EVP_bign_pmeth)
+{
+	EVP_PKEY_meth_set_copy(EVP_bign_pmeth, evpBign_pkey_copy);
+	EVP_PKEY_meth_set_cleanup(EVP_bign_pmeth, evpBign_pkey_cleanup);
+	EVP_PKEY_meth_set_paramgen(EVP_bign_pmeth, 0, evpBign_pkey_paramgen);
+	EVP_PKEY_meth_set_keygen(EVP_bign_pmeth, 0, evpBign_pkey_keygen);
+	EVP_PKEY_meth_set_sign(EVP_bign_pmeth, 0, evpBign_pkey_sign);
+	EVP_PKEY_meth_set_verify(EVP_bign_pmeth, 0, evpBign_pkey_verify);
+	EVP_PKEY_meth_set_encrypt(EVP_bign_pmeth, 0, evpBign_pkey_encrypt);
+	EVP_PKEY_meth_set_decrypt(EVP_bign_pmeth, 0, evpBign_pkey_decrypt);
+	EVP_PKEY_meth_set_derive(EVP_bign_pmeth, 0, evpBign_pkey_kdf_derive);
+	EVP_PKEY_meth_set_ctrl(
+		EVP_bign_pmeth, evpBign_pkey_ctrl, evpBign_pkey_ctrl_str);
+}
 
 int evpBign_pmeth_bind(ENGINE* e)
 {
@@ -875,22 +934,40 @@ int evpBign_pmeth_bind(ENGINE* e)
 		return 0;
 	// настроить описатель
 	EVP_PKEY_meth_set_init(EVP_bign_pmeth, evpBign_pkey_init);
-	EVP_PKEY_meth_set_copy(EVP_bign_pmeth, evpBign_pkey_copy);
-	EVP_PKEY_meth_set_cleanup(EVP_bign_pmeth, evpBign_pkey_cleanup);
-	EVP_PKEY_meth_set_paramgen(EVP_bign_pmeth, 0, evpBign_pkey_paramgen);
-	EVP_PKEY_meth_set_keygen(EVP_bign_pmeth, 0, evpBign_pkey_keygen);
-	EVP_PKEY_meth_set_sign(EVP_bign_pmeth, 0, evpBign_pkey_sign);
-	EVP_PKEY_meth_set_verify(EVP_bign_pmeth, 0, evpBign_pkey_verify);
-	EVP_PKEY_meth_set_encrypt(EVP_bign_pmeth, 0, evpBign_pkey_encrypt);
-	EVP_PKEY_meth_set_decrypt(EVP_bign_pmeth, 0, evpBign_pkey_decrypt);
-	EVP_PKEY_meth_set_derive(EVP_bign_pmeth, 0, evpBign_pkey_kdf_derive);
-	EVP_PKEY_meth_set_ctrl(
-		EVP_bign_pmeth, evpBign_pkey_ctrl, evpBign_pkey_ctrl_str);
+	set_pmeth_methods(EVP_bign_pmeth);
+
+	// создать описатель методов ключа
+	EVP_bign_pmeth256 = EVP_PKEY_meth_new(NID_bign_curve256v1, 0);
+	if (!EVP_bign_pmeth256)
+		return 0;
+	// настроить описатель
+	EVP_PKEY_meth_set_init(EVP_bign_pmeth256, evpBign_pkey_init256);
+	set_pmeth_methods(EVP_bign_pmeth256);
+
+	// создать описатель методов ключа
+	EVP_bign_pmeth384 = EVP_PKEY_meth_new(NID_bign_curve384v1, 0);
+	if (!EVP_bign_pmeth384)
+		return 0;
+	// настроить описатель
+	EVP_PKEY_meth_set_init(EVP_bign_pmeth384, evpBign_pkey_init384);
+	set_pmeth_methods(EVP_bign_pmeth384);
+
+	// создать описатель методов ключа
+	EVP_bign_pmeth512 = EVP_PKEY_meth_new(NID_bign_curve512v1, 0);
+	if (!EVP_bign_pmeth512)
+		return 0;
+	// настроить описатель
+	EVP_PKEY_meth_set_init(EVP_bign_pmeth512, evpBign_pkey_init512);
+	set_pmeth_methods(EVP_bign_pmeth512);
+
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_meths(e);
 	if (!ENGINE_set_pkey_meths(e, evpBign_pmeth_enum))
 	{
 		EVP_PKEY_meth_free(EVP_bign_pmeth);
+		EVP_PKEY_meth_free(EVP_bign_pmeth256);
+		EVP_PKEY_meth_free(EVP_bign_pmeth384);
+		EVP_PKEY_meth_free(EVP_bign_pmeth512);
 		return 0;
 	}
 	return 1;
