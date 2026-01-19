@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief BTLS ciphersuites
 \created 2021.01.11
-\version 2021.06.09
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -67,9 +67,8 @@ static int btls_inited = 0;
 
 int btls_init()
 {
-    if (btls_inited) {
+    if (btls_inited) 
         return 1;
-    }
 
     btls_inited++;
     return 1;
@@ -159,15 +158,14 @@ int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey)
         return 0;
     // загрузить параметры открытого ключа сервера
     if (s->s3.peer_tmp == 0 && (s->s3.peer_tmp = EVP_PKEY_new()) == 0)
-            return 0;
+        return 0;
     if (!EVP_PKEY_copy_parameters(s->s3.peer_tmp, *pkey))
         return 0;
     // загрузить эфемерный открытый ключ сервера
     if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt))
         return 0;
     if (!EVP_PKEY_set1_tls_encodedpoint(s->s3.peer_tmp,
-            PACKET_data(&encoded_pt),
-            PACKET_remaining(&encoded_pt)))
+        PACKET_data(&encoded_pt), PACKET_remaining(&encoded_pt)))
         return 0;
     // завершить
     return 1;
@@ -370,7 +368,8 @@ todo: Можно ли взять под контроль генерацию pre_
 *******************************************************************************
 */
 
-int btls_construct_cke_bign_dht(SSL_CONNECTION *s, WPACKET *pkt){
+int btls_construct_cke_bign_dht(SSL_CONNECTION *s, WPACKET *pkt)
+{
     unsigned char* pms = NULL;
     size_t pms_len = 48;
     EVP_PKEY_CTX* pkey_ctx = NULL;

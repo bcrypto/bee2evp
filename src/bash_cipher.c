@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Bash encryption algorithms
 \created 2025.10.29
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -83,13 +83,8 @@ static int evpBashPrgAe_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		memCopy(state->ann, iv, state->ann_len);
 	}
 
-	bashPrgStart(state->state,
-		state->tag_len * 8,
-		state->d,
-		state->ann,
-		state->ann_len,
-		state->key,
-		state->key_len);
+	bashPrgStart(state->state, state->tag_len * 8, state->d, state->ann,
+		state->ann_len, state->key, state->key_len);
 
 	return 1;
 }
@@ -208,8 +203,8 @@ static int evpBashCipher_enum(ENGINE* e, const EVP_CIPHER** cipher,
 				return 0;
 			if (bash_cipher_count + nid >= (int)COUNT_OF(bash_cipher_nids))
 				return 0;
-			memCopy(
-				bash_cipher_nids + bash_cipher_count, *nids, nid * sizeof(int));
+			memCopy(bash_cipher_nids + bash_cipher_count, *nids, 
+				nid * sizeof(int));
 			*nids = bash_cipher_nids;
 			return bash_cipher_count + nid;
 		}
@@ -233,17 +228,8 @@ static int evpBashCipher_enum(ENGINE* e, const EVP_CIPHER** cipher,
 *******************************************************************************
 */
 
-#define BASH_CIPHER_DESCR(name,                                                \
-	block_size,                                                                \
-	key_size,                                                                  \
-	iv_len,                                                                    \
-	flags,                                                                     \
-	init,                                                                      \
-	cipher,                                                                    \
-	cleanup,                                                                   \
-	set_params,                                                                \
-	get_params,                                                                \
-	ctrl)                                                                      \
+#define BASH_CIPHER_DESCR(name, block_size, key_size, iv_len, flags,init,      \
+	cipher, cleanup, set_params, get_params, ctrl)                             \
 	EVP_##name = EVP_CIPHER_meth_new(NID_##name, block_size, key_size);        \
 	if (EVP_##name == 0 ||                                                     \
 		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||                  \
@@ -264,16 +250,8 @@ int evpBashCipher_bind(ENGINE* e)
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (Bash_CIPHER_REG(bash_prg_ae2561, tmp) == NID_undef)
 		return 0;
-	BASH_CIPHER_DESCR(bash_prg_ae2561,
-		1,
-		32,
-		0,
-		FLAGS_bash_prg_ae,
-		evpBashPrgAe_init,
-		evpBashPrgAe_cipher,
-		evpBashPrgAe_cleanup,
-		0,
-		0,
+	BASH_CIPHER_DESCR(bash_prg_ae2561, 1, 32, 0, FLAGS_bash_prg_ae,
+		evpBashPrgAe_init, evpBashPrgAe_cipher, evpBashPrgAe_cleanup, 0, 0,
 		evpBashPrgAe_ctrl);
 	// задать перечислитель
 	prev_enum = ENGINE_get_ciphers(e);

@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -1011,8 +1011,8 @@ static int evpBign_set_privkey(EVP_PKEY* pkey, const octet* privkey, size_t len)
 	return 1;
 }
 
-static int evpBign_get_privkey(
-	const EVP_PKEY* pkey, octet* privkey, size_t* len)
+static int evpBign_get_privkey(const EVP_PKEY* pkey, octet* privkey, 
+	size_t* len)
 {
 	const bign_key* key;
 	if (evpBign_param_missing(pkey))
@@ -1069,8 +1069,8 @@ static int bign_ameth_count;
 
 static ENGINE_PKEY_ASN1_METHS_PTR prev_enum;
 
-static int evpBign_ameth_enum(
-	ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, const int** nids, int nid)
+static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth, 
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!ameth)
@@ -1083,8 +1083,8 @@ static int evpBign_ameth_enum(
 				return 0;
 			if (bign_ameth_count + nid >= (int)COUNT_OF(bign_ameth_nids))
 				return 0;
-			memCopy(
-				bign_ameth_nids + bign_ameth_count, *nids, nid * sizeof(int));
+			memCopy(bign_ameth_nids + bign_ameth_count, *nids, 
+				nid * sizeof(int));
 			*nids = bign_ameth_nids;
 			return bign_ameth_count + nid;
 		}
@@ -1116,8 +1116,8 @@ int evpBign_ameth_bind(ENGINE* e)
 	if (BIGN_AMETH_REG(bign_pubkey, tmp) == NID_undef)
 		return 0;
 	// создать описатель методов ключа
-	EVP_bign_ameth =
-		EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", "OpenSSL bign method");
+	EVP_bign_ameth = EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", 
+		"OpenSSL bign method");
 	if (!EVP_bign_ameth)
 		return 0;
 	// настроить описатель
@@ -1144,8 +1144,8 @@ int evpBign_ameth_bind(ENGINE* e)
 	EVP_PKEY_asn1_set_check(EVP_bign_ameth, evpBign_keypair_check);
 	EVP_PKEY_asn1_set_free(EVP_bign_ameth, evpBign_pkey_free);
 	EVP_PKEY_asn1_set_ctrl(EVP_bign_ameth, evpBign_pkey_asn1_ctrl);
-	EVP_PKEY_asn1_set_item(
-		EVP_bign_ameth, evpBign_item_verify, evpBign_item_sign);
+	EVP_PKEY_asn1_set_item(EVP_bign_ameth, evpBign_item_verify, 
+		evpBign_item_sign);
 	EVP_PKEY_asn1_set_security_bits(EVP_bign_ameth, evpBign_pkey_security_bits);
 	EVP_PKEY_asn1_set_set_pub_key(EVP_bign_ameth, evpBign_set_pubkey);
 	EVP_PKEY_asn1_set_get_pub_key(EVP_bign_ameth, evpBign_get_pubkey);

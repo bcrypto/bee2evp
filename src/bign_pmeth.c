@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for bign-pubkey
 \created 2014.10.06
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -270,8 +270,8 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 		return 0;
 	}
 	// сгенерировать пару ключей
-	return bignKeypairGen(
-			   key->privkey, key->pubkey, key->params, rngStepR, 0) == ERR_OK;
+	return bignKeypairGen(key->privkey, key->pubkey, key->params, 
+		rngStepR, 0) == ERR_OK;
 }
 
 /*
@@ -280,11 +280,8 @@ static int evpBign_pkey_keygen(EVP_PKEY_CTX* ctx, EVP_PKEY* pkey)
 *******************************************************************************
 */
 
-static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx,
-	octet* sig,
-	size_t* siglen,
-	const octet* tbs,
-	size_t tbslen)
+static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx, octet* sig, size_t* siglen,
+	const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
@@ -326,28 +323,18 @@ static int evpBign_pkey_sign(EVP_PKEY_CTX* ctx,
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// подписать
 	if ((key->flags & EVP_BIGN_PKEY_SIG_DETERMINISTIC) || !rngIsValid())
-		ret = bignSign2(
-				  sig, key->params, der, der_len, tbs, key->privkey, 0, 0) ==
-			ERR_OK;
+		ret = bignSign2(sig, key->params, der, der_len, tbs, 
+			key->privkey, 0, 0) == ERR_OK;
 	else
-		ret = bignSign(sig,
-				  key->params,
-				  der,
-				  der_len,
-				  tbs,
-				  key->privkey,
-				  rngStepR,
-				  0) == ERR_OK;
+		ret = bignSign(sig, key->params, der, der_len, tbs, key->privkey,
+			rngStepR, 0) == ERR_OK;
 	// завершить
 	blobClose(der);
 	return ret;
 }
 
-static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx,
-	const octet* sig,
-	size_t siglen,
-	const octet* tbs,
-	size_t tbslen)
+static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx, const octet* sig,
+	size_t siglen, const octet* tbs, size_t tbslen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
@@ -382,8 +369,8 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx,
 		return 0;
 	derEnc(der, 6, OBJ_get0_data(obj), OBJ_length(obj));
 	// проверить подпись
-	ret =
-		bignVerify(key->params, der, der_len, tbs, sig, key->pubkey) == ERR_OK;
+	ret = bignVerify(key->params, der, der_len, tbs, sig, 
+		key->pubkey) == ERR_OK;
 	// завершить
 	blobClose(der);
 	return ret;
@@ -395,11 +382,8 @@ static int evpBign_pkey_verify(EVP_PKEY_CTX* ctx,
 *******************************************************************************
 */
 
-static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx,
-	octet* out,
-	size_t* outlen,
-	const octet* in,
-	size_t inlen)
+static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx, octet* out,
+	size_t* outlen, const octet* in, size_t inlen)
 {
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 	bign_key* key;
@@ -415,16 +399,12 @@ static int evpBign_pkey_encrypt(EVP_PKEY_CTX* ctx,
 	if (!out)
 		return 1;
 	// зашифровать (установить защиту)
-	return bignKeyWrap(
-			   out, key->params, in, inlen, 0, key->pubkey, rngStepR, 0) ==
-		ERR_OK;
+	return bignKeyWrap(out, key->params, in, inlen, 0, key->pubkey, 
+		rngStepR, 0) == ERR_OK;
 }
 
-static int evpBign_pkey_decrypt(EVP_PKEY_CTX* ctx,
-	octet* out,
-	size_t* outlen,
-	const octet* in,
-	size_t inlen)
+static int evpBign_pkey_decrypt(EVP_PKEY_CTX* ctx, octet* out,
+	size_t* outlen, const octet* in, size_t inlen)
 {
 	EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
 	bign_key* key;
@@ -440,8 +420,8 @@ static int evpBign_pkey_decrypt(EVP_PKEY_CTX* ctx,
 	if (!out)
 		return 1;
 	// расшифровать (снять защиту)
-	return bignKeyUnwrap(out, key->params, in, inlen, 0, key->privkey) ==
-		ERR_OK;
+	return bignKeyUnwrap(out, key->params, in, inlen, 0, 
+		key->privkey) == ERR_OK;
 }
 
 /*
@@ -475,13 +455,12 @@ static int evpBign_pkey_derive(EVP_PKEY_CTX* ctx, octet* key, size_t* key_len)
 	}
 	// построить ключ
 	*key_len = MIN2(*key_len, mykey->params->l / 2);
-	return bignDH(
-			   key, mykey->params, mykey->privkey, peerkey->pubkey, *key_len) ==
-		ERR_OK;
+	return bignDH(key, mykey->params, mykey->privkey, peerkey->pubkey, 
+		*key_len) == ERR_OK;
 }
 
-static int evpBign_pkey_kdf_derive(
-	EVP_PKEY_CTX* ctx, octet* key, size_t* keylen)
+static int evpBign_pkey_kdf_derive(EVP_PKEY_CTX* ctx, octet* key, 
+	size_t* keylen)
 {
 	bign_pkey_ctx* dctx = (bign_pkey_ctx*)EVP_PKEY_CTX_get_data(ctx);
 	octet* secret;
@@ -511,12 +490,8 @@ static int evpBign_pkey_kdf_derive(
 	}
 	// построить ключ bake-kdf
 	*keylen = MIN2(*keylen, 32);
-	code = bakeKDF(key,
-		secret,
-		secret_len,
-		(octet*)dctx->kdf_ukm,
-		blobSize(dctx->kdf_ukm),
-		dctx->kdf_num);
+	code = bakeKDF(key, secret, secret_len, (octet*)dctx->kdf_ukm,
+		blobSize(dctx->kdf_ukm), dctx->kdf_num);
 	// завершить
 	blobClose(secret);
 	return code == ERR_OK;
@@ -632,92 +607,56 @@ static int evpBign_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 
 int evpBign_pkey_set_params(EVP_PKEY_CTX* ctx, int params_nid)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_SET_PARAMS,
-		params_nid,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_TYPE_GEN,
+		EVP_BIGN_PKEY_CTRL_SET_PARAMS, params_nid, 0);
 }
 
 int evpBign_pkey_set_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_TYPE_GEN,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_enc_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_TYPE_GEN,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_TYPE_GEN,
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_set_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_TYPE_SIG,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_TYPE_SIG,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_sig_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_TYPE_SIG,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_TYPE_SIG,
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_set_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_SET_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_clr_kdf_flags(EVP_PKEY_CTX* ctx, u8 flags)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS,
-		(int)flags,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_CLR_ENC_FLAGS, (int)flags, 0);
 }
 
 int evpBign_pkey_set_kdf_ukm(EVP_PKEY_CTX* ctx, void* ukm, size_t ukm_len)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_KDF_UKM,
-		(int)ukm_len,
-		ukm);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_SET_KDF_UKM, (int)ukm_len, ukm);
 }
 
 int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 {
-	return EVP_PKEY_CTX_ctrl(ctx,
-		NID_bign_pubkey,
-		EVP_PKEY_OP_DERIVE,
-		EVP_BIGN_PKEY_CTRL_SET_KDF_NUM,
-		(int)num,
-		0);
+	return EVP_PKEY_CTX_ctrl(ctx, NID_bign_pubkey, EVP_PKEY_OP_DERIVE,
+		EVP_BIGN_PKEY_CTRL_SET_KDF_NUM, (int)num, 0);
 }
 
 /*
@@ -726,8 +665,8 @@ int evpBign_pkey_set_kdf_num(EVP_PKEY_CTX* ctx, size_t num)
 *******************************************************************************
 */
 
-static int evpBign_pkey_ctrl_str(
-	EVP_PKEY_CTX* ctx, const char* type, const char* value)
+static int evpBign_pkey_ctrl_str(EVP_PKEY_CTX* ctx, const char* type, 
+	const char* value)
 {
 	// долговременные параметры
 	if (strEq(type, "params"))
@@ -845,8 +784,8 @@ static int bign_pmeth_count;
 
 static ENGINE_PKEY_METHS_PTR prev_enum;
 
-static int evpBign_pmeth_enum(
-	ENGINE* e, EVP_PKEY_METHOD** pmeth, const int** nids, int nid)
+static int evpBign_pmeth_enum(ENGINE* e, EVP_PKEY_METHOD** pmeth, 
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!pmeth)
@@ -859,8 +798,8 @@ static int evpBign_pmeth_enum(
 				return 0;
 			if (bign_pmeth_count + nid >= (int)COUNT_OF(bign_pmeth_nids))
 				return 0;
-			memCopy(
-				bign_pmeth_nids + bign_pmeth_count, *nids, nid * sizeof(int));
+			memCopy(bign_pmeth_nids + bign_pmeth_count, *nids, 
+				nid * sizeof(int));
 			*nids = bign_pmeth_nids;
 			return bign_pmeth_count + nid;
 		}
@@ -905,8 +844,8 @@ void set_pmeth_methods(EVP_PKEY_METHOD* EVP_bign_pmeth)
 	EVP_PKEY_meth_set_encrypt(EVP_bign_pmeth, 0, evpBign_pkey_encrypt);
 	EVP_PKEY_meth_set_decrypt(EVP_bign_pmeth, 0, evpBign_pkey_decrypt);
 	EVP_PKEY_meth_set_derive(EVP_bign_pmeth, 0, evpBign_pkey_kdf_derive);
-	EVP_PKEY_meth_set_ctrl(
-		EVP_bign_pmeth, evpBign_pkey_ctrl, evpBign_pkey_ctrl_str);
+	EVP_PKEY_meth_set_ctrl(EVP_bign_pmeth, evpBign_pkey_ctrl, 
+		evpBign_pkey_ctrl_str);
 }
 
 int evpBign_pmeth_bind(ENGINE* e)

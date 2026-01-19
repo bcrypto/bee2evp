@@ -154,7 +154,9 @@ add_library(bee2evp SHARED ${src})
 target_link_libraries(bee2evp ${libs})
 
 set_target_properties(bee2evp PROPERTIES
-  VERSION ${BEE2EVP_VERSION} SOVERSION 1.0)
+  INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
+  VERSION ${BEE2EVP_VERSION} SOVERSION 1.0
+)
 
 install(TARGETS bee2evp
   DESTINATION ${CMAKE_INSTALL_LIBDIR}

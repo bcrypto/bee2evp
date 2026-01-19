@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief The Belt-based PBKDF
 \created 2015.01.19
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -56,13 +56,8 @@ const char SN_belt_pbkdf[] = "belt-pbkdf";
 const char LN_belt_pbkdf[] = "belt-pbkdf";
 #define NID_belt_pbkdf OBJ_sn2nid(SN_belt_pbkdf)
 
-int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx,
-	const char* pass,
-	int passlen,
-	ASN1_TYPE* param,
-	const EVP_CIPHER* c,
-	const EVP_MD* md,
-	int en_de)
+int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
+	ASN1_TYPE* param, const EVP_CIPHER* c, const EVP_MD* md, int en_de)
 {
 	int key_len;
 	const octet* der;

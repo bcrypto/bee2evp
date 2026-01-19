@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt authenticated encryption for TLS
 \created 2021.01.26
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -509,13 +509,8 @@ static int evpBashPrgAET_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 
 		state->ann_len = 24;
 
-		bashPrgStart(state->state,
-			256,
-			state->d,
-			state->ann,
-			state->ann_len,
-			state->key,
-			32);
+		bashPrgStart(state->state, 256, state->d, state->ann, state->ann_len,
+			state->key, 32);
 
 		return 1;
 	}
@@ -707,8 +702,8 @@ static int evpBeltCTRT_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob =
-			blobCreate(sizeof(belt_ctrt_ctx) + beltCTR_keep() + beltMAC_keep());
+		blob_t blob = blobCreate(sizeof(belt_ctrt_ctx) + beltCTR_keep() + 
+			beltMAC_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
@@ -824,18 +819,8 @@ static int evpBeltTLS_enum(ENGINE* e, const EVP_CIPHER** cipher,
 Подключение / закрытие
 *******************************************************************************
 */
-
-#define BELT_TLS_DESCR(name,                                                   \
-	block_size,                                                                \
-	key_size,                                                                  \
-	iv_len,                                                                    \
-	flags,                                                                     \
-	init,                                                                      \
-	cipher,                                                                    \
-	cleanup,                                                                   \
-	set_params,                                                                \
-	get_params,                                                                \
-	ctrl)                                                                      \
+#define BELT_TLS_DESCR(name, block_size, key_size, iv_len, flags,              \
+	init, cipher, cleanup, set_params, get_params, ctrl)                       \
 	EVP_##name = EVP_CIPHER_meth_new(NID_##name, block_size, key_size);        \
 	if (EVP_##name == 0 ||                                                     \
 		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||                  \
@@ -860,50 +845,18 @@ int evpBeltTLS_bind(ENGINE* e)
 		BELT_TLS_REG(belt_ctrt, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
-	BELT_TLS_DESCR(belt_dwpt,
-		1,
-		32,
-		8,
-		FLAGS_belt_dwpt,
-		evpBeltDWPT_init,
-		evpBeltDWPT_cipher,
-		evpBeltDWPT_cleanup,
-		0,
-		0,
-		evpBeltDWPT_ctrl);
-	BELT_TLS_DESCR(belt_chet,
-		1,
-		32,
-		16,
-		FLAGS_belt_chet,
-		evpBeltCHET_init,
-		evpBeltCHET_cipher,
-		evpBeltCHET_cleanup,
-		0,
-		0,
-		evpBeltCHET_ctrl);
-	BELT_TLS_DESCR(bash_prg_aet,
-		1,
-		32,
-		16,
-		FLAGS_bash_prg_aet,
-		evpBashPrgAET_init,
-		evpBashPrgAET_cipher,
-		evpBashPrgAET_cleanup,
-		0,
-		0,
-		evpBashPrgAET_ctrl);
-	BELT_TLS_DESCR(belt_ctrt,
-		1,
-		32,
-		0,
-		FLAGS_belt_ctrt,
-		evpBeltCTRT_init,
-		evpBeltCTRT_cipher,
-		evpBeltCTRT_cleanup,
-		0,
-		0,
-		evpBeltCTRT_ctrl);
+	BELT_TLS_DESCR(belt_dwpt, 1, 32, 8, FLAGS_belt_dwpt,
+		evpBeltDWPT_init, evpBeltDWPT_cipher, evpBeltDWPT_cleanup,
+		0, 0, evpBeltDWPT_ctrl);
+	BELT_TLS_DESCR(belt_chet, 1, 32, 16, FLAGS_belt_chet,
+		evpBeltCHET_init, evpBeltCHET_cipher, evpBeltCHET_cleanup,
+		0, 0, evpBeltCHET_ctrl);
+	BELT_TLS_DESCR(bash_prg_aet, 1, 32, 16, FLAGS_bash_prg_aet,
+		evpBashPrgAET_init, evpBashPrgAET_cipher, evpBashPrgAET_cleanup,
+		0, 0, evpBashPrgAET_ctrl);
+	BELT_TLS_DESCR(belt_ctrt, 1, 32, 0, FLAGS_belt_ctrt,
+		evpBeltCTRT_init, evpBeltCTRT_cipher, evpBeltCTRT_cleanup,
+		0, 0, evpBeltCTRT_ctrl);
 	// задать перечислитель
 	prev_enum = ENGINE_get_ciphers(e);
 	if (!ENGINE_set_ciphers(e, evpBeltTLS_enum))

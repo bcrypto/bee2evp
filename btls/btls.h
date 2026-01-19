@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2021.06.09
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -168,7 +168,8 @@ int btls_process_cke_bign_dht(SSL_CONNECTION *s, PACKET *pkt);
 *******************************************************************************
 */
 int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt);
-int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY **pkey);
+int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, 
+	EVP_PKEY **pkey);
 
 #ifdef __cplusplus
 } /* extern "C" */

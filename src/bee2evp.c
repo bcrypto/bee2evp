@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Registration of bee2evp in OpenSSL
 \created 2014.11.06
-\version 2024.07.12
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -158,11 +158,8 @@ static int bee2evp_bind(ENGINE* e, const char* id)
 		!OBJ_add_sigid(NID_bign_with_hspec, NID_undef, NID_bign_pubkey))
 		return 0;
 	// связать belt-pbkdf + belt-hmac
-	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF,
-			NID_belt_hmac,
-			-1,
-			NID_belt_hash,
-			evpBeltPBKDF_keyivgen))
+	if (!EVP_PBE_alg_add_type(EVP_PBE_TYPE_PRF, NID_belt_hmac, -1,
+			NID_belt_hash, evpBeltPBKDF_keyivgen))
 		return 0;
 	// все нормально
 	return 1;

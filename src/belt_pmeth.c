@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Methods for belt-macXXX and belt-hmac (hmac-hbelt) keys
 \created 2014.09.16
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -93,8 +93,7 @@ static int evpBeltMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltMAC_pkey_init(dest))
 		return 0;
-	memCopy(EVP_PKEY_CTX_get_data(dest),
-		EVP_PKEY_CTX_get_data(src),
+	memCopy(EVP_PKEY_CTX_get_data(dest), EVP_PKEY_CTX_get_data(src),
 		beltMAC_keep());
 	return 1;
 }
@@ -200,8 +199,7 @@ static int evpBeltMAC192_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1,
 		break;
 	case EVP_PKEY_CTRL_MD:
 		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx),
-				EVP_PKEY_get0(pkey),
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey),
 				beltMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltMAC_keep());
@@ -226,8 +224,7 @@ static int evpBeltMAC256_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1,
 	case EVP_PKEY_CTRL_MD:
 		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
 		{
-			memCopy(EVP_PKEY_CTX_get_data(ctx),
-				EVP_PKEY_get0(pkey),
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey),
 				beltMAC_keep());
 		}
 		else
@@ -364,8 +361,7 @@ static int evpBeltHMAC_pkey_copy(EVP_PKEY_CTX* dest, CONST3 EVP_PKEY_CTX* src)
 {
 	if (!evpBeltHMAC_pkey_init(dest))
 		return 0;
-	memCopy(EVP_PKEY_CTX_get_data(dest),
-		EVP_PKEY_CTX_get_data(src),
+	memCopy(EVP_PKEY_CTX_get_data(dest), EVP_PKEY_CTX_get_data(src),
 		beltHMAC_keep());
 	return 1;
 }
@@ -424,8 +420,7 @@ static int evpBeltHMAC_pkey_ctrl(EVP_PKEY_CTX* ctx, int type, int p1, void* p2)
 		break;
 	case EVP_PKEY_CTRL_MD:
 		if (pkey = EVP_PKEY_CTX_get0_pkey(ctx))
-			memCopy(EVP_PKEY_CTX_get_data(ctx),
-				EVP_PKEY_get0(pkey),
+			memCopy(EVP_PKEY_CTX_get_data(ctx), EVP_PKEY_get0(pkey),
 				beltHMAC_keep());
 		else
 			memWipe(EVP_PKEY_CTX_get_data(ctx), beltHMAC_keep());
@@ -564,8 +559,8 @@ int evpBelt_pmeth_bind(ENGINE* e)
 		BELT_PMETH_REG(belt_hmac, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатель belt_mac128
-	EVP_belt_mac128_pmeth =
-		EVP_PKEY_meth_new(NID_belt_mac128, EVP_PKEY_FLAG_SIGCTX_CUSTOM);
+	EVP_belt_mac128_pmeth = EVP_PKEY_meth_new(NID_belt_mac128, 
+		EVP_PKEY_FLAG_SIGCTX_CUSTOM);
 	if (EVP_belt_mac128_pmeth == 0)
 		return 0;
 	EVP_PKEY_meth_set_init(EVP_belt_mac128_pmeth, evpBeltMAC_pkey_init);
@@ -578,8 +573,8 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_ctrl(EVP_belt_mac128_pmeth, evpBeltMAC128_pkey_ctrl,
 		evpBeltMAC128_pkey_ctrl_str);
 	// создать и настроить описатель belt_mac192
-	EVP_belt_mac192_pmeth =
-		EVP_PKEY_meth_new(NID_belt_mac192, EVP_PKEY_FLAG_SIGCTX_CUSTOM);
+	EVP_belt_mac192_pmeth = EVP_PKEY_meth_new(NID_belt_mac192, 
+		EVP_PKEY_FLAG_SIGCTX_CUSTOM);
 	if (EVP_belt_mac192_pmeth == 0)
 		return 0;
 	EVP_PKEY_meth_set_init(EVP_belt_mac192_pmeth, evpBeltMAC_pkey_init);
@@ -592,8 +587,8 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_ctrl(EVP_belt_mac192_pmeth, evpBeltMAC192_pkey_ctrl,
 		evpBeltMAC192_pkey_ctrl_str);
 	// создать и настроить описатель belt_mac256
-	EVP_belt_mac256_pmeth =
-		EVP_PKEY_meth_new(NID_belt_mac256, EVP_PKEY_FLAG_SIGCTX_CUSTOM);
+	EVP_belt_mac256_pmeth = EVP_PKEY_meth_new(NID_belt_mac256, 
+		EVP_PKEY_FLAG_SIGCTX_CUSTOM);
 	if (EVP_belt_mac256_pmeth == 0)
 		return 0;
 	EVP_PKEY_meth_set_init(EVP_belt_mac256_pmeth, evpBeltMAC_pkey_init);
@@ -606,8 +601,8 @@ int evpBelt_pmeth_bind(ENGINE* e)
 	EVP_PKEY_meth_set_ctrl(EVP_belt_mac256_pmeth, evpBeltMAC256_pkey_ctrl,
 		evpBeltMAC256_pkey_ctrl_str);
 	// ...belt_hmac
-	EVP_belt_hmac_pmeth =
-		EVP_PKEY_meth_new(NID_belt_hmac, EVP_PKEY_FLAG_SIGCTX_CUSTOM);
+	EVP_belt_hmac_pmeth = EVP_PKEY_meth_new(NID_belt_hmac, 
+		EVP_PKEY_FLAG_SIGCTX_CUSTOM);
 	if (EVP_belt_hmac_pmeth == 0)
 		return 0;
 	EVP_PKEY_meth_set_init(EVP_belt_hmac_pmeth, evpBeltHMAC_pkey_init);

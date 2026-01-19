@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -318,17 +318,13 @@ evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
-		beltCBCStart(state,
-			key,
-			EVP_CIPHER_CTX_key_length(ctx),
+		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
 }
 
-static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx,
-	octet* out,
-	const octet* in,
+static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
@@ -531,9 +527,8 @@ static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
-		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
-			EVP_CIPHER_CTX_original_iv(ctx),
-			16);
+		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx), 
+			EVP_CIPHER_CTX_original_iv(ctx), 16);
 		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
@@ -656,11 +651,8 @@ static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	if (key)
 	{
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
-			EVP_CIPHER_CTX_original_iv(ctx),
-			16);
-		beltDWPStart(state->state,
-			key,
-			EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_original_iv(ctx), 16);
+		beltDWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
@@ -835,11 +827,8 @@ static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	if (key)
 	{
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
-			EVP_CIPHER_CTX_original_iv(ctx),
-			16);
-		beltCHEStart(state->state,
-			key,
-			EVP_CIPHER_CTX_key_length(ctx),
+			EVP_CIPHER_CTX_original_iv(ctx), 16);
+		beltCHEStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
@@ -1125,10 +1114,8 @@ static int belt_cipher_count;
 
 static ENGINE_CIPHERS_PTR prev_enum;
 
-static int evpBeltCipher_enum(ENGINE* e,
-	const EVP_CIPHER** cipher,
-	const int** nids,
-	int nid)
+static int evpBeltCipher_enum(ENGINE* e, const EVP_CIPHER** cipher,
+	const int** nids, int nid)
 {
 	// возвратить таблицу идентификаторов?
 	if (!cipher)
@@ -1210,17 +1197,8 @@ static int evpBeltCipher_enum(ENGINE* e,
 *******************************************************************************
 */
 
-#define BELT_CIPHER_DESCR(name,                                                \
-	block_size,                                                                \
-	key_size,                                                                  \
-	iv_len,                                                                    \
-	flags,                                                                     \
-	init,                                                                      \
-	cipher,                                                                    \
-	cleanup,                                                                   \
-	set_params,                                                                \
-	get_params,                                                                \
-	ctrl)                                                                      \
+#define BELT_CIPHER_DESCR(name, block_size, key_size, iv_len, flags, init,     \
+	cipher, cleanup, set_params, get_params, ctrl)                             \
 	EVP_##name = EVP_CIPHER_meth_new(NID_##name, block_size, key_size);        \
 	if (EVP_##name == 0 ||                                                     \
 		!EVP_CIPHER_meth_set_iv_length(EVP_##name, iv_len) ||                  \
@@ -1262,236 +1240,74 @@ int evpBeltCipher_bind(ENGINE* e)
 		BELT_CIPHER_REG(belt_kwp256, tmp) == NID_undef)
 		return 0;
 	// создать и настроить описатели
-	BELT_CIPHER_DESCR(belt_ecb128,
-		16,
-		16,
-		0,
-		FLAGS_belt_ecb,
-		evpBeltECB_init,
-		evpBeltECB_cipher,
-		evpBeltECB_cleanup,
-		evpBeltECB_set_asn1_params,
-		evpBeltECB_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_ecb128, 16, 16, 0, FLAGS_belt_ecb,
+		evpBeltECB_init, evpBeltECB_cipher, evpBeltECB_cleanup,
+		evpBeltECB_set_asn1_params, evpBeltECB_get_asn1_params,
 		evpBeltECB_ctrl);
-	BELT_CIPHER_DESCR(belt_ecb192,
-		16,
-		24,
-		0,
-		FLAGS_belt_ecb,
-		evpBeltECB_init,
-		evpBeltECB_cipher,
-		evpBeltECB_cleanup,
-		evpBeltECB_set_asn1_params,
-		evpBeltECB_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_ecb192, 16, 24, 0, FLAGS_belt_ecb,
+		evpBeltECB_init, evpBeltECB_cipher, evpBeltECB_cleanup,
+		evpBeltECB_set_asn1_params, evpBeltECB_get_asn1_params,
 		evpBeltECB_ctrl);
-	BELT_CIPHER_DESCR(belt_ecb256,
-		16,
-		32,
-		0,
-		FLAGS_belt_ecb,
-		evpBeltECB_init,
-		evpBeltECB_cipher,
-		evpBeltECB_cleanup,
-		evpBeltECB_set_asn1_params,
-		evpBeltECB_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_ecb256, 16, 32, 0, FLAGS_belt_ecb,
+		evpBeltECB_init, evpBeltECB_cipher, evpBeltECB_cleanup,
+		evpBeltECB_set_asn1_params, evpBeltECB_get_asn1_params,
 		evpBeltECB_ctrl);
-	BELT_CIPHER_DESCR(belt_cbc128,
-		16,
-		16,
-		16,
-		FLAGS_belt_cbc,
-		evpBeltCBC_init,
-		evpBeltCBC_cipher,
-		evpBeltCBC_cleanup,
-		0,
-		0,
-		evpBeltCBC_ctrl);
-	BELT_CIPHER_DESCR(belt_cbc192,
-		16,
-		24,
-		16,
-		FLAGS_belt_cbc,
-		evpBeltCBC_init,
-		evpBeltCBC_cipher,
-		evpBeltCBC_cleanup,
-		0,
-		0,
-		evpBeltCBC_ctrl);
-	BELT_CIPHER_DESCR(belt_cbc256,
-		16,
-		32,
-		16,
-		FLAGS_belt_cbc,
-		evpBeltCBC_init,
-		evpBeltCBC_cipher,
-		evpBeltCBC_cleanup,
-		0,
-		0,
-		evpBeltCBC_ctrl);
-	BELT_CIPHER_DESCR(belt_cfb128,
-		1,
-		16,
-		16,
-		FLAGS_belt_cfb,
-		evpBeltCFB_init,
-		evpBeltCFB_cipher,
-		evpBeltCFB_cleanup,
-		0,
-		0,
-		evpBeltCFB_ctrl);
-	BELT_CIPHER_DESCR(belt_cfb192,
-		1,
-		24,
-		16,
-		FLAGS_belt_cfb,
-		evpBeltCFB_init,
-		evpBeltCFB_cipher,
-		evpBeltCFB_cleanup,
-		0,
-		0,
-		evpBeltCFB_ctrl);
-	BELT_CIPHER_DESCR(belt_cfb256,
-		1,
-		32,
-		16,
-		FLAGS_belt_cfb,
-		evpBeltCFB_init,
-		evpBeltCFB_cipher,
-		evpBeltCFB_cleanup,
-		0,
-		0,
-		evpBeltCFB_ctrl);
-	BELT_CIPHER_DESCR(belt_ctr128,
-		1,
-		16,
-		16,
-		FLAGS_belt_ctr,
-		evpBeltCTR_init,
-		evpBeltCTR_cipher,
-		evpBeltCTR_cleanup,
-		0,
-		0,
-		evpBeltCTR_ctrl);
-	BELT_CIPHER_DESCR(belt_ctr192,
-		1,
-		24,
-		16,
-		FLAGS_belt_ctr,
-		evpBeltCTR_init,
-		evpBeltCTR_cipher,
-		evpBeltCTR_cleanup,
-		0,
-		0,
-		evpBeltCTR_ctrl);
-	BELT_CIPHER_DESCR(belt_ctr256,
-		1,
-		32,
-		16,
-		FLAGS_belt_ctr,
-		evpBeltCTR_init,
-		evpBeltCTR_cipher,
-		evpBeltCTR_cleanup,
-		0,
-		0,
-		evpBeltCTR_ctrl);
-	BELT_CIPHER_DESCR(belt_dwp128,
-		8,
-		16,
-		16,
-		FLAGS_belt_dwp,
-		evpBeltDWP_init,
-		evpBeltDWP_cipher,
-		evpBeltDWP_cleanup,
-		0,
-		0,
-		evpBeltDWP_ctrl);
-	BELT_CIPHER_DESCR(belt_dwp192,
-		8,
-		24,
-		16,
-		FLAGS_belt_dwp,
-		evpBeltDWP_init,
-		evpBeltDWP_cipher,
-		evpBeltDWP_cleanup,
-		0,
-		0,
-		evpBeltDWP_ctrl);
-	BELT_CIPHER_DESCR(belt_dwp256,
-		8,
-		32,
-		16,
-		FLAGS_belt_dwp,
-		evpBeltDWP_init,
-		evpBeltDWP_cipher,
-		evpBeltDWP_cleanup,
-		0,
-		0,
-		evpBeltDWP_ctrl);
-	BELT_CIPHER_DESCR(belt_che128,
-		8,
-		16,
-		16,
-		FLAGS_belt_che,
-		evpBeltCHE_init,
-		evpBeltCHE_cipher,
-		evpBeltCHE_cleanup,
-		0,
-		0,
-		evpBeltCHE_ctrl);
-	BELT_CIPHER_DESCR(belt_che192,
-		8,
-		24,
-		16,
-		FLAGS_belt_che,
-		evpBeltCHE_init,
-		evpBeltCHE_cipher,
-		evpBeltCHE_cleanup,
-		0,
-		0,
-		evpBeltCHE_ctrl);
-	BELT_CIPHER_DESCR(belt_che256,
-		8,
-		32,
-		16,
-		FLAGS_belt_che,
-		evpBeltCHE_init,
-		evpBeltCHE_cipher,
-		evpBeltCHE_cleanup,
-		0,
-		0,
-		evpBeltCHE_ctrl);
-	BELT_CIPHER_DESCR(belt_kwp128,
-		16,
-		16,
-		0,
-		FLAGS_belt_kwp,
-		evpBeltKWP_init,
-		evpBeltKWP_cipher,
-		evpBeltKWP_cleanup,
-		evpBeltKWP_set_asn1_params,
-		evpBeltKWP_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_cbc128, 16, 16, 16, FLAGS_belt_cbc,
+		evpBeltCBC_init, evpBeltCBC_cipher, evpBeltCBC_cleanup, 
+		0, 0, evpBeltCBC_ctrl);
+	BELT_CIPHER_DESCR(belt_cbc192, 16, 24, 16, FLAGS_belt_cbc,
+		evpBeltCBC_init, evpBeltCBC_cipher, evpBeltCBC_cleanup, 
+		0, 0, evpBeltCBC_ctrl);
+	BELT_CIPHER_DESCR(belt_cbc256, 16, 32, 16, FLAGS_belt_cbc,
+		evpBeltCBC_init, evpBeltCBC_cipher, evpBeltCBC_cleanup, 
+		0, 0, evpBeltCBC_ctrl);
+	BELT_CIPHER_DESCR(belt_cfb128, 1, 16, 16, FLAGS_belt_cfb,
+		evpBeltCFB_init, evpBeltCFB_cipher, evpBeltCFB_cleanup, 
+		0, 0, evpBeltCFB_ctrl);
+	BELT_CIPHER_DESCR(belt_cfb192, 1, 24, 16, FLAGS_belt_cfb,
+		evpBeltCFB_init, evpBeltCFB_cipher, evpBeltCFB_cleanup, 
+		0, 0, evpBeltCFB_ctrl);
+	BELT_CIPHER_DESCR(belt_cfb256, 1, 32, 16, FLAGS_belt_cfb,
+		evpBeltCFB_init, evpBeltCFB_cipher, evpBeltCFB_cleanup, 
+		0, 0, evpBeltCFB_ctrl);
+	BELT_CIPHER_DESCR(belt_ctr128, 1, 16, 16, FLAGS_belt_ctr,
+		evpBeltCTR_init, evpBeltCTR_cipher, evpBeltCTR_cleanup, 
+		0, 0, evpBeltCTR_ctrl);
+	BELT_CIPHER_DESCR(belt_ctr192, 1, 24, 16, FLAGS_belt_ctr,
+		evpBeltCTR_init, evpBeltCTR_cipher, evpBeltCTR_cleanup, 
+		0, 0, evpBeltCTR_ctrl);
+	BELT_CIPHER_DESCR(belt_ctr256, 1, 32, 16, FLAGS_belt_ctr,
+		evpBeltCTR_init, evpBeltCTR_cipher, evpBeltCTR_cleanup, 
+		0, 0, evpBeltCTR_ctrl);
+	BELT_CIPHER_DESCR(belt_dwp128, 8, 16, 16, FLAGS_belt_dwp,
+		evpBeltDWP_init, evpBeltDWP_cipher, evpBeltDWP_cleanup, 
+		0, 0, evpBeltDWP_ctrl);
+	BELT_CIPHER_DESCR(belt_dwp192, 8, 24, 16, FLAGS_belt_dwp,
+		evpBeltDWP_init, evpBeltDWP_cipher, evpBeltDWP_cleanup, 
+		0, 0, evpBeltDWP_ctrl);
+	BELT_CIPHER_DESCR(belt_dwp256, 8, 32, 16, FLAGS_belt_dwp,
+		evpBeltDWP_init, evpBeltDWP_cipher, evpBeltDWP_cleanup, 
+		0, 0, evpBeltDWP_ctrl);
+BELT_CIPHER_DESCR(belt_che128, 8, 16, 16, FLAGS_belt_che,
+		evpBeltCHE_init, evpBeltCHE_cipher, evpBeltCHE_cleanup,
+		0, 0, evpBeltCHE_ctrl);
+	BELT_CIPHER_DESCR(belt_che192, 8, 24, 16, FLAGS_belt_che,
+		evpBeltCHE_init, evpBeltCHE_cipher, evpBeltCHE_cleanup,
+		0, 0, evpBeltCHE_ctrl);
+	BELT_CIPHER_DESCR(belt_che256, 8, 32, 16, FLAGS_belt_che,
+		evpBeltCHE_init, evpBeltCHE_cipher, evpBeltCHE_cleanup,
+		0, 0, evpBeltCHE_ctrl);
+	BELT_CIPHER_DESCR(belt_kwp128, 16, 16, 0, FLAGS_belt_kwp,
+		evpBeltKWP_init, evpBeltKWP_cipher, evpBeltKWP_cleanup, 
+		evpBeltKWP_set_asn1_params, evpBeltKWP_get_asn1_params, 
 		evpBeltKWP_ctrl);
-	BELT_CIPHER_DESCR(belt_kwp192,
-		16,
-		24,
-		0,
-		FLAGS_belt_kwp,
-		evpBeltKWP_init,
-		evpBeltKWP_cipher,
-		evpBeltKWP_cleanup,
-		evpBeltKWP_set_asn1_params,
-		evpBeltKWP_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_kwp192, 16, 24, 0, FLAGS_belt_kwp,
+		evpBeltKWP_init, evpBeltKWP_cipher, evpBeltKWP_cleanup, 
+		evpBeltKWP_set_asn1_params, evpBeltKWP_get_asn1_params, 
 		evpBeltKWP_ctrl);
-	BELT_CIPHER_DESCR(belt_kwp256,
-		16,
-		32,
-		0,
-		FLAGS_belt_kwp,
-		evpBeltKWP_init,
-		evpBeltKWP_cipher,
-		evpBeltKWP_cleanup,
-		evpBeltKWP_set_asn1_params,
-		evpBeltKWP_get_asn1_params,
+	BELT_CIPHER_DESCR(belt_kwp256, 16, 32, 0, FLAGS_belt_kwp,
+		evpBeltKWP_init, evpBeltKWP_cipher, evpBeltKWP_cleanup, 
+		evpBeltKWP_set_asn1_params, evpBeltKWP_get_asn1_params, 
 		evpBeltKWP_ctrl);
 	// задать перечислитель
 	prev_enum = ENGINE_get_ciphers(e);

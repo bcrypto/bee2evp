@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for belt-macXXX and belt-hmac (hmac-hbelt)
 \created 2013.07.01
-\version 2026.01.16
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -197,24 +197,24 @@ int evpBelt_ameth_bind(ENGINE* e)
 		"OpenSSL belt-mac128 method");
 	if (EVP_belt_mac128_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(
-		EVP_belt_mac128_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(EVP_belt_mac128_ameth, 0, 0, 0, 0, 
+		evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac128_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac192
 	EVP_belt_mac192_ameth = EVP_PKEY_asn1_new(NID_belt_mac192, 0, "belt-mac192",
 		"OpenSSL belt-mac192 method");
 	if (EVP_belt_mac192_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(
-		EVP_belt_mac192_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(EVP_belt_mac192_ameth, 0, 0, 0, 0, 
+		evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac192_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_mac256
 	EVP_belt_mac256_ameth = EVP_PKEY_asn1_new(NID_belt_mac256, 0, "belt-mac256",
 		"OpenSSL belt-mac256 method");
 	if (EVP_belt_mac256_ameth == 0)
 		return 0;
-	EVP_PKEY_asn1_set_public(
-		EVP_belt_mac256_ameth, 0, 0, 0, 0, evpBeltMAC_size, 0);
+	EVP_PKEY_asn1_set_public(EVP_belt_mac256_ameth, 0, 0, 0, 0, 
+		evpBeltMAC_size, 0);
 	EVP_PKEY_asn1_set_free(EVP_belt_mac256_ameth, evpBeltMAC_key_free);
 	// создать и настроить описатель belt_hmac
 	EVP_belt_hmac_ameth = EVP_PKEY_asn1_new(NID_belt_hmac, 0, "belt-hmac",

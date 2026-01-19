@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Internal definitions
 \created 2013.11.11
-\version 2024.11.04
+\version 2026.01.19
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -50,13 +50,8 @@ Belt
 *******************************************************************************
 */
 
-int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx,
-	const char* pass,
-	int passlen,
-	ASN1_TYPE* param,
-	const EVP_CIPHER* c,
-	const EVP_MD* md,
-	int en_de);
+int evpBeltPBKDF_keyivgen(EVP_CIPHER_CTX* ctx, const char* pass, int passlen,
+	ASN1_TYPE* param, const EVP_CIPHER* c, const EVP_MD* md, int en_de);
 
 /*
 *******************************************************************************
@@ -84,10 +79,10 @@ int evpBign_eq_params(const bign_params* params1, const bign_params* params2);
 int evpBign_params2nid(const bign_params* params);
 int evpBign_nid2params(bign_params* params, int nid);
 
-int evpBign_asn1_d2i_params(
-	bign_key* key, bool_t* specified, const octet** in, long len);
-int evpBign_asn1_i2d_params(
-	octet** out, bool_t* specified, const bign_key* key);
+int evpBign_asn1_d2i_params(bign_key* key, bool_t* specified, 
+	const octet** in, long len);
+int evpBign_asn1_i2d_params(octet** out, bool_t* specified, 
+	const bign_key* key);
 int evpBign_asn1_o2i_pubkey(bign_key* key, const octet** in, long len);
 int evpBign_asn1_i2o_pubkey(octet** out, const bign_key* key);
 
