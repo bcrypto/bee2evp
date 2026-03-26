@@ -1,3 +1,89 @@
+diff --git a/apps/apps.h b/apps/apps.h
+index 34c3fd86..eb68690e 100644
+--- a/apps/apps.h
++++ b/apps/apps.h
+@@ -52,6 +52,9 @@ extern BIO *bio_out;
+ extern BIO *bio_err;
+ extern const unsigned char tls13_aes128gcmsha256_id[];
+ extern const unsigned char tls13_aes256gcmsha384_id[];
++extern const unsigned char tls13_beltche256hbelt_id[];
++extern const unsigned char tls13_bashprg2561bash_id[];
++extern const unsigned char* default_cipher;
+ extern BIO_ADDR *ourpeer;
+ 
+ BIO_METHOD *apps_bf_prefix(void);
+diff --git a/apps/s_client.c b/apps/s_client.c
+index 83b3fc9c..b801bafe 100644
+--- a/apps/s_client.c
++++ b/apps/s_client.c
+@@ -177,6 +177,9 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
+ 
+ const unsigned char tls13_aes128gcmsha256_id[] = { 0x13, 0x01 };
+ const unsigned char tls13_aes256gcmsha384_id[] = { 0x13, 0x02 };
++const unsigned char tls13_beltche256hbelt_id[] = { 0xFF, 0x1D };
++const unsigned char tls13_bashprg2561bash_id[] = { 0xFF, 0x1E };
++const unsigned char* default_cipher = tls13_aes128gcmsha256_id;
+ 
+ static int psk_use_session_cb(SSL *s, const EVP_MD *md,
+                               const unsigned char **id, size_t *idlen,
+@@ -199,7 +202,7 @@ static int psk_use_session_cb(SSL *s, const EVP_MD *md,
+         }
+ 
+         /* We default to SHA-256 */
+-        cipher = SSL_CIPHER_find(s, tls13_aes128gcmsha256_id);
++        cipher = SSL_CIPHER_find(s, default_cipher);
+         if (cipher == NULL) {
+             BIO_printf(bio_err, "Error finding suitable ciphersuite\n");
+             OPENSSL_free(key);
+@@ -1145,6 +1148,17 @@ int s_client_main(int argc, char **argv)
+                 BIO_printf(bio_err, "%s: Memory allocation failure\n", prog);
+                 goto end;
+             }
++            if (!strcmp(opt_flag(), "-ciphersuites"))
++            {
++                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_bashprg2561bash_id;
++                }
++                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_beltche256hbelt_id;
++                }
++            }
+             break;
+         case OPT_V_CASES:
+             if (!opt_verify(o, vpm))
+diff --git a/apps/s_server.c b/apps/s_server.c
+index 0ba75999..f1d38c0c 100644
+--- a/apps/s_server.c
++++ b/apps/s_server.c
+@@ -208,7 +208,7 @@ static int psk_find_session_cb(SSL *ssl, const unsigned char *identity,
+     }
+ 
+     /* We default to SHA256 */
+-    cipher = SSL_CIPHER_find(ssl, tls13_aes128gcmsha256_id);
++    cipher = SSL_CIPHER_find(ssl, default_cipher);
+     if (cipher == NULL) {
+         BIO_printf(bio_err, "Error finding suitable ciphersuite\n");
+         OPENSSL_free(key);
+@@ -1276,6 +1276,17 @@ int s_server_main(int argc, char *argv[])
+                 BIO_printf(bio_err, "%s: Memory allocation failure\n", prog);
+                 goto end;
+             }
++            if (!strcmp(opt_flag(), "-ciphersuites"))
++            {
++                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_bashprg2561bash_id;
++                }
++                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_beltche256hbelt_id;
++                }
++            }
+             break;
+         case OPT_V_CASES:
+             if (!opt_verify(o, vpm))
 diff --git a/ssl/build.info b/ssl/build.info
 index bb2f1deb..e15d5cb0 100644
 --- a/ssl/build.info
@@ -781,7 +867,7 @@ index 48d46f8a..71f861c0 100644
  
  /* User level utility function to check a chain is suitable */
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e2c397b7..afa46acf 100644
+index e2c397b7..5f2bb5cc 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -443,6 +443,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -796,8 +882,8 @@ index e2c397b7..afa46acf 100644
 +    {0xFF1A, "BDHE-PSK-BIGN_WITH-BELT-DWP-HBELT"},
 +    {0xFF1B, "BDHT-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT"},
 +    {0xFF1C, "BDHT-PSK-BIGN_WITH-BELT-DWP-HBELT"},
-+ 	{0xFF1D, "BELT-CHE256-BELT-HASH"},
-+ 	{0xFF1E, "BASH-PRG_AE256-BASH256"},
++    {0xFF1D, "BELT-CHE256-BELT-HASH"},
++    {0xFF1E, "BASH-PRG_AE256-BASH256"},
  };
  
  /* Compression methods */
