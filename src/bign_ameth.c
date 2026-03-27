@@ -785,6 +785,8 @@ static int evpBign_pkey_asn1_ctrl(EVP_PKEY* pkey, int op, long arg1, void* arg2)
 		}
 
 	case ASN1_PKEY_CTRL_SET1_TLS_ENCPT:
+		if (evpBign_param_missing(pkey))
+			return 0;
 		key = (bign_key*)EVP_PKEY_get0(pkey);
 		ASSERT(memIsValid(key, sizeof(bign_key)));
 		if (arg1 != (int)key->params->l / 2)
@@ -1093,7 +1095,10 @@ static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 		return bign_ameth_count;
 	}
 	// обработать запрос
-	if (nid == NID_bign_pubkey)
+	if (nid == NID_bign_pubkey ||
+		nid == NID_bign_curve256v1 ||
+		nid == NID_bign_curve384v1 ||
+		nid == NID_bign_curve512v1)
 		*ameth = EVP_bign_ameth;
 	else if (prev_enum && prev_enum != evpBign_ameth_enum)
 		return prev_enum(e, ameth, nids, nid);
@@ -1114,6 +1119,12 @@ int evpBign_ameth_bind(ENGINE* e)
 	int tmp;
 	// зарегистрировать алгоритмы и получить nid'ы
 	if (BIGN_AMETH_REG(bign_pubkey, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve256v1, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve384v1, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve512v1, tmp) == NID_undef)
 		return 0;
 	// создать описатель методов ключа
 	EVP_bign_ameth = EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", 
