@@ -13,7 +13,7 @@ index 34c3fd86..eb68690e 100644
  
  BIO_METHOD *apps_bf_prefix(void);
 diff --git a/apps/s_client.c b/apps/s_client.c
-index 83b3fc9c..b801bafe 100644
+index 83b3fc9c..dd749ab2 100644
 --- a/apps/s_client.c
 +++ b/apps/s_client.c
 @@ -177,6 +177,9 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
@@ -54,7 +54,7 @@ index 83b3fc9c..b801bafe 100644
          case OPT_V_CASES:
              if (!opt_verify(o, vpm))
 diff --git a/apps/s_server.c b/apps/s_server.c
-index 0ba75999..f1d38c0c 100644
+index 0ba75999..47e1eae7 100644
 --- a/apps/s_server.c
 +++ b/apps/s_server.c
 @@ -208,7 +208,7 @@ static int psk_find_session_cb(SSL *ssl, const unsigned char *identity,
@@ -96,7 +96,7 @@ index bb2f1deb..e15d5cb0 100644
 +        statem/statem.c record/ssl3_record_tls13.c \
 +        btls.c
 diff --git a/ssl/record/ssl3_record_tls13.c b/ssl/record/ssl3_record_tls13.c
-index ab50e376..3aeebc28 100644
+index ab50e376..8a00edc7 100644
 --- a/ssl/record/ssl3_record_tls13.c
 +++ b/ssl/record/ssl3_record_tls13.c
 @@ -10,6 +10,8 @@
@@ -121,17 +121,8 @@ index ab50e376..3aeebc28 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS13_ENC,
                   ERR_R_INTERNAL_ERROR);
          return -1;
-@@ -171,7 +177,7 @@ int tls13_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
-      * any AAD.
-      */
-     if (((alg_enc & SSL_AESCCM) != 0
--                 && EVP_CipherUpdate(ctx, NULL, &lenu, NULL,
-+                && EVP_CipherUpdate(ctx, NULL, &lenu, NULL,
-                                      (unsigned int)rec->length) <= 0)
-             || EVP_CipherUpdate(ctx, NULL, &lenu, recheader,
-                                 sizeof(recheader)) <= 0
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..c8aa86df 100644
+index 4511b52c..3194613c 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
@@ -329,6 +320,32 @@ index 4511b52c..c8aa86df 100644
      if ((s->version == SSL3_VERSION) && (alg_k & SSL_kDHE)) {
  #ifndef OPENSSL_NO_DH
  # ifndef OPENSSL_NO_RSA
+@@ -4746,8 +4913,24 @@ EVP_PKEY *ssl_generate_param_group(uint16_t id)
+ 
+     if ((ginf->flags & TLS_CURVE_TYPE) == TLS_CURVE_CUSTOM) {
+         pkey = EVP_PKEY_new();
+-        if (pkey != NULL && EVP_PKEY_set_type(pkey, ginf->nid))
++        if (pkey != NULL && EVP_PKEY_set_type(pkey, ginf->nid)) {
++            if (ginf->nid == NID_bign_curve256v1 ||
++                ginf->nid == NID_bign_curve384v1 ||
++                ginf->nid == NID_bign_curve512v1
++            ) {
++                pctx = EVP_PKEY_CTX_new_id(ginf->nid, NULL);
++                if (pctx == NULL)
++                    goto err;
++                if (EVP_PKEY_paramgen_init(pctx) <= 0)
++                    goto err;
++                if (EVP_PKEY_paramgen(pctx, &pkey) <= 0) {
++                    EVP_PKEY_free(pkey);
++                    pkey = NULL;
++                }
++                EVP_PKEY_CTX_free(pctx);
++            }
+             return pkey;
++        }
+         EVP_PKEY_free(pkey);
+         return NULL;
+     }
 diff --git a/ssl/ssl_cert_table.h b/ssl/ssl_cert_table.h
 index 0c47241c..76c52283 100644
 --- a/ssl/ssl_cert_table.h
@@ -805,7 +822,7 @@ index cf45a40c..89b1ec42 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index 48d46f8a..71f861c0 100644
+index 48d46f8a..bf444c1d 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -20,6 +20,7 @@
@@ -826,7 +843,17 @@ index 48d46f8a..71f861c0 100644
  };
  
  static const unsigned char ecformats_default[] = {
-@@ -674,6 +678,9 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -184,6 +188,9 @@ static const uint16_t eccurves_default[] = {
+     30,                      /* X448 (30) */
+     25,                      /* secp521r1 (25) */
+     24,                      /* secp384r1 (24) */
++    31,                      /* bign-curve256v1 (31) */
++    32,                      /* bign-curve384v1 (32) */
++    33,                      /* bign-curve512v1 (33) */
+ };
+ 
+ static const uint16_t suiteb_curves[] = {
+@@ -674,6 +681,9 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
@@ -836,7 +863,7 @@ index 48d46f8a..71f861c0 100644
  };
  
  #ifndef OPENSSL_NO_EC
-@@ -769,8 +776,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -769,8 +779,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
@@ -858,7 +885,7 @@ index 48d46f8a..71f861c0 100644
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -2428,6 +2447,7 @@ void tls1_set_cert_validity(SSL *s)
+@@ -2428,6 +2450,7 @@ void tls1_set_cert_validity(SSL *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -867,7 +894,7 @@ index 48d46f8a..71f861c0 100644
  
  /* User level utility function to check a chain is suitable */
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e2c397b7..5f2bb5cc 100644
+index e2c397b7..bd1c519a 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -443,6 +443,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -887,7 +914,17 @@ index e2c397b7..5f2bb5cc 100644
  };
  
  /* Compression methods */
-@@ -572,6 +582,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -522,6 +532,9 @@ static const ssl_trace_tbl ssl_groups_tbl[] = {
+     {28, "brainpoolP512r1"},
+     {29, "ecdh_x25519"},
+     {30, "ecdh_x448"},
++    {31, "bign-curve256v1"},
++    {32, "bign-curve384v1"},
++    {33, "bign-curve512v1"},
+     {256, "ffdhe2048"},
+     {257, "ffdhe3072"},
+     {258, "ffdhe4096"},
+@@ -572,6 +585,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
      {TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, "gost2012_256"},
      {TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, "gost2012_512"},
      {TLSEXT_SIGALG_gostr34102001_gostr3411, "gost2001_gost94"},
