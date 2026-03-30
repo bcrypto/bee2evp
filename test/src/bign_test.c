@@ -330,8 +330,6 @@ bool_t checkPKCS8pem(EVP_PKEY* pkey)
 	bool_t ret = FALSE;
 	char* p;
 	const EVP_CIPHER* cipher = NULL;
-	int pbe_nid = -1;
-	int iter = 10000;
 	const char* p8pass = "password";
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER* ciph = NULL;

@@ -888,7 +888,7 @@ index e9aa078..90ca2ec 100644
          EVP_KEYMGMT_free(keymgmt);
 +    } else {
 +        ctx->group_list_len++;
-+        ginf = NULL;        
++        ginf = NULL;
      }
      ERR_pop_to_mark();
   err:
