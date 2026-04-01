@@ -94,7 +94,7 @@ def client_13_psk(tmpdir, suite, curve):
 	# test if server returns the reversed initial string
 	with open(output, 'r') as f:
 		echo2 = f.read()
-	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
+	process_result('{}[{}]PSK'.format(suite, curve), echo2[::-1])
 
 def btls_test():
 	tmpdir = tempfile.mkdtemp()

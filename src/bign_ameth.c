@@ -1037,11 +1037,11 @@ static int evpBign_get_privkey(const EVP_PKEY* pkey, octet* privkey,
 *******************************************************************************
 */
 
-static EVP_PKEY_ASN1_METHOD* EVP_bign_ameth;
+static EVP_PKEY_ASN1_METHOD* EVP_bign_ameth[] = {NULL, NULL, NULL, NULL};
 
 const EVP_PKEY_ASN1_METHOD* evpBign_ameth()
 {
-	return EVP_bign_ameth;
+	return EVP_bign_ameth[0];
 }
 
 /*
@@ -1095,11 +1095,14 @@ static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 		return bign_ameth_count;
 	}
 	// обработать запрос
-	if (nid == NID_bign_pubkey ||
-		nid == NID_bign_curve256v1 ||
-		nid == NID_bign_curve384v1 ||
-		nid == NID_bign_curve512v1)
-		*ameth = EVP_bign_ameth;
+	if (nid == NID_bign_pubkey)
+		*ameth = EVP_bign_ameth[0];
+	else if (nid == NID_bign_curve256v1)
+		*ameth = EVP_bign_ameth[1];
+	else if (nid == NID_bign_curve384v1)
+		*ameth = EVP_bign_ameth[2];
+	else if (nid == NID_bign_curve512v1)
+		*ameth = EVP_bign_ameth[3];
 	else if (prev_enum && prev_enum != evpBign_ameth_enum)
 		return prev_enum(e, ameth, nids, nid);
 	else
@@ -1113,25 +1116,9 @@ static int evpBign_ameth_enum(ENGINE* e, EVP_PKEY_ASN1_METHOD** ameth,
 Связывание
 *******************************************************************************
 */
-
-int evpBign_ameth_bind(ENGINE* e)
+void set_ameth_methods(EVP_PKEY_ASN1_METHOD* EVP_bign_ameth)
 {
-	int tmp;
-	// зарегистрировать алгоритмы и получить nid'ы
-	if (BIGN_AMETH_REG(bign_pubkey, tmp) == NID_undef)
-		return 0;
-	if (BIGN_AMETH_REG(bign_curve256v1, tmp) == NID_undef)
-		return 0;
-	if (BIGN_AMETH_REG(bign_curve384v1, tmp) == NID_undef)
-		return 0;
-	if (BIGN_AMETH_REG(bign_curve512v1, tmp) == NID_undef)
-		return 0;
-	// создать описатель методов ключа
-	EVP_bign_ameth = EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", 
-		"OpenSSL bign method");
-	if (!EVP_bign_ameth)
-		return 0;
-	// настроить описатель
+		// настроить описатель
 	EVP_PKEY_asn1_set_param(EVP_bign_ameth,
 		evpBign_param_decode,
 		evpBign_param_encode,
@@ -1162,11 +1149,36 @@ int evpBign_ameth_bind(ENGINE* e)
 	EVP_PKEY_asn1_set_get_pub_key(EVP_bign_ameth, evpBign_get_pubkey);
 	EVP_PKEY_asn1_set_set_priv_key(EVP_bign_ameth, evpBign_set_privkey);
 	EVP_PKEY_asn1_set_get_priv_key(EVP_bign_ameth, evpBign_get_privkey);
+}
+
+int evpBign_ameth_bind(ENGINE* e)
+{
+	int tmp;
+	// зарегистрировать алгоритмы и получить nid'ы
+	if (BIGN_AMETH_REG(bign_pubkey, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve256v1, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve384v1, tmp) == NID_undef)
+		return 0;
+	if (BIGN_AMETH_REG(bign_curve512v1, tmp) == NID_undef)
+		return 0;
+	// создать описатель методов ключа
+	for (int i = 0; i < 4; i++) {
+		EVP_bign_ameth[i] = EVP_PKEY_asn1_new(NID_bign_pubkey, 0, "bign", 
+			"OpenSSL bign method");
+		if (!EVP_bign_ameth[i])
+			return 0;
+		set_ameth_methods(EVP_bign_ameth[i]);
+	}
+	
 	// задать перечислитель
 	prev_enum = ENGINE_get_pkey_asn1_meths(e);
 	if (!ENGINE_set_pkey_asn1_meths(e, evpBign_ameth_enum))
 	{
-		EVP_PKEY_asn1_free(EVP_bign_ameth);
+		for (int i = 0; i < 4; i++) 
+			if (EVP_bign_ameth[i])
+				EVP_PKEY_asn1_free(EVP_bign_ameth[i]);
 		return 0;
 	}
 	return 1;
