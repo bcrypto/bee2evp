@@ -47,6 +47,17 @@ def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
 	global g_server
 	g_server = openssl2(cmd)
 
+def server_13_psk(tmpdir, suite, curve):
+	# prepare cmd
+	cmd = f"s_server -engine bee2evp -tls1_3 -ciphersuites {suite} " 
+	cmd += f" -psk 123456 -nocert -allow_no_dhe_kex -curves {curve} -rev "
+	# prepare output
+	output = os.path.join(tmpdir, suite + curve + '.srv')
+	cmd = cmd + ' >{}'.format(output)
+	# start server
+	global g_server
+	g_server = openssl2(cmd)
+
 def btls_client(tmpdir, suite, is_tls13, curve, cert, psk):
 	assert cert or psk
 	# prepare cmd
@@ -69,6 +80,21 @@ def btls_client(tmpdir, suite, is_tls13, curve, cert, psk):
 	with open(output, 'r') as f:
 		echo2 = f.read()
 	process_result('{}[{}]'.format(suite, curve), echo2[::-1])
+
+def client_13_psk(tmpdir, suite, curve):
+	# prepare cmd
+	cmd = f"s_client -engine bee2evp -tls1_3 -ciphersuites {suite}"
+	cmd += f" -psk 123456 -allow_no_dhe_kex -curves {curve}"
+    # prepare output
+	output = os.path.join(tmpdir, suite + curve + '.cli')
+	cmd = cmd + ' >{}'.format(output)
+	# run cmd
+	echo = 'test_{}={}'.format(curve, suite)
+	openssl(cmd, prefix='(echo ' + echo + '; sleep 1) |')
+	# test if server returns the reversed initial string
+	with open(output, 'r') as f:
+		echo2 = f.read()
+	process_result('{}[{}]PSK'.format(suite, curve), echo2[::-1])
 
 def btls_test():
 	tmpdir = tempfile.mkdtemp()
@@ -126,5 +152,25 @@ def btls_test():
 			client.run()
 			# kill server
 			os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+
+	for suite in tls13_ciphersuites:
+		n = len(curves_shortlist)
+		for i, curve in enumerate(curves_shortlist):
+			for psk_dhe in range(2):
+				# prepare args
+				s_args = (tmpdir, suite, curve)
+				if psk_dhe:
+					c_args = s_args
+				else:	#psk
+					c_args = (tmpdir, suite, curves_shortlist[(i+1) % n])
+				# run server
+				server = threading.Thread(target=server_13_psk, args=s_args)
+				server.run()
+				# run client
+				time.sleep(1)
+				client = threading.Thread(target=client_13_psk, args=c_args)
+				client.run()
+				# kill server
+				os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
 
 	shutil.rmtree(tmpdir)

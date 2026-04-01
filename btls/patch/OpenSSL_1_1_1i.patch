@@ -1,3 +1,89 @@
+diff --git a/apps/apps.h b/apps/apps.h
+index 34c3fd86..eb68690e 100644
+--- a/apps/apps.h
++++ b/apps/apps.h
+@@ -52,6 +52,9 @@ extern BIO *bio_out;
+ extern BIO *bio_err;
+ extern const unsigned char tls13_aes128gcmsha256_id[];
+ extern const unsigned char tls13_aes256gcmsha384_id[];
++extern const unsigned char tls13_beltche256hbelt_id[];
++extern const unsigned char tls13_bashprg2561bash_id[];
++extern const unsigned char* default_cipher;
+ extern BIO_ADDR *ourpeer;
+ 
+ BIO_METHOD *apps_bf_prefix(void);
+diff --git a/apps/s_client.c b/apps/s_client.c
+index 83b3fc9c..dd749ab2 100644
+--- a/apps/s_client.c
++++ b/apps/s_client.c
+@@ -177,6 +177,9 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
+ 
+ const unsigned char tls13_aes128gcmsha256_id[] = { 0x13, 0x01 };
+ const unsigned char tls13_aes256gcmsha384_id[] = { 0x13, 0x02 };
++const unsigned char tls13_beltche256hbelt_id[] = { 0xFF, 0x1D };
++const unsigned char tls13_bashprg2561bash_id[] = { 0xFF, 0x1E };
++const unsigned char* default_cipher = tls13_aes128gcmsha256_id;
+ 
+ static int psk_use_session_cb(SSL *s, const EVP_MD *md,
+                               const unsigned char **id, size_t *idlen,
+@@ -199,7 +202,7 @@ static int psk_use_session_cb(SSL *s, const EVP_MD *md,
+         }
+ 
+         /* We default to SHA-256 */
+-        cipher = SSL_CIPHER_find(s, tls13_aes128gcmsha256_id);
++        cipher = SSL_CIPHER_find(s, default_cipher);
+         if (cipher == NULL) {
+             BIO_printf(bio_err, "Error finding suitable ciphersuite\n");
+             OPENSSL_free(key);
+@@ -1145,6 +1148,17 @@ int s_client_main(int argc, char **argv)
+                 BIO_printf(bio_err, "%s: Memory allocation failure\n", prog);
+                 goto end;
+             }
++            if (!strcmp(opt_flag(), "-ciphersuites"))
++            {
++                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_bashprg2561bash_id;
++                }
++                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_beltche256hbelt_id;
++                }
++            }
+             break;
+         case OPT_V_CASES:
+             if (!opt_verify(o, vpm))
+diff --git a/apps/s_server.c b/apps/s_server.c
+index 0ba75999..47e1eae7 100644
+--- a/apps/s_server.c
++++ b/apps/s_server.c
+@@ -208,7 +208,7 @@ static int psk_find_session_cb(SSL *ssl, const unsigned char *identity,
+     }
+ 
+     /* We default to SHA256 */
+-    cipher = SSL_CIPHER_find(ssl, tls13_aes128gcmsha256_id);
++    cipher = SSL_CIPHER_find(ssl, default_cipher);
+     if (cipher == NULL) {
+         BIO_printf(bio_err, "Error finding suitable ciphersuite\n");
+         OPENSSL_free(key);
+@@ -1276,6 +1276,17 @@ int s_server_main(int argc, char *argv[])
+                 BIO_printf(bio_err, "%s: Memory allocation failure\n", prog);
+                 goto end;
+             }
++            if (!strcmp(opt_flag(), "-ciphersuites"))
++            {
++                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_bashprg2561bash_id;
++                }
++                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                    printf("Set default cipher %s\n", opt_arg());
++                    default_cipher = tls13_beltche256hbelt_id;
++                }
++            }
+             break;
+         case OPT_V_CASES:
+             if (!opt_verify(o, vpm))
 diff --git a/ssl/build.info b/ssl/build.info
 index bb2f1deb..e15d5cb0 100644
 --- a/ssl/build.info
@@ -10,7 +96,7 @@ index bb2f1deb..e15d5cb0 100644
 +        statem/statem.c record/ssl3_record_tls13.c \
 +        btls.c
 diff --git a/ssl/record/ssl3_record_tls13.c b/ssl/record/ssl3_record_tls13.c
-index ab50e376..3aeebc28 100644
+index ab50e376..8a00edc7 100644
 --- a/ssl/record/ssl3_record_tls13.c
 +++ b/ssl/record/ssl3_record_tls13.c
 @@ -10,6 +10,8 @@
@@ -35,17 +121,8 @@ index ab50e376..3aeebc28 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS13_ENC,
                   ERR_R_INTERNAL_ERROR);
          return -1;
-@@ -171,7 +177,7 @@ int tls13_enc(SSL *s, SSL3_RECORD *recs, size_t n_recs, int sending)
-      * any AAD.
-      */
-     if (((alg_enc & SSL_AESCCM) != 0
--                 && EVP_CipherUpdate(ctx, NULL, &lenu, NULL,
-+                && EVP_CipherUpdate(ctx, NULL, &lenu, NULL,
-                                      (unsigned int)rec->length) <= 0)
-             || EVP_CipherUpdate(ctx, NULL, &lenu, recheader,
-                                 sizeof(recheader)) <= 0
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..c8aa86df 100644
+index 4511b52c..3194613c 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
@@ -243,6 +320,32 @@ index 4511b52c..c8aa86df 100644
      if ((s->version == SSL3_VERSION) && (alg_k & SSL_kDHE)) {
  #ifndef OPENSSL_NO_DH
  # ifndef OPENSSL_NO_RSA
+@@ -4746,8 +4913,24 @@ EVP_PKEY *ssl_generate_param_group(uint16_t id)
+ 
+     if ((ginf->flags & TLS_CURVE_TYPE) == TLS_CURVE_CUSTOM) {
+         pkey = EVP_PKEY_new();
+-        if (pkey != NULL && EVP_PKEY_set_type(pkey, ginf->nid))
++        if (pkey != NULL && EVP_PKEY_set_type(pkey, ginf->nid)) {
++            if (ginf->nid == NID_bign_curve256v1 ||
++                ginf->nid == NID_bign_curve384v1 ||
++                ginf->nid == NID_bign_curve512v1
++            ) {
++                pctx = EVP_PKEY_CTX_new_id(ginf->nid, NULL);
++                if (pctx == NULL)
++                    goto err;
++                if (EVP_PKEY_paramgen_init(pctx) <= 0)
++                    goto err;
++                if (EVP_PKEY_paramgen(pctx, &pkey) <= 0) {
++                    EVP_PKEY_free(pkey);
++                    pkey = NULL;
++                }
++                EVP_PKEY_CTX_free(pctx);
++            }
+             return pkey;
++        }
+         EVP_PKEY_free(pkey);
+         return NULL;
+     }
 diff --git a/ssl/ssl_cert_table.h b/ssl/ssl_cert_table.h
 index 0c47241c..76c52283 100644
 --- a/ssl/ssl_cert_table.h
@@ -719,7 +822,7 @@ index cf45a40c..89b1ec42 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index 48d46f8a..71f861c0 100644
+index 48d46f8a..bf444c1d 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -20,6 +20,7 @@
@@ -740,7 +843,17 @@ index 48d46f8a..71f861c0 100644
  };
  
  static const unsigned char ecformats_default[] = {
-@@ -674,6 +678,9 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -184,6 +188,9 @@ static const uint16_t eccurves_default[] = {
+     30,                      /* X448 (30) */
+     25,                      /* secp521r1 (25) */
+     24,                      /* secp384r1 (24) */
++    31,                      /* bign-curve256v1 (31) */
++    32,                      /* bign-curve384v1 (32) */
++    33,                      /* bign-curve512v1 (33) */
+ };
+ 
+ static const uint16_t suiteb_curves[] = {
+@@ -674,6 +681,9 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
@@ -750,7 +863,7 @@ index 48d46f8a..71f861c0 100644
  };
  
  #ifndef OPENSSL_NO_EC
-@@ -769,8 +776,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -769,8 +779,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
@@ -772,7 +885,7 @@ index 48d46f8a..71f861c0 100644
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -2428,6 +2447,7 @@ void tls1_set_cert_validity(SSL *s)
+@@ -2428,6 +2450,7 @@ void tls1_set_cert_validity(SSL *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -781,7 +894,7 @@ index 48d46f8a..71f861c0 100644
  
  /* User level utility function to check a chain is suitable */
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e2c397b7..afa46acf 100644
+index e2c397b7..bd1c519a 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -443,6 +443,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -796,12 +909,22 @@ index e2c397b7..afa46acf 100644
 +    {0xFF1A, "BDHE-PSK-BIGN_WITH-BELT-DWP-HBELT"},
 +    {0xFF1B, "BDHT-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT"},
 +    {0xFF1C, "BDHT-PSK-BIGN_WITH-BELT-DWP-HBELT"},
-+ 	{0xFF1D, "BELT-CHE256-BELT-HASH"},
-+ 	{0xFF1E, "BASH-PRG_AE256-BASH256"},
++    {0xFF1D, "BELT-CHE256-BELT-HASH"},
++    {0xFF1E, "BASH-PRG_AE256-BASH256"},
  };
  
  /* Compression methods */
-@@ -572,6 +582,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -522,6 +532,9 @@ static const ssl_trace_tbl ssl_groups_tbl[] = {
+     {28, "brainpoolP512r1"},
+     {29, "ecdh_x25519"},
+     {30, "ecdh_x448"},
++    {31, "bign-curve256v1"},
++    {32, "bign-curve384v1"},
++    {33, "bign-curve512v1"},
+     {256, "ffdhe2048"},
+     {257, "ffdhe3072"},
+     {258, "ffdhe4096"},
+@@ -572,6 +585,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
      {TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, "gost2012_256"},
      {TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, "gost2012_512"},
      {TLSEXT_SIGALG_gostr34102001_gostr3411, "gost2001_gost94"},
