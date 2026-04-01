@@ -1,10 +1,10 @@
 /*
 *******************************************************************************
-\file btls.c
+\file btls.h
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Definitions for BTLS ciphersuites
 \created 2021.01.12
-\version 2026.01.19
+\version 2026.04.01
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -60,9 +60,9 @@ extern "C" {
 
 #define SSL_PKEY_BIGN 9
 
-#define TLSEXT_SIGALG_bign_sign_128 0xe7e7
-#define TLSEXT_SIGALG_bign_sign_192 0xe8e8
-#define TLSEXT_SIGALG_bign_sign_256 0xe9e9
+#define TLSEXT_SIGALG_bign_sign_128 0xFE01
+#define TLSEXT_SIGALG_bign_sign_192 0xFE02
+#define TLSEXT_SIGALG_bign_sign_256 0xFE03
 
 /* ssl.h */
 #define SSL_TXT_kBDHE "kBDHE"
@@ -132,9 +132,9 @@ extern "C" {
 
 /* t1_lib.c */
 
-#define BIGN_CURVE256V1_ID 0x0200
-#define BIGN_CURVE384V1_ID 0x0201
-#define BIGN_CURVE512V1_ID 0x0202
+#define BIGN_CURVE256V1_ID 0xFE01
+#define BIGN_CURVE384V1_ID 0xFE02
+#define BIGN_CURVE512V1_ID 0xFE03
 
 /*
 *******************************************************************************

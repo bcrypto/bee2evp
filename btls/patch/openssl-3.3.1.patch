@@ -174,9 +174,9 @@ index f723461..71ce26b 100644
      { OSSL_TLS_GROUP_ID_ffdhe4096, 128, TLS1_3_VERSION, 0, -1, -1 },
      { OSSL_TLS_GROUP_ID_ffdhe6144, 128, TLS1_3_VERSION, 0, -1, -1 },
      { OSSL_TLS_GROUP_ID_ffdhe8192, 192, TLS1_3_VERSION, 0, -1, -1 },
-+	{ 0x0200, 128, TLS1_2_VERSION, TLS1_3_VERSION, DTLS1_VERSION, DTLS1_2_VERSION},
-+	{ 0x0201, 192, TLS1_2_VERSION, TLS1_3_VERSION, -1, -1},
-+	{ 0x0202, 256, TLS1_2_VERSION, TLS1_3_VERSION, -1, -1},
++	{ 0xFE01, 128, TLS1_2_VERSION, TLS1_3_VERSION, DTLS1_VERSION, DTLS1_2_VERSION},
++	{ 0xFE02, 192, TLS1_2_VERSION, TLS1_3_VERSION, -1, -1},
++	{ 0xFE03, 256, TLS1_2_VERSION, TLS1_3_VERSION, -1, -1},
  };
  
  #define TLS_GROUP_ENTRY(tlsname, realname, algorithm, idx) \
@@ -908,9 +908,9 @@ index e9aa078..d3db1e7 100644
      {NID_ffdhe6144, OSSL_TLS_GROUP_ID_ffdhe6144},
 -    {NID_ffdhe8192, OSSL_TLS_GROUP_ID_ffdhe8192}
 +    {NID_ffdhe8192, OSSL_TLS_GROUP_ID_ffdhe8192},
-+    {NID_bign_curve256v1, 0x0200}, /* BIGN_CURVE256V1_ID */
-+    {NID_bign_curve384v1, 0x0201}, /* BIGN_CURVE384V1_ID */
-+    {NID_bign_curve512v1, 0x0202}, /* BIGN_CURVE512V1_ID */
++    {NID_bign_curve256v1, 0xFE01}, /* BIGN_CURVE256V1_ID */
++    {NID_bign_curve384v1, 0xFE02}, /* BIGN_CURVE384V1_ID */
++    {NID_bign_curve512v1, 0xFE03}, /* BIGN_CURVE512V1_ID */
  };
  
  static const unsigned char ecformats_default[] = {
@@ -918,9 +918,9 @@ index e9aa078..d3db1e7 100644
      OSSL_TLS_GROUP_ID_ffdhe4096,     /* ffdhe4096 (0x102) */
      OSSL_TLS_GROUP_ID_ffdhe6144,     /* ffdhe6144 (0x103) */
      OSSL_TLS_GROUP_ID_ffdhe8192,     /* ffdhe8192 (0x104) */
-+	0x0200,
-+	0x0201,
-+	0x0202
++	0xFE01,
++	0xFE02,
++	0xFE03
  };
  
  static const uint16_t suiteb_curves[] = {
