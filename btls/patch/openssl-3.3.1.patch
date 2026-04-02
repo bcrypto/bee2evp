@@ -167,7 +167,7 @@ index 7e3d1a7..f4fca39 100644
  # if defined(SSL3_CT_NUMBER)
  #  if TLS_CT_NUMBER != SSL3_CT_NUMBER
 diff --git a/providers/common/capabilities.c b/providers/common/capabilities.c
-index f723461..71ce26b 100644
+index f723461..7622f15 100644
 --- a/providers/common/capabilities.c
 +++ b/providers/common/capabilities.c
 @@ -95,6 +95,9 @@ static const TLS_GROUP_CONSTANTS group_list[] = {
@@ -424,7 +424,7 @@ index e4dc806..78b1fe1 100644
 +    {NID_bign_pubkey, SSL_aBIGN} /* SSL_PKEY_BIGN */
  };
 diff --git a/ssl/ssl_ciph.c b/ssl/ssl_ciph.c
-index ddde21b..2316e1b 100644
+index ddde21b..d7bca10 100644
 --- a/ssl/ssl_ciph.c
 +++ b/ssl/ssl_ciph.c
 @@ -21,6 +21,7 @@
@@ -610,6 +610,15 @@ index ddde21b..2316e1b 100644
      default:
          mac = "unknown";
          break;
+@@ -2267,5 +2334,7 @@ const char *OSSL_default_ciphersuites(void)
+ {
+     return "TLS_AES_256_GCM_SHA384:"
+            "TLS_CHACHA20_POLY1305_SHA256:"
+-           "TLS_AES_128_GCM_SHA256";
++           "TLS_AES_128_GCM_SHA256:"
++           "BTLS_BELT_CHE256_BELT_HASH:"
++           "BTLS_BASH_PRG_AE256_BASH256";
+ }
 diff --git a/ssl/ssl_init.c b/ssl/ssl_init.c
 index 70e567b..c71ce9c 100644
 --- a/ssl/ssl_init.c
@@ -891,7 +900,7 @@ index 5ff479a..e3c05b7 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_UNKNOWN_CIPHER_TYPE);
          goto err;
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index e9aa078..d3db1e7 100644
+index e9aa078..157fb7e 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -26,6 +26,7 @@

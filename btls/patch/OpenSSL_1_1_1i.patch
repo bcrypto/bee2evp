@@ -84,6 +84,27 @@ index 0ba75999..47e1eae7 100644
              break;
          case OPT_V_CASES:
              if (!opt_verify(o, vpm))
+diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
+index fd0c5a99..9d6de29d 100644
+--- a/include/openssl/ssl.h
++++ b/include/openssl/ssl.h
+@@ -175,10 +175,14 @@ extern "C" {
+ # if !defined(OPENSSL_NO_CHACHA) && !defined(OPENSSL_NO_POLY1305)
+ #  define TLS_DEFAULT_CIPHERSUITES "TLS_AES_256_GCM_SHA384:" \
+                                    "TLS_CHACHA20_POLY1305_SHA256:" \
+-                                   "TLS_AES_128_GCM_SHA256"
++                                   "TLS_AES_128_GCM_SHA256:" \
++                                   "BTLS_BELT_CHE256_BELT_HASH:" \
++                                   "BTLS_BASH_PRG_AE256_BASH256"
+ # else
+ #  define TLS_DEFAULT_CIPHERSUITES "TLS_AES_256_GCM_SHA384:" \
+-                                   "TLS_AES_128_GCM_SHA256"
++                                   "TLS_AES_128_GCM_SHA256" \
++                                   "BTLS_BELT_CHE256_BELT_HASH:" \
++                                   "BTLS_BASH_PRG_AE256_BASH256"
+ #endif
+ /*
+  * As of OpenSSL 1.0.0, ssl_create_cipher_list() in ssl/ssl_ciph.c always
 diff --git a/ssl/build.info b/ssl/build.info
 index bb2f1deb..e15d5cb0 100644
 --- a/ssl/build.info
@@ -122,7 +143,7 @@ index ab50e376..8a00edc7 100644
                   ERR_R_INTERNAL_ERROR);
          return -1;
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..3194613c 100644
+index 4511b52c..7d2a2f5f 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
