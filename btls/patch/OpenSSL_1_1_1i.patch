@@ -13,7 +13,7 @@ index 34c3fd86..eb68690e 100644
  
  BIO_METHOD *apps_bf_prefix(void);
 diff --git a/apps/s_client.c b/apps/s_client.c
-index 83b3fc9c..dd749ab2 100644
+index 83b3fc9c..895b4c86 100644
 --- a/apps/s_client.c
 +++ b/apps/s_client.c
 @@ -177,6 +177,9 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
@@ -41,11 +41,11 @@ index 83b3fc9c..dd749ab2 100644
              }
 +            if (!strcmp(opt_flag(), "-ciphersuites"))
 +            {
-+                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                if (!strcmp(opt_arg(), "TLS_BASH_PRG_AE2561_BASH256")) {
 +                    printf("Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_bashprg2561bash_id;
 +                }
-+                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                if (!strcmp(opt_arg(), "TLS_BELT_CHE256_BELT_HASH")) {
 +                    printf("Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_beltche256hbelt_id;
 +                }
@@ -54,7 +54,7 @@ index 83b3fc9c..dd749ab2 100644
          case OPT_V_CASES:
              if (!opt_verify(o, vpm))
 diff --git a/apps/s_server.c b/apps/s_server.c
-index 0ba75999..47e1eae7 100644
+index 0ba75999..31fe4838 100644
 --- a/apps/s_server.c
 +++ b/apps/s_server.c
 @@ -208,7 +208,7 @@ static int psk_find_session_cb(SSL *ssl, const unsigned char *identity,
@@ -72,11 +72,11 @@ index 0ba75999..47e1eae7 100644
              }
 +            if (!strcmp(opt_flag(), "-ciphersuites"))
 +            {
-+                if (!strcmp(opt_arg(), "BTLS_BASH_PRG_AE256_BASH256")) {
++                if (!strcmp(opt_arg(), "TLS_BASH_PRG_AE2561_BASH256")) {
 +                    printf("Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_bashprg2561bash_id;
 +                }
-+                if (!strcmp(opt_arg(), "BTLS_BELT_CHE256_BELT_HASH")) {
++                if (!strcmp(opt_arg(), "TLS_BELT_CHE256_BELT_HASH")) {
 +                    printf("Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_beltche256hbelt_id;
 +                }
@@ -85,7 +85,7 @@ index 0ba75999..47e1eae7 100644
          case OPT_V_CASES:
              if (!opt_verify(o, vpm))
 diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
-index fd0c5a99..9d6de29d 100644
+index fd0c5a99..cca990ff 100644
 --- a/include/openssl/ssl.h
 +++ b/include/openssl/ssl.h
 @@ -175,10 +175,14 @@ extern "C" {
@@ -94,14 +94,14 @@ index fd0c5a99..9d6de29d 100644
                                     "TLS_CHACHA20_POLY1305_SHA256:" \
 -                                   "TLS_AES_128_GCM_SHA256"
 +                                   "TLS_AES_128_GCM_SHA256:" \
-+                                   "BTLS_BELT_CHE256_BELT_HASH:" \
-+                                   "BTLS_BASH_PRG_AE256_BASH256"
++                                   "TLS_BELT_CHE256_BELT_HASH:" \
++                                   "TLS_BASH_PRG_AE2561_BASH256"
  # else
  #  define TLS_DEFAULT_CIPHERSUITES "TLS_AES_256_GCM_SHA384:" \
 -                                   "TLS_AES_128_GCM_SHA256"
 +                                   "TLS_AES_128_GCM_SHA256" \
-+                                   "BTLS_BELT_CHE256_BELT_HASH:" \
-+                                   "BTLS_BASH_PRG_AE256_BASH256"
++                                   "TLS_BELT_CHE256_BELT_HASH:" \
++                                   "TLS_BASH_PRG_AE2561_BASH256"
  #endif
  /*
   * As of OpenSSL 1.0.0, ssl_create_cipher_list() in ssl/ssl_ciph.c always
@@ -143,7 +143,7 @@ index ab50e376..8a00edc7 100644
                   ERR_R_INTERNAL_ERROR);
          return -1;
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 4511b52c..7d2a2f5f 100644
+index 4511b52c..83d8e8c1 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -17,6 +17,7 @@
@@ -161,8 +161,8 @@ index 4511b52c..7d2a2f5f 100644
 +    },
 +{
 +        1,
-+        BTLS1_RFC_BELT_CHE256_BELT_HASH,
-+        BTLS1_RFC_BELT_CHE256_BELT_HASH,
++        BTLS1_3_RFC_BELT_CHE256_BELT_HASH,
++        BTLS1_3_RFC_BELT_CHE256_BELT_HASH,
 +        BTLS1_3_CK_BELT_CHE256_BELT_HASH,
 +        SSL_kANY,
 +        SSL_aANY,
@@ -177,8 +177,8 @@ index 4511b52c..7d2a2f5f 100644
 +    },
 +{
 +        1,
-+        BTLS1_RFC_BASH_PRG_AE256_BASH256,
-+        BTLS1_RFC_BASH_PRG_AE256_BASH256,
++        BTLS1_3_RFC_BASH_PRG_AE2561_BASH256,
++        BTLS1_3_RFC_BASH_PRG_AE2561_BASH256,
 +        BTLS1_3_CK_BASH_PRG_AE256_BASH256,
 +        SSL_kANY,
 +        SSL_aANY,

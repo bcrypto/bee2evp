@@ -100,8 +100,8 @@ def btls_test():
 	tmpdir = tempfile.mkdtemp()
 
 	tls13_ciphersuites = [
-		'BTLS_BASH_PRG_AE256_BASH256',
-		'BTLS_BELT_CHE256_BELT_HASH']
+		'TLS_BASH_PRG_AE2561_BASH256',
+		'TLS_BELT_CHE256_BELT_HASH']
 
 	ciphersuites = [
 		'DHE-BIGN-WITH-BELT-DWP-HBELT',
@@ -112,8 +112,8 @@ def btls_test():
 		'DHE-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT',
 		'DHT-PSK-BIGN-WITH-BELT-DWP-HBELT',
 		'DHT-PSK-BIGN-WITH-BELT-CTR-MAC-HBELT',
-		'BTLS_BASH_PRG_AE256_BASH256',
-		'BTLS_BELT_CHE256_BELT_HASH']
+		'TLS_BASH_PRG_AE2561_BASH256',
+		'TLS_BELT_CHE256_BELT_HASH']
 
 	curves_shortlist = [
 		'bign-curve256v1',
