@@ -167,7 +167,7 @@ index 931ee79..1694ca3 100644
  #if defined(SSL3_CT_NUMBER)
  #if TLS_CT_NUMBER != SSL3_CT_NUMBER
 diff --git a/providers/common/capabilities.c b/providers/common/capabilities.c
-index eb96627..e4d306c 100644
+index eb96627..ed046f3 100644
 --- a/providers/common/capabilities.c
 +++ b/providers/common/capabilities.c
 @@ -91,6 +91,9 @@ static const TLS_GROUP_CONSTANTS group_list[] = {
@@ -204,7 +204,7 @@ index 7f4ecaa..5516070 100644
  # For shared builds we need to include the libcrypto packet.c and quic_vlint.c
  # in libssl as well.
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
-index 0e1445b..2de6dbe 100644
+index 0e1445b..c25e047 100644
 --- a/ssl/s3_lib.c
 +++ b/ssl/s3_lib.c
 @@ -22,6 +22,7 @@
@@ -215,12 +215,10 @@ index 0e1445b..2de6dbe 100644
  
  #define TLS13_NUM_CIPHERS OSSL_NELEM(tls13_ciphers)
  #define SSL3_NUM_CIPHERS OSSL_NELEM(ssl3_ciphers)
-@@ -163,7 +164,38 @@ static SSL_CIPHER tls13_ciphers[] = {
-         SSL_HANDSHAKE_MAC_SHA384,
+@@ -164,6 +165,37 @@ static SSL_CIPHER tls13_ciphers[] = {
          0,
          384,
--    },
-+    },
+     },
 +    {
 +        1,
 +        BTLS1_3_RFC_BELT_CHE256_BELT_HASH,
@@ -424,7 +422,7 @@ index f7fc984..3c4699b 100644
 +    { NID_bign_pubkey, SSL_aBIGN } /* SSL_PKEY_BIGN */
  };
 diff --git a/ssl/ssl_ciph.c b/ssl/ssl_ciph.c
-index 7dccec6..64e45fe 100644
+index 7dccec6..dce04a2 100644
 --- a/ssl/ssl_ciph.c
 +++ b/ssl/ssl_ciph.c
 @@ -23,6 +23,7 @@
@@ -663,7 +661,7 @@ index ac77faa..2a3ce21 100644
      mask_k |= SSL_kPSK;
      mask_a |= SSL_aPSK;
 diff --git a/ssl/ssl_local.h b/ssl/ssl_local.h
-index 8fc8b64..e06c692 100644
+index 8fc8b64..1c30a2b 100644
 --- a/ssl/ssl_local.h
 +++ b/ssl/ssl_local.h
 @@ -41,6 +41,7 @@
@@ -674,17 +672,15 @@ index 8fc8b64..e06c692 100644
  
  #ifdef OPENSSL_BUILD_SHLIBSSL
  #undef OPENSSL_EXTERN
-@@ -98,8 +99,8 @@
+@@ -98,7 +99,7 @@
  
  /* all PSK */
  
 -#define SSL_PSK (SSL_kPSK | SSL_kRSAPSK | SSL_kECDHEPSK | SSL_kDHEPSK)
--
 +#define SSL_PSK (SSL_kPSK | SSL_kRSAPSK | SSL_kECDHEPSK | SSL_kDHEPSK | SSL_kBDHEPSK | SSL_kBDHTPSK)
-+
+ 
  /* Any appropriate key exchange algorithm (for TLS 1.3 ciphersuites) */
  #define SSL_kANY 0x00000000U
- 
 @@ -124,7 +125,7 @@
  #define SSL_aANY 0x00000000U
  /* All bits requiring a certificate */
@@ -722,7 +718,7 @@ index 8fc8b64..e06c692 100644
  /*-
   * SSL_kRSA <- RSA_ENC
 diff --git a/ssl/statem/extensions_clnt.c b/ssl/statem/extensions_clnt.c
-index 305ca4a..1a0e6e4 100644
+index 305ca4a..dcd346f 100644
 --- a/ssl/statem/extensions_clnt.c
 +++ b/ssl/statem/extensions_clnt.c
 @@ -156,7 +156,7 @@ static int use_ecc(SSL_CONNECTION *s, int min_version, int max_version)
@@ -730,7 +726,7 @@ index 305ca4a..1a0e6e4 100644
          alg_k = c->algorithm_mkey;
          alg_a = c->algorithm_auth;
 -        if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK))
-+        if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHEPSK))
++        if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHE | SSL_kBDHEPSK))
              || (alg_a & SSL_aECDSA)
              || c->min_tls >= TLS1_3_VERSION) {
              ret = 1;
@@ -749,7 +745,7 @@ index cdb914d..93078ed 100644
          return EXT_RETURN_NOT_SENT;
      }
 diff --git a/ssl/statem/statem_clnt.c b/ssl/statem/statem_clnt.c
-index 0619fbd..4a80a08 100644
+index 0619fbd..e0ff94e 100644
 --- a/ssl/statem/statem_clnt.c
 +++ b/ssl/statem/statem_clnt.c
 @@ -78,7 +78,8 @@ static int key_exchange_expected(SSL_CONNECTION *s)
@@ -886,7 +882,7 @@ index 6079176..514390b 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_UNKNOWN_CIPHER_TYPE);
          goto err;
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index cd471a6..fcb777f 100644
+index cd471a6..d5f6f23 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -28,6 +28,7 @@
@@ -934,7 +930,7 @@ index cd471a6..fcb777f 100644
          || strcmp(ginfo->algorithm, "X25519") == 0
 -        || strcmp(ginfo->algorithm, "X448") == 0;
 +        || strcmp(ginfo->algorithm, "X448") == 0
-+        || strcmp(ginfo->algorithm, "bign") == 0;
++        || strncmp(ginfo->algorithm, "bign", 4) == 0;
  
      return ret;
  }
