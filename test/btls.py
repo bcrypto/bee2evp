@@ -68,7 +68,7 @@ def btls_client(tmpdir, suite, is_tls13, curve, cert, psk):
 
 	if psk:
 		cmd = cmd + ' -psk 123456'
-	if not cert and curve != 'NULL':
+	if (not cert or is_tls13) and curve != 'NULL':
 		cmd = cmd + ' -curves {}'.format(curve)
     # prepare output
 	output = os.path.join(tmpdir, suite + curve + '.cli')
