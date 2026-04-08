@@ -3,7 +3,7 @@
 # \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 # \brief A python wrapper over STB 34.101.65 (btls) ciphersuites
 # \created 2019.12.09
-# \version 2024.06.03
+# \version 2026.04.08
 # \copyright The Bee2evp authors
 # \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 # *****************************************************************************
@@ -31,10 +31,8 @@ def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
 		cmd = 's_server -engine bee2evp -tls1_2 -rev'.format(suite)
 
 	if cert:
-		privkey = os.path.join(tmpdir, suite + curve + '.sk')
-		cert = os.path.join(tmpdir, suite + curve + '.cert')
-		btls_gen_privkey(privkey, curve)
-		btls_issue_cert(cert, privkey)
+		privkey = os.path.join(tmpdir, curve + '.sk')
+		cert = os.path.join(tmpdir, curve + '.cert')
 		cmd = cmd + ' -key {} -cert {}'.format(privkey, cert)
 	else:
 		cmd = cmd + ' -nocert'
@@ -125,6 +123,12 @@ def btls_test():
 		'bign-curve256v1:bign-curve384v1:bign-curve512v1',
 		'bign-curve256v1:bign-curve512v1'
 	]
+
+	for curve in curves_shortlist:
+		privkey = os.path.join(tmpdir, curve + '.sk')
+		cert = os.path.join(tmpdir, curve + '.cert')
+		btls_gen_privkey(privkey, curve)
+		btls_issue_cert(cert, privkey)
 
 	for suite in ciphersuites:
 		# psk?
