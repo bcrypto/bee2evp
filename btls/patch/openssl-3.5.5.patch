@@ -882,7 +882,7 @@ index 6079176..514390b 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_UNKNOWN_CIPHER_TYPE);
          goto err;
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index cd471a6..d5f6f23 100644
+index cd471a6..ae0fb7c 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -28,6 +28,7 @@
@@ -934,17 +934,20 @@ index cd471a6..d5f6f23 100644
  
      return ret;
  }
-@@ -1955,6 +1963,9 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -1955,6 +1963,12 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
 +    TLSEXT_SIGALG_bign_sign_128,
 +    TLSEXT_SIGALG_bign_sign_192,
-+    TLSEXT_SIGALG_bign_sign_256
++    TLSEXT_SIGALG_bign_sign_256,
++    TLSEXT_SIGALG_bign_with_hbelt,
++    TLSEXT_SIGALG_bign_with_bash384,
++    TLSEXT_SIGALG_bign_with_bash512
  };
  
  static const uint16_t suiteb_sigalgs[] = {
-@@ -2140,6 +2151,24 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -2140,6 +2154,42 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
          NID_undef, NID_undef, 1, 0,
          TLS1_2_VERSION, TLS1_2_VERSION, DTLS1_2_VERSION, DTLS1_2_VERSION },
  #endif
@@ -966,10 +969,28 @@ index cd471a6..d5f6f23 100644
 +        NID_bign_pubkey, SSL_PKEY_BIGN,
 +        NID_bign_with_bash512, NID_bign_curve512v1, 1, 0,
 +        TLS1_2_VERSION, 0, DTLS1_2_VERSION, 0},
++    { "bign_with_hbelt",
++        NULL, TLSEXT_SIGALG_bign_with_hbelt,
++        NID_belt_hash, SSL_MD_HBELT_IDX,
++        NID_bign_pubkey, SSL_PKEY_BIGN,
++        NID_bign_with_hbelt, NID_bign_curve256v1, 1, 0,
++        TLS1_2_VERSION, 0, DTLS1_2_VERSION, 0},
++    { "bign_with_bash384",
++        NULL, TLSEXT_SIGALG_bign_with_bash384,
++        NID_bash384, SSL_MD_BASH384_IDX,
++        NID_bign_pubkey, SSL_PKEY_BIGN,
++        NID_bign_with_bash384, NID_bign_curve384v1, 1, 0,
++        TLS1_2_VERSION, 0, DTLS1_2_VERSION, 0},
++    { "bign_with_bash512",
++        NULL, TLSEXT_SIGALG_bign_with_bash512,
++        NID_bash512, SSL_MD_BASH512_IDX,
++        NID_bign_pubkey, SSL_PKEY_BIGN,
++        NID_bign_with_bash512, NID_bign_curve512v1, 1, 0,
++        TLS1_2_VERSION, 0, DTLS1_2_VERSION, 0},
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -4262,6 +4291,7 @@ void tls1_set_cert_validity(SSL_CONNECTION *s)
+@@ -4262,6 +4312,7 @@ void tls1_set_cert_validity(SSL_CONNECTION *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -977,7 +998,7 @@ index cd471a6..d5f6f23 100644
  }
  
  /* User level utility function to check a chain is suitable */
-@@ -4472,6 +4502,12 @@ static int check_cert_usable(SSL_CONNECTION *s, const SIGALG_LOOKUP *sig,
+@@ -4472,6 +4523,12 @@ static int check_cert_usable(SSL_CONNECTION *s, const SIGALG_LOOKUP *sig,
      const char *mdname = NULL;
      SSL_CTX *sctx = SSL_CONNECTION_GET_CTX(s);
  
@@ -991,7 +1012,7 @@ index cd471a6..d5f6f23 100644
       * If the given EVP_PKEY cannot support signing with this digest,
       * the answer is simply 'no'.
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e8075d0..cd52197 100644
+index e8075d0..6326aee 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -453,6 +453,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -1011,17 +1032,20 @@ index e8075d0..cd52197 100644
  };
  
  /* Compression methods */
-@@ -607,6 +617,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -607,6 +617,12 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
      { TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256, TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256_name },
      { TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384, TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384_name },
      { TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512, TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512_name },
 +    { TLSEXT_SIGALG_bign_sign_128, "bign_auth128" },
 +    { TLSEXT_SIGALG_bign_sign_192, "bign_auth192" },
 +    { TLSEXT_SIGALG_bign_sign_256, "bign_auth256" },
++    { TLSEXT_SIGALG_bign_with_hbelt, "bign_with_hbelt" },
++    { TLSEXT_SIGALG_bign_with_bash384, "bign_with_bash384" },
++    { TLSEXT_SIGALG_bign_with_bash512, "bign_with_bash512" },  
      /*
       * Well known groups that we happen to know about, but only come from
       * provider capability declarations (hence no macros for the
-@@ -614,7 +627,7 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -614,7 +630,7 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
       */
      { 0x0904, "mldsa44" },
      { 0x0905, "mldsa65" },
