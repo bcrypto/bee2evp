@@ -60,9 +60,13 @@ extern "C" {
 
 #define SSL_PKEY_BIGN 9
 
-#define TLSEXT_SIGALG_bign_sign_128 0xFE01
-#define TLSEXT_SIGALG_bign_sign_192 0xFE02
-#define TLSEXT_SIGALG_bign_sign_256 0xFE03
+#define TLSEXT_SIGALG_bign_sign_128 0xE7E7
+#define TLSEXT_SIGALG_bign_sign_192 0xE8E8
+#define TLSEXT_SIGALG_bign_sign_256 0xE9E9
+
+#define TLSEXT_SIGALG_bign_with_hbelt   0xFE01
+#define TLSEXT_SIGALG_bign_with_bash384 0xFE02
+#define TLSEXT_SIGALG_bign_with_bash512 0xFE03
 
 /* ssl.h */
 #define SSL_TXT_kBDHE "kBDHE"
