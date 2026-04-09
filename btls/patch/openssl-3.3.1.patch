@@ -900,7 +900,7 @@ index 5ff479a..e3c05b7 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_R_UNKNOWN_CIPHER_TYPE);
          goto err;
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index e9aa078..157fb7e 100644
+index e9aa078..bc09ce4 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -26,6 +26,7 @@
@@ -953,17 +953,20 @@ index e9aa078..157fb7e 100644
  
      return ret;
  }
-@@ -1372,6 +1383,9 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -1372,6 +1383,12 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
 +    TLSEXT_SIGALG_bign_sign_128,
 +    TLSEXT_SIGALG_bign_sign_192,
-+    TLSEXT_SIGALG_bign_sign_256
++    TLSEXT_SIGALG_bign_sign_256,
++    TLSEXT_SIGALG_bign_with_hbelt,
++    TLSEXT_SIGALG_bign_with_bash384,
++    TLSEXT_SIGALG_bign_with_bash512
  };
  
  
-@@ -1479,8 +1493,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -1479,8 +1496,32 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
@@ -982,10 +985,22 @@ index e9aa078..157fb7e 100644
 +     NID_bash512, SSL_MD_BASH512_IDX,
 +     NID_bign_pubkey, SSL_PKEY_BIGN,
 +     NID_bign_with_bash512, NID_bign_curve512v1, 1},
++    {"bign_with_hbelt", TLSEXT_SIGALG_bign_with_hbelt,
++     NID_belt_hash, SSL_MD_HBELT_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_hbelt, NID_bign_curve256v1, 1},
++    {"bign_with_bash384", TLSEXT_SIGALG_bign_with_bash384,
++     NID_bash384, SSL_MD_BASH384_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash384, NID_bign_curve384v1, 1},
++    {"bign_with_bash512", TLSEXT_SIGALG_bign_with_bash512,
++     NID_bash512, SSL_MD_BASH512_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash512, NID_bign_curve512v1, 1},
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -3398,6 +3424,7 @@ void tls1_set_cert_validity(SSL_CONNECTION *s)
+@@ -3398,6 +3439,7 @@ void tls1_set_cert_validity(SSL_CONNECTION *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -993,7 +1008,7 @@ index e9aa078..157fb7e 100644
  }
  
  /* User level utility function to check a chain is suitable */
-@@ -3608,10 +3635,18 @@ static int check_cert_usable(SSL_CONNECTION *s, const SIGALG_LOOKUP *sig,
+@@ -3608,10 +3650,18 @@ static int check_cert_usable(SSL_CONNECTION *s, const SIGALG_LOOKUP *sig,
      const char *mdname = NULL;
      SSL_CTX *sctx = SSL_CONNECTION_GET_CTX(s);
  
@@ -1013,7 +1028,7 @@ index e9aa078..157fb7e 100644
          mdname = OBJ_nid2sn(sig->hash);
      supported = EVP_PKEY_digestsign_supports_digest(pkey, sctx->libctx,
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index 29dce65..a034917 100644
+index 29dce65..e87a0f6 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -449,6 +449,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -1033,13 +1048,16 @@ index 29dce65..a034917 100644
  };
  
  /* Compression methods */
-@@ -597,6 +607,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -597,6 +607,12 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
      {TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256, "ecdsa_brainpoolP256r1_sha256"},
      {TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384, "ecdsa_brainpoolP384r1_sha384"},
      {TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512, "ecdsa_brainpoolP512r1_sha512"},
 +    {TLSEXT_SIGALG_bign_sign_128, "bign_auth128"},
 +    {TLSEXT_SIGALG_bign_sign_192, "bign_auth192"},
 +    {TLSEXT_SIGALG_bign_sign_256, "bign_auth256"},
++    {TLSEXT_SIGALG_bign_with_hbelt, "bign_with_hbelt"},
++    {TLSEXT_SIGALG_bign_with_bash384, "bign_with_bash384"},
++    {TLSEXT_SIGALG_bign_with_bash512, "bign_with_bash512"},
  };
  
  static const ssl_trace_tbl ssl_ctype_tbl[] = {
