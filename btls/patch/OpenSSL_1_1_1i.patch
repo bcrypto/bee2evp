@@ -843,7 +843,7 @@ index cf45a40c..89b1ec42 100644
          SSLfatal(s, SSL_AD_INTERNAL_ERROR,
                   SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
 diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
-index 48d46f8a..bf444c1d 100644
+index 48d46f8a..580e3847 100644
 --- a/ssl/t1_lib.c
 +++ b/ssl/t1_lib.c
 @@ -20,6 +20,7 @@
@@ -874,17 +874,20 @@ index 48d46f8a..bf444c1d 100644
  };
  
  static const uint16_t suiteb_curves[] = {
-@@ -674,6 +681,9 @@ static const uint16_t tls12_sigalgs[] = {
+@@ -674,6 +681,12 @@ static const uint16_t tls12_sigalgs[] = {
      TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
      TLSEXT_SIGALG_gostr34102001_gostr3411,
  #endif
 +    TLSEXT_SIGALG_bign_sign_128,
 +    TLSEXT_SIGALG_bign_sign_192,
-+    TLSEXT_SIGALG_bign_sign_256
++    TLSEXT_SIGALG_bign_sign_256,
++    TLSEXT_SIGALG_bign_with_hbelt,
++    TLSEXT_SIGALG_bign_with_bash384,
++    TLSEXT_SIGALG_bign_with_bash512
  };
  
  #ifndef OPENSSL_NO_EC
-@@ -769,8 +779,20 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+@@ -769,8 +782,32 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
      {NULL, TLSEXT_SIGALG_gostr34102001_gostr3411,
       NID_id_GostR3411_94, SSL_MD_GOST94_IDX,
       NID_id_GostR3410_2001, SSL_PKEY_GOST01,
@@ -903,10 +906,22 @@ index 48d46f8a..bf444c1d 100644
 +     NID_bash512, SSL_MD_BASH512_IDX,
 +     NID_bign_pubkey, SSL_PKEY_BIGN,
 +     NID_bign_with_bash512, NID_bign_curve512v1},
++    {NULL, TLSEXT_SIGALG_bign_with_hbelt,
++     NID_belt_hash, SSL_MD_HBELT_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_hbelt, NID_bign_curve256v1},
++    {NULL, TLSEXT_SIGALG_bign_with_bash384,
++     NID_bash384, SSL_MD_BASH384_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash384, NID_bign_curve384v1},
++    {NULL, TLSEXT_SIGALG_bign_with_bash512,
++     NID_bash512, SSL_MD_BASH512_IDX,
++     NID_bign_pubkey, SSL_PKEY_BIGN,
++     NID_bign_with_bash512, NID_bign_curve512v1},
  };
  /* Legacy sigalgs for TLS < 1.2 RSA TLS signatures */
  static const SIGALG_LOOKUP legacy_rsa_sigalg = {
-@@ -2428,6 +2450,7 @@ void tls1_set_cert_validity(SSL *s)
+@@ -2428,6 +2465,7 @@ void tls1_set_cert_validity(SSL *s)
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
      tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
@@ -915,7 +930,7 @@ index 48d46f8a..bf444c1d 100644
  
  /* User level utility function to check a chain is suitable */
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e2c397b7..bd1c519a 100644
+index e2c397b7..7da695ca 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -443,6 +443,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -945,13 +960,16 @@ index e2c397b7..bd1c519a 100644
      {256, "ffdhe2048"},
      {257, "ffdhe3072"},
      {258, "ffdhe4096"},
-@@ -572,6 +585,9 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
+@@ -572,6 +585,12 @@ static const ssl_trace_tbl ssl_sigalg_tbl[] = {
      {TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, "gost2012_256"},
      {TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, "gost2012_512"},
      {TLSEXT_SIGALG_gostr34102001_gostr3411, "gost2001_gost94"},
 +	{TLSEXT_SIGALG_bign_sign_128, "bign_auth128"},
 +	{TLSEXT_SIGALG_bign_sign_192, "bign_auth192"},
 +	{TLSEXT_SIGALG_bign_sign_256, "bign_auth256"},
++    {TLSEXT_SIGALG_bign_with_hbelt, "bign_with_hbelt"},
++    {TLSEXT_SIGALG_bign_with_bash384, "bign_with_bash384"},
++    {TLSEXT_SIGALG_bign_with_bash512, "bign_with_bash512"},
  };
  
  static const ssl_trace_tbl ssl_ctype_tbl[] = {
