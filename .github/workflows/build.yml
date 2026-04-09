@@ -23,6 +23,8 @@ jobs:
           - tag: "OpenSSL_1_1_1i"
 
           - tag: "openssl-3.3.1"
+
+          - tag: "openssl-3.5.5"
     env:
       BEE2_BRANCH: master
       local: ${{github.workspace}}/build/local

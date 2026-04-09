@@ -227,6 +227,22 @@ ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHEPSK).
 *******************************************************************************
 */
 
+static int btls_shared_group(SSL_CONNECTION *s)
+{
+    int i = 0;
+    int num = tls1_shared_group(s, -1);
+    while (i < num) 
+    {
+        int group_id = tls1_shared_group(s, i);
+        if (group_id == BIGN_CURVE256V1_ID ||
+            group_id == BIGN_CURVE384V1_ID ||
+            group_id == BIGN_CURVE512V1_ID)
+            return group_id;
+        i++;
+    }
+    return 0;
+}
+
 int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
 {
     int ret = 0;
@@ -249,12 +265,15 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
 	// загружен сертификат сервера?
     if (s->s3.tmp.pkey != NULL)
         goto err;
-	// клиент не высылал расширение supported_groups?
+	// сервер не сформировал расширение supported_groups?
 	if (!s->ext.supportedgroups)
-		// ...используем первую кривую bign
-		curve_id = BIGN_CURVE256V1_ID;
+		// ...используем первую кривую bign		
+        curve_id = BIGN_CURVE256V1_ID;
+	// клиент не высылал расширение supported_groups?
+    else if (!s->ext.peer_supportedgroups)
+        curve_id = BIGN_CURVE256V1_ID;
 	// ... определяем подходящую кривую по стандартной схеме
-	else if (!(curve_id = tls1_shared_group(s, -2)))
+	else if (!(curve_id = btls_shared_group(s)))
 		goto err;
 	// определить oid(curve)
     SSL_CTX *CTX=s->session_ctx;
