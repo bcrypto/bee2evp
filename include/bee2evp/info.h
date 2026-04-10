@@ -24,7 +24,7 @@
 #define BEE2EVP_NAME		  "Bee2evp"
 #define BEE2EVP_VERSION_MAJOR "1"
 #define BEE2EVP_VERSION_MINOR "2"
-#define BEE2EVP_VERSION_PATCH "2"
+#define BEE2EVP_VERSION_PATCH "3"
 
 #define BEE2EVP_VERSION                                                        \
 	BEE2EVP_VERSION_MAJOR "." BEE2EVP_VERSION_MINOR "." BEE2EVP_VERSION_PATCH
@@ -36,7 +36,7 @@
 *******************************************************************************
 \mainpage Криптографический плагин Bee2evp для OpenSSL
 
-\version 1.2.2
+\version 1.2.3
 
 \section toc Содержание
 
