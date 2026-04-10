@@ -1012,7 +1012,7 @@ index cd471a6..ae0fb7c 100644
       * If the given EVP_PKEY cannot support signing with this digest,
       * the answer is simply 'no'.
 diff --git a/ssl/t1_trce.c b/ssl/t1_trce.c
-index e8075d0..6326aee 100644
+index e8075d0..83f3107 100644
 --- a/ssl/t1_trce.c
 +++ b/ssl/t1_trce.c
 @@ -453,6 +453,16 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
@@ -1041,7 +1041,7 @@ index e8075d0..6326aee 100644
 +    { TLSEXT_SIGALG_bign_sign_256, "bign_auth256" },
 +    { TLSEXT_SIGALG_bign_with_hbelt, "bign_with_hbelt" },
 +    { TLSEXT_SIGALG_bign_with_bash384, "bign_with_bash384" },
-+    { TLSEXT_SIGALG_bign_with_bash512, "bign_with_bash512" },  
++    { TLSEXT_SIGALG_bign_with_bash512, "bign_with_bash512" },
      /*
       * Well known groups that we happen to know about, but only come from
       * provider capability declarations (hence no macros for the
