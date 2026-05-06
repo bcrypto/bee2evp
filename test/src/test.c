@@ -76,8 +76,8 @@ int testCiphers()
 	ret |= !code;
 	printf("belt-che: %s\n", (code = beltCHETest()) ? "OK" : "Err");
 	ret |= !code;
-	//printf("bash-prg: %s\n", (code = bashPrgTest()) ? "OK" : "Err");
-	//ret |= !code;
+	printf("bash-prg: %s\n", (code = bashPrgTest()) ? "OK" : "Err");
+	ret |= !code;
 	printf("belt-kwp: %s\n", (code = beltKWPTest()) ? "OK" : "Err");
 	ret |= !code;
 	return ret;

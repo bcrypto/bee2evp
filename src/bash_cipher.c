@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Bash encryption algorithms
 \created 2025.10.29
-\version 2026.01.19
+\version 2026.05.06
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -48,6 +48,9 @@ typedef struct bash_prg_ae_ctx
 	size_t key_len;
 	octet ann[60];
 	size_t ann_len;
+	octet block[32];	 /*< блок данных (ловим имитовставку) */
+	size_t block_len;	 /*< длина блока */
+	octet stage;
 	mem_align_t state[];
 } bash_prg_ae_ctx;
 
@@ -55,6 +58,7 @@ static int evpBashPrgAe_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	const octet* iv, int enc)
 {
 	bash_prg_ae_ctx* state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	state->stage = 0;
 
 	if (!key & !iv)
 	{
@@ -69,7 +73,7 @@ static int evpBashPrgAe_init(EVP_CIPHER_CTX* ctx, const octet* key,
 			state->d = 1;
 		}
 
-		return 0;
+		return 1;
 	}
 
 	if (key)
@@ -97,27 +101,85 @@ static int evpBashPrgAe_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 
 	if (!in)
 	{
-		bashPrgSqueeze(out, state->tag_len, state->state);
+		if (EVP_CIPHER_CTX_encrypting(ctx)) 
+		{
+			bashPrgSqueeze(out, state->tag_len, state->state);
+		}
+		else
+		{
+			// проверить имитовставку
+			if (state->block_len != state->tag_len)
+				return -1;
+			bashPrgSqueeze(state->tag, state->tag_len, state->state);
+			if (!memEq(state->block, state->tag, state->tag_len))
+				return -1;
+		}
 		return state->tag_len;
 	}
 
 	if (!out)
 	{
-		bashPrgAbsorb(in, inlen, state->state);
-		return 0;
+		if (state->stage > 1)
+			return -1;
+		if (state->stage == 0) 
+		{
+			bashPrgAbsorbStart(state->state);
+			state->stage = 1;
+		}
+		bashPrgAbsorbStep(in, inlen, state->state);
+		return 1;
 	}
 
 	if (EVP_CIPHER_CTX_encrypting(ctx))
 	{
+		if (state->stage < 2) 
+		{
+			bashPrgEncrStart(state->state);
+			state->stage = 2;
+		}
 		memMove(out, in, inlen);
-		bashPrgEncr(out, inlen, state->state);
+		bashPrgEncrStep(out, inlen, state->state);
 		outlen = inlen;
 	}
 	else
 	{
-		memMove(out, in, inlen);
-		bashPrgDecr(out, inlen, state->state);
-		outlen = inlen;
+		if (state->stage < 2) 
+		{
+			bashPrgDecrStart(state->state);
+			state->stage = 2;
+		}
+		// есть что обрабатывать?
+		if (state->block_len + inlen > state->tag_len)
+		{
+			// сколько всего обработать октетов
+			size_t l = state->block_len + inlen - state->tag_len;
+			// сколько обработать октетов block
+			size_t lb = MIN2(state->block_len, l);
+			// копировать октеты block
+			memCopy(out, state->block, lb);
+			// копировать октеты in
+			memMove(out + lb, in, l - lb);
+			// обработать октеты
+			bashPrgDecrStep(out, l, state->state);
+			outlen = l;
+			// обновить block
+			if (lb < state->block_len)
+			{
+				memMove(state->block, state->block + lb, state->block_len - lb);
+				memCopy(state->block + lb, in, 
+					state->tag_len - state->block_len + lb);
+			}
+			else
+				memCopy(state->block, in + inlen - state->tag_len, 
+					state->tag_len);
+			state->block_len = state->tag_len;
+		}
+		// обрабатывать нечего, просто расширить блок
+		else
+		{
+			memCopy(state->block + state->block_len, in, inlen);
+			state->block_len += inlen;
+		}
 	}
 	return (int)outlen;
 }
