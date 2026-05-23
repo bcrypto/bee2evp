@@ -76,6 +76,17 @@ static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
 *******************************************************************************
 */
 
+/*static err_t rngReadOpenssl(size_t* read, void* buf, size_t count, void* file)
+{
+	ASSERT(memIsValid(read, O_PER_S));
+	ASSERT(memIsValid(buf, count));
+	if ((size_t)(int)count == count && RAND_priv_bytes(buf, (int)count))
+		*read = count;
+	else
+		*read = 0;
+	return ERR_OK;
+}*/
+
 static int bee2evp_init(ENGINE* e)
 {
 	if (rngCreate(0, 0) != ERR_OK)

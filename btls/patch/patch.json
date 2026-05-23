@@ -1,0 +1,674 @@
+{
+    "ssl/ssl_ciph.c" :
+    {
+        "macros" :
+        {
+            "1" :
+            {
+                "macro_name" : "SSL_ENC_NUM_IDX",
+                "new_value" : "SSL_ENC_NUM_IDX\t24"
+            }
+        },
+        "static_arrays" :
+        {
+        "1" :
+            {
+            "array_name" : "ssl_cipher_table_cipher",
+            "values" : {
+                "1" : "{SSL_BELTCTR, NID_belt_ctrt},",
+                "2" : "{SSL_BELTDWP, NID_belt_dwpt},"}
+            },
+        "2" :
+            {
+            "array_name" : "ssl_cipher_table_mac",
+            "values" : {
+                "1" : ",{SSL_BELTMAC, NID_belt_mac256},",
+                "2" : "{SSL_HBELT, NID_belt_hash},",
+                "3" : "{SSL_BASH384, NID_bash384},",
+                "4" : "{SSL_BASH512, NID_bash512}"}
+            },
+        "3" :
+            {
+            "array_name" : "ssl_digest_methods",
+            "values" : {
+                "1" : ",NULL,NULL,",
+                "2" : "NULL,NULL"}
+            },
+        "4" :
+            {
+            "array_name" : "ssl_cipher_table_kx",
+            "values" : {
+                "1" : ",{SSL_kBDHE,     NID_kxbdhe},",
+                "2" : "{SSL_kBDHT,     NID_kxbdht},",
+                "3" : "{SSL_kBDHEPSK,  NID_kxbdhe_psk},",
+                "4" : "{SSL_kBDHTPSK,  NID_kxbdht_psk},"}
+            },
+        "5" :
+            {
+            "array_name" : "ssl_mac_pkey_id",
+            "values" : {
+                "1" : ",NID_undef,",
+                "2" : "NID_undef"}
+            },
+        "6" :
+            {
+            "array_name" : "cipher_aliases",
+            "values" : {
+                "1" : "{0, SSL_TXT_kBDHE, NULL, 0, SSL_kBDHE},",
+                "2" : "{0, SSL_TXT_kBDHT, NULL, 0, SSL_kBDHT},",
+                "3" : "{0, SSL_TXT_kBDHEPSK, NULL, 0, SSL_kBDHEPSK},",
+                "4" : "{0, SSL_TXT_kBDHTPSK, NULL, 0, SSL_kBDHTPSK},",
+                "5" : "{0, SSL_TXT_aBIGN, NULL, 0, SSL_aBIGN},",
+                "6" : "{0, SSL_TXT_BELTCTR, NULL, 0, 0, 0, SSL_BELTCTR},",
+                "7" : "{0, SSL_TXT_BELTDWP, NULL, 0, 0, 0, SSL_BELTDWP},",
+                "8" : "{0, SSL_TXT_BELTMAC, NULL, 0, 0, 0, 0, SSL_BELTMAC},"}
+            }
+        },
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "ssl_load_ciphers",
+                "to_end" : "1",
+                "code" :
+"
+    ssl_mac_pkey_id[SSL_MD_BELTMAC_IDX] = get_optional_pkey_id(\"belt-mac256\");
+    if (ssl_mac_pkey_id[SSL_MD_BELTMAC_IDX])
+        ssl_mac_secret_size[SSL_MD_BELTMAC_IDX] = 32;
+    if (!get_optional_pkey_id(\"BIGN\")){
+        disabled_auth_mask |= SSL_aBIGN;
+        disabled_mkey_mask |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHEPSK | SSL_kBDHTPSK;
+    }"
+            },
+            "2" :
+            {
+                "func_name" : "SSL_CIPHER_description",
+                "switch_name" : "alg_mkey",
+                "code" :
+"
+\tcase SSL_kBDHE:
+\t\tkx = \"BDHE\";
+\t\tbreak;
+\tcase SSL_kBDHT:
+\t\tkx = \"BDHT\";
+\t\tbreak;
+\tcase SSL_kBDHEPSK:
+\t\tkx = \"BDHEPSK\";
+\t\tbreak;
+\tcase SSL_kBDHTPSK:
+\t\tkx = \"BDHTPSK\";\n\t"
+            },
+            "3" :
+            {
+                "func_name" : "SSL_CIPHER_description",
+                "switch_name" : "alg_enc",
+                "code" :
+"
+\tcase SSL_BELTCTR:
+\t\tenc = \"BELTCTR\";
+\t\tbreak;
+\tcase SSL_BELTDWP:
+\t\tenc = \"BELTDWP\";
+\t\tbreak;\n
+\t"
+            },
+            "4" :
+            {
+                "func_name" : "SSL_CIPHER_description",
+                "switch_name" : "alg_auth",
+                "code" :
+"
+\tcase SSL_aBIGN:
+\t\tau = \"BIGN\";
+\t\tbreak;\n\t"
+            },
+            "5" :
+            {
+                "func_name" : "SSL_CIPHER_description",
+                "switch_name" : "alg_mac",
+                "code" :
+"
+\tcase SSL_BELTMAC:
+\t\tmac = \"BELTMAC\";
+\t\tbreak;\n\t
+\t"
+            }
+        }
+    },
+    "ssl/s3_lib.c" :
+    {
+        "static_arrays" :
+        {
+            "1" :
+            {
+            "array_name" : "ssl3_ciphers",
+            "values" : {
+                "1" :
+"
+    {
+     1,
+     BTLS1_TXT_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     BTLS1_RFC_DHE_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     0x0300ff15,
+     SSL_kBDHE,
+     SSL_aBIGN,
+     SSL_BELTCTR,
+     SSL_BELTMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "2" :
+"
+    {
+     1,
+     BTLS1_TXT_DHE_BIGN_WITH_BELT_DWP_HBELT,
+     BTLS1_RFC_DHE_BIGN_WITH_BELT_DWP_HBELT,
+     0x0300ff16,
+     SSL_kBDHE,
+     SSL_aBIGN,
+     SSL_BELTDWP,
+     SSL_AEAD,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "3" :
+"
+    {
+     1,
+     BTLS1_TXT_DHT_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     BTLS1_RFC_DHT_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     0x0300ff17,
+     SSL_kBDHT,
+     SSL_aBIGN,
+     SSL_BELTCTR,
+     SSL_BELTMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "4" :
+"
+    {
+     1,
+     BTLS1_TXT_DHT_BIGN_WITH_BELT_DWP_HBELT,
+     BTLS1_RFC_DHT_BIGN_WITH_BELT_DWP_HBELT,
+     0x0300ff18,
+     SSL_kBDHT,
+     SSL_aBIGN,
+     SSL_BELTDWP,
+     SSL_AEAD,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "5" :
+"
+    {
+     1,
+     BTLS1_TXT_DHE_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     BTLS1_RFC_DHE_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     0x0300ff19,
+     SSL_kBDHEPSK,
+     SSL_aPSK,
+     SSL_BELTCTR,
+     SSL_BELTMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "6" :
+"
+    {
+     1,
+     BTLS1_TXT_DHE_PSK_BIGN_WITH_BELT_DWP_HBELT,
+     BTLS1_RFC_DHE_PSK_BIGN_WITH_BELT_DWP_HBELT,
+     0x0300ff1a,
+     SSL_kBDHEPSK,
+     SSL_aPSK,
+     SSL_BELTDWP,
+     SSL_AEAD,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "7" :
+"
+    {
+     1,
+     BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_CTR_MAC_HBELT,
+     0x0300ff1b,
+     SSL_kBDHTPSK,
+     SSL_aBIGN,
+     SSL_BELTCTR,
+     SSL_BELTMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     },",
+                "8" :
+"
+    {
+     1,
+     BTLS1_TXT_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT,
+     BTLS1_RFC_DHT_PSK_BIGN_WITH_BELT_DWP_HBELT,
+     0x0300ff1c,
+     SSL_kBDHTPSK,
+     SSL_aBIGN,
+     SSL_BELTDWP,
+     SSL_AEAD,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_HBELT | TLS1_PRF_HBELT,
+     256,
+     256,
+     }"
+                }
+            }
+        }
+    },
+    "ssl/ssl_init.c" : 
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "OPENSSL_init_ssl",
+                "insert_before" :
+"
+    if (!OPENSSL_init_crypto(opts, settings))
+",
+                "code" :
+"
+    if (!btls_init())
+        return 0;
+"
+            }
+        }
+    },
+    "ssl/ssl_lib.c" :
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "ssl_set_masks",
+                "code" :
+"
+    if (ssl_has_cert(s, SSL_PKEY_BIGN)){
+        mask_k |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHTPSK;
+        mask_a |= SSL_aBIGN;
+    }
+",
+                "insert_before" :
+"
+    if (rsa_enc)
+        mask_k |= SSL_kRSA;
+"
+            },
+            "2" :
+            {
+                "func_name" : "ssl_set_mask",
+                "code" :
+                "    mask_k |= SSL_kBDHEPSK;\n",
+                "insert_before" :
+                "#ifndef OPENSSL_NO_PSK"
+            }
+        }
+    },
+    "ssl/ssl_local.h" :
+    {
+        "macros" :
+        {
+            "1" :
+            {
+                "macro_name" : "SSL_PSK",
+                "new_value" : "SSL_PSK\t(SSL_kPSK | SSL_kRSAPSK | SSL_kECDHEPSK | SSL_kDHEPSK | SSL_kBDHEPSK | SSL_kBDHTPSK)"
+            },
+            "2" :
+            {
+                "macro_name" : "SSL_aCERT",
+                "new_value" : "SSL_aCERT    (SSL_aRSA | SSL_aDSS | SSL_aECDSA | SSL_aGOST01 | SSL_aGOST12 | SSL_aBIGN)"
+            },
+            "3" :
+            {
+                "macro_name" : "SSL_MAX_DIGEST",
+                "new_value" : "SSL_MAX_DIGEST\t16"
+            },
+            "4" :
+            {
+                "macro_name" : "SSL_PKEY_NUM",
+                "new_value" : "SSL_PKEY_NUM\t10"
+            }
+        }
+    },
+    "ssl/statem/extensions_clnt.c" :
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "use_ecc",
+                "code" : "((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHEPSK))",
+                "change_if" : "((alg_k & (SSL_kECDHE | SSL_kECDHEPSK))" 
+            }
+        }
+    },
+    "ssl/statem/extensions_srvr.c" :
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "tls_construct_stoc_etm",
+                "code" : "(s->s3->tmp.new_cipher->algorithm_mac == SSL_AEAD
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_RC4
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT12
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_BELTCTR)",
+                "change_if" : "(s->s3->tmp.new_cipher->algorithm_mac == SSL_AEAD
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_RC4
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT
+        || s->s3->tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT12)"
+            }
+        }
+    },
+    "ssl/statem/statem_clnt.c" :
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "key_exchange_expected",
+                "code" : "(alg_k & (SSL_kDHE | SSL_kECDHE | SSL_kDHEPSK | SSL_kECDHEPSK 
+                                 | SSL_kSRP | SSL_kBDHE | SSL_kBDHEPSK | SSL_kBDHTPSK))",
+                "change_if" : 
+"(alg_k & (SSL_kDHE | SSL_kECDHE | SSL_kDHEPSK | SSL_kECDHEPSK
+                 | SSL_kSRP))"
+            },
+            "2" :
+            {
+                "func_name" : "tls_process_key_exchange",
+                "code" : "(alg_k & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK))",
+                "change_if" : "(alg_k & (SSL_kPSK | SSL_kRSAPSK))"
+            },
+            "3" :
+            {
+                "func_name" : "tls_process_key_exchange",
+                "code" : 
+"
+    } else if (alg_k & (SSL_kBDHE)) {
+        if (!btls_process_ske_bign_dhe(s, pkt, &pkey)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+    } else if (alg_k & SSL_kBDHEPSK) {
+        if (!btls_process_ske_psk_bign_dhe(s, pkt, &pkey)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+",
+                "insert_before" : 
+"
+    } else if (alg_k) {
+"
+            },
+            "4" :
+            {
+                "func_name" : "tls_construct_client_key_exchange",
+                "code" : 
+"
+    } else if (alg_k & (SSL_kBDHE | SSL_kBDHEPSK)) {
+        if (!tls_construct_cke_ecdhe(s, pkt))
+            goto err;
+    } else if (alg_k & (SSL_kBDHT | SSL_kBDHTPSK)) {
+        if (!btls_construct_cke_bign_dht(s, pkt))
+            goto err;
+",
+                "insert_before" : 
+"
+    } else if (!(alg_k & SSL_kPSK)) {
+"
+            },
+            "5" :
+            {
+                "func_name" : "ssl3_check_cert_and_algorithm",
+                "code" :
+"
+    if ((alg_k & SSL_kBDHE) && (s->s3->peer_tmp == NULL)) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,
+                 ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+",
+                "to_end" : "1"
+            }
+        }
+    },
+    "ssl/statem/statem_srvr.c" :
+    {
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "send_server_key_exchange",
+                "code" : 
+"(alg_k & (SSL_kDHE | SSL_kECDHE)
+        /*
+         * PSK: send ServerKeyExchange if PSK identity hint if
+         * provided
+         */
+#ifndef OPENSSL_NO_PSK
+        /* Only send SKE if we have identity hint for plain PSK or BDHTPSK */
+        || ((alg_k & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK))
+            && s->cert->psk_identity_hint)
+        /* For other PSK always send SKE */
+        || (alg_k & (SSL_PSK & (SSL_kDHEPSK | SSL_kECDHEPSK | SSL_kBDHEPSK)))
+#endif
+#ifndef OPENSSL_NO_SRP
+        /* SRP: send ServerKeyExchange */
+        || (alg_k & SSL_kSRP)
+#endif
+        || (alg_k & SSL_kBDHE)
+        ) {
+        return 1;
+    }",
+                "change_if" :
+"(alg_k & (SSL_kDHE | SSL_kECDHE)
+        /*
+         * PSK: send ServerKeyExchange if PSK identity hint if
+         * provided
+         */
+#ifndef OPENSSL_NO_PSK
+        /* Only send SKE if we have identity hint for plain PSK */
+        || ((alg_k & (SSL_kPSK | SSL_kRSAPSK))
+            && s->cert->psk_identity_hint)
+        /* For other PSK always send SKE */
+        || (alg_k & (SSL_PSK & (SSL_kDHEPSK | SSL_kECDHEPSK)))
+#endif
+#ifndef OPENSSL_NO_SRP
+        /* SRP: send ServerKeyExchange */
+        || (alg_k & SSL_kSRP)
+#endif
+        ) {
+        return 1;
+    }"
+            },
+            "2" : 
+            {
+                "func_name" : "tls_construct_server_key_exchange",
+                "code" : "(type & (SSL_kPSK | SSL_kRSAPSK | SSL_kBDHTPSK))",
+                "change_if" : "(type & (SSL_kPSK | SSL_kRSAPSK))"
+            },
+            "3" :
+            {
+                "func_name" : "tls_construct_server_key_exchange",
+                "code" : 
+"
+    if (type & (SSL_kBDHE)) {
+        if(!btls_construct_ske_bign_dhe(s, pkt))
+            goto err;
+    } else
+    if (type & SSL_kBDHEPSK) {
+        if(!btls_construct_ske_psk_bign_dhe(s, pkt))
+            goto err;
+    } else
+",
+                "insert_before" : 
+"
+#ifndef OPENSSL_NO_SRP
+    if (type & SSL_kSRP) {
+"
+            },
+            "4" :
+            {
+                "func_name" : "tls_construct_server_key_exchange",
+                "code" : "((type & SSL_PSK) && (s->s3->tmp.new_cipher->algorithm_mkey != SSL_kBDHEPSK))",
+                "change_if" : "(type & SSL_PSK)"
+            },
+            "5" :
+            {
+                "func_name" : "tls_process_client_key_exchange",
+                "code" : 
+"    } else if (alg_k & (SSL_kBDHE | SSL_kBDHEPSK)) {
+        if (!tls_process_cke_ecdhe(s, pkt)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+    } else if (alg_k & (SSL_kBDHT | SSL_kBDHTPSK)) {
+        if (!btls_process_cke_bign_dht(s, pkt)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+",
+                "insert_before" : 
+"    } else {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+                 SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE,
+                 SSL_R_UNKNOWN_CIPHER_TYPE);
+        goto err;
+    }"
+            }
+        }
+    },
+    "ssl/t1_lib.c" :
+    {
+        "static_arrays" :
+        {
+            "1" :
+            {
+                "array_name" : "nid_list",
+                "values" : {
+                    "1" : "{NID_bign_curve256v1, 128, TLS_CURVE_CUSTOM},",
+                    "2" : "{NID_bign_curve384v1, 192, TLS_CURVE_CUSTOM},",
+                    "3" : "{NID_bign_curve512v1, 256, TLS_CURVE_CUSTOM},"
+                }
+            },
+            "2" :
+            {
+                "array_name" : "tls12_sigalgs",
+                "values" : {
+                    "1" : "    TLSEXT_SIGALG_bign_sign_128,",
+                    "2" : "    TLSEXT_SIGALG_bign_sign_192,",
+                    "3" : "    TLSEXT_SIGALG_bign_sign_256"
+                }
+            },
+            "3" :
+            {
+                "array_name" : "sigalg_lookup_tbl",
+                "values" : {
+                    "1" :
+"     {NULL, TLSEXT_SIGALG_bign_sign_128,
+     NID_belt_hash, SSL_MD_HBELT_IDX,
+     NID_bign_pubkey, SSL_PKEY_BIGN,
+     NID_bign_with_hbelt, NID_bign_curve256v1},",
+                    "2" :
+"    {NULL, TLSEXT_SIGALG_bign_sign_192,
+     NID_bash384, SSL_MD_BASH384_IDX,
+     NID_bign_pubkey, SSL_PKEY_BIGN,
+     NID_bign_with_bash384, NID_bign_curve384v1},",
+                    "3" :
+"    {NULL, TLSEXT_SIGALG_bign_sign_256,
+     NID_bash512, SSL_MD_BASH512_IDX,
+     NID_bign_pubkey, SSL_PKEY_BIGN,
+     NID_bign_with_bash512, NID_bign_curve512v1},"
+                }
+            }
+        },
+        "functions" :
+        {
+            "1" :
+            {
+                "func_name" : "tls1_set_cert_validity",
+                "code" : "    tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_BIGN);",
+                "insert_before" : "}"
+            }
+        }
+    },
+    "ssl/t1_trce.c" :
+    {
+        "static_arrays" :
+        {
+            "1" :
+            {
+                "array_name" : "ssl_ciphers_tbl",
+                "values" : {
+                    "1" : "{0xFF15, \"BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT\"},",
+                    "2" : "{0xFF16, \"BDHE-BIGN_WITH-BELT-DWP-HBELT\"},",
+                    "3" : "{0xFF17, \"BDHT-BIGN_WITH-BELT-CTR-MAC-HBELT\"},",
+                    "4" : "{0xFF18, \"BDHT-BIGN_WITH-BELT-DWP-HBELT\"},",
+                    "5" : "{0xFF19, \"BDHE-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT\"},",
+                    "6" : "{0xFF1A, \"BDHE-PSK-BIGN_WITH-BELT-DWP-HBELT\"},",
+                    "7" : "{0xFF1B, \"BDHT-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT\"},",
+                    "8" : "{0xFF1C, \"BDHT-PSK-BIGN_WITH-BELT-DWP-HBELT\"},"
+                }
+            },
+            "2" :
+            {
+                "array_name" : "ssl_sigalg_tbl",
+                "values" : {
+                    "1" : "{TLSEXT_SIGALG_bign_sign_128, \"bign_auth128\"},",
+                    "2" : "{TLSEXT_SIGALG_bign_sign_192, \"bign_auth192\"},",
+                    "3" : "{TLSEXT_SIGALG_bign_sign_256, \"bign_auth256\"},"
+                }
+            }
+        }
+    },
+    "ssl/ssl_cert_table.h" :
+    {
+        "static_arrays" : 
+        {
+            "1" :
+            {
+                "array_name" : "ssl_cert_info",
+                "values" :  {
+                    "1" : ",{NID_bign_pubkey, SSL_aBIGN}"
+                }
+            }
+        }
+    }
+}
