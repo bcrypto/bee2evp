@@ -42,11 +42,11 @@ index d356359..11fc846 100644
 +            if (!strcmp(opt_flag(), "-ciphersuites"))
 +            {
 +                if (!strcmp(opt_arg(), "TLS_BASH_PRG_AE2561_BASH256")) {
-+                    printf("Set default cipher %s\n", opt_arg());
++                    BIO_printf(bio_err, "Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_bashprg2561bash_id;
 +                }
 +                if (!strcmp(opt_arg(), "TLS_BELT_CHE256_BELT_HASH")) {
-+                    printf("Set default cipher %s\n", opt_arg());
++                    BIO_printf(bio_err, "Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_beltche256hbelt_id;
 +                }
 +            }
@@ -73,11 +73,11 @@ index da8d001..a2294d3 100644
 +            if (!strcmp(opt_flag(), "-ciphersuites"))
 +            {
 +                if (!strcmp(opt_arg(), "TLS_BASH_PRG_AE2561_BASH256")) {
-+                    printf("Set default cipher %s\n", opt_arg());
++                    BIO_printf(bio_err, "Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_bashprg2561bash_id;
 +                }
 +                if (!strcmp(opt_arg(), "TLS_BELT_CHE256_BELT_HASH")) {
-+                    printf("Set default cipher %s\n", opt_arg());
++                    BIO_printf(bio_err, "Set default cipher %s\n", opt_arg());
 +                    default_cipher = tls13_beltche256hbelt_id;
 +                }
 +            }
