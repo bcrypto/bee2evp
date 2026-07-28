@@ -66,6 +66,9 @@ Bign
 *******************************************************************************
 */
 
+/* внутренний флаг: параметры наследуются от издателя (implicit NULL в SPKI) */
+#define EVP_BIGN_PKEY_PARAMS_IMPLICIT 16
+
 typedef struct bign_key
 {
 	bign_params params[1]; /*< долговременные параметры */
