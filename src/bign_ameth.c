@@ -966,6 +966,14 @@ int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 static int evpBign_set_pubkey(EVP_PKEY* pkey, const octet* pubkey, size_t len)
 {
 	bign_key* key;
+	EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if ((EVP_PKEY_paramgen_init(ctx) <= 0) ||
+		(EVP_PKEY_paramgen(ctx, &pkey) <= 0))
+	{
+		EVP_PKEY_CTX_free(ctx);
+		return 0;
+	}
+	EVP_PKEY_CTX_free(ctx);
 	if (evpBign_param_missing(pkey))
 		return 0;
 	key = (bign_key*)EVP_PKEY_get0(pkey);
@@ -1002,6 +1010,14 @@ static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey, size_t* len)
 static int evpBign_set_privkey(EVP_PKEY* pkey, const octet* privkey, size_t len)
 {
 	bign_key* key;
+	EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if ((EVP_PKEY_paramgen_init(ctx) <= 0) ||
+		(EVP_PKEY_paramgen(ctx, &pkey) <= 0))
+	{
+		EVP_PKEY_CTX_free(ctx);
+		return 0;
+	}
+	EVP_PKEY_CTX_free(ctx);
 	if (evpBign_param_missing(pkey))
 		return 0;
 	key = (bign_key*)EVP_PKEY_get0(pkey);
