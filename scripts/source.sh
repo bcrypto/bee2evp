@@ -217,7 +217,7 @@ patch_openssl(){
   fi
   cp $btls_srcs_path/btls.c ./ssl/
   cp $btls_srcs_path/btls.h ./ssl/
-  git apply $bee2evp/btls/patch/$openssl_tag.patch
+  python3 $bee2evp/scripts/patcher.py --root $openssl --rules $bee2evp/scripts/btls_rules.py --apply
 }
 
 build_bee2(){
@@ -269,7 +269,36 @@ build_bee2evp(){
   ls -la $lib_path/$lib_name
 }
 
-attach_bee2evp(){
+attach_bee2evp_darwin(){
+  green echo "[-] attach bee2evp"
+  cp $local/openssl.cnf.dist $local/openssl.cnf
+  if $is_openssl_3;
+  then
+    sed -i '' "/providers = provider_sect/a\\
+engines = engine_sect\\
+\\
+[ engine_sect]\\
+bee2evp = bee2evp_section\\
+\\
+[ bee2evp_section ]\\
+engine_id = bee2evp\\
+dynamic_path = $lib_path/$lib_name\\
+default_algorithms = ALL" "$local/openssl.cnf"
+  else
+    sed -i '' "/\[ new\_oids \]/i openssl_conf = openssl_init\
+\n[ openssl_init ]\
+\nengines = engine_section\
+\n[ engine_section ]\
+\nbee2evp = bee2evp_section\
+\n[ bee2evp_section ]\
+\nengine_id = bee2evp\
+\ndynamic_path = $lib_path/$lib_name\
+\ndefault_algorithms = ALL\
+\n" $local/openssl.cnf
+  fi
+}
+
+attach_bee2evp_general(){
   green echo "[-] attach bee2evp"
   cp $local/openssl.cnf.dist $local/openssl.cnf
   if $is_openssl_3;
@@ -293,6 +322,17 @@ attach_bee2evp(){
 \ndefault_algorithms = ALL\
 \n" $local/openssl.cnf
   fi
+}
+
+attach_bee2evp() {
+  case "$os_name" in
+    Darwin)
+      attach_bee2evp_darwin
+      ;;
+    *)
+      attach_bee2evp_other
+      ;;
+  esac
 }
 
 test_bee2evp(){

@@ -6,6 +6,10 @@ project(BEE2EVP
 
 include(GNUInstallDirs)
 
+# Emit build/<dir>/compile_commands.json so clangd (VS Code, nvim, ...)
+# knows the include paths -- see .clangd.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(BEE2EVP_VERSION
   "${BEE2EVP_VERSION_MAJOR}.${BEE2EVP_VERSION_MINOR}.${BEE2EVP_VERSION_PATCH}")
 

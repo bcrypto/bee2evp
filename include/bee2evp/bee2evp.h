@@ -886,9 +886,11 @@ l = 128, 192, 256. Используются названия алгоритмо�
 
 /* bash256 */
 extern const char OID_bash256[];
+#ifndef NID_bash256
 extern const char SN_bash256[];
 extern const char LN_bash256[];
 #define NID_bash256 OBJ_sn2nid(SN_bash256)
+#endif
 
 /*!	\brief Описание алгоритма bash256
 
