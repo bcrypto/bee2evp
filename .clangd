@@ -1,3 +1,2 @@
 CompileFlags:
   CompilationDatabase: build/bee2evp
-  Add: [-std=c11]
