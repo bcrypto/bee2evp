@@ -10,7 +10,7 @@
 
 import os, subprocess
 
-OPENSSL_EXE_PATH = '/Users/murakami/univer/bee2evp/build/local/bin/openssl'
+OPENSSL_EXE_PATH = 'openssl'
 
 def openssl(cmd, prefix='', echo=False, check=True):
 	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)

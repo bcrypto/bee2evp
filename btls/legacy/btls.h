@@ -48,6 +48,7 @@ extern "C" {
 #define NID_kxbdht				(NUM_NID + 16)
 #define NID_kxbdhe_psk			(NUM_NID + 17)
 #define NID_kxbdht_psk			(NUM_NID + 18)
+#define NID_bash256				(NUM_NID + 19)
 
 /* ssl_local.h */
 #define SSL_kBDHE               0x00000200U
