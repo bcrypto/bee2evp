@@ -26,8 +26,10 @@
 */
 
 const char OID_bash256[] = "1.2.112.0.2.0.34.101.77.11";
+#ifndef SN_bash256
 const char SN_bash256[] = "bash256";
 const char LN_bash256[] = "bash256";
+#endif
 
 const char OID_bash384[] = "1.2.112.0.2.0.34.101.77.12";
 #ifndef SN_bash384

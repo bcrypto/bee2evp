@@ -17,9 +17,9 @@ def btls_gen_privkey(privkey, curve):
 		.format(curve, privkey))
 	openssl(cmd)
 
-def btls_issue_cert(cert, privkey):
-	cmd = ('req -x509 -subj "/CN=www.example.org/O=BCrypto/C=BY" \
-		 -new -key {} -nodes -out {}'.format(privkey, cert))
+def btls_issue_cert(cert, privkey, subj='/CN=www.example.org/O=BCrypto/C=BY'):
+	cmd = ('req -x509 -subj "{}" \
+		 -new -key {} -nodes -out {}'.format(subj, privkey, cert))
 	openssl(cmd)
 
 def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
@@ -47,7 +47,7 @@ def btls_server(tmpdir, suite, is_tls13, curve, cert, psk):
 
 def server_13_psk(tmpdir, suite, curve):
 	# prepare cmd
-	cmd = f"s_server -engine bee2evp -tls1_3 -ciphersuites {suite} " 
+	cmd = f"s_server -engine bee2evp -tls1_3 -ciphersuites {suite} "
 	cmd += f" -psk 123456 -nocert -allow_no_dhe_kex -curves {curve} -rev "
 	# prepare output
 	output = os.path.join(tmpdir, suite + curve + '.srv')
@@ -93,6 +93,64 @@ def client_13_psk(tmpdir, suite, curve):
 	with open(output, 'r') as f:
 		echo2 = f.read()
 	process_result('{}[{}]PSK'.format(suite, curve), echo2[::-1])
+
+def btls_mtls_server(tmpdir, suite, is_tls13, curve, client_cert, tag):
+	privkey = os.path.join(tmpdir, curve + '.sk')
+	cert = os.path.join(tmpdir, curve + '.cert')
+	if is_tls13:
+		cmd = 's_server -engine bee2evp -tls1_3 -ciphersuites {} -rev'.format(suite)
+	else:
+		cmd = 's_server -engine bee2evp -tls1_2 -rev'
+	cmd = cmd + ' -key {} -cert {}'.format(privkey, cert)
+	cmd = cmd + ' -CAfile {} -Verify 1'.format(client_cert)
+	output = os.path.join(tmpdir, tag + '.srv')
+	cmd = cmd + ' >{} 2>&1'.format(output)
+	global g_server
+	g_server = openssl2(cmd)
+	return output
+
+def btls_mtls_client(tmpdir, suite, is_tls13, curve, privkey, cert, tag):
+	if is_tls13:
+		cmd = 's_client -engine bee2evp -tls1_3 -ciphersuites {}'.format(suite)
+	else:
+		cmd = 's_client -engine bee2evp -tls1_2 -cipher {}'.format(suite)
+	cmd = cmd + ' -curves {}'.format(curve)
+	cmd = cmd + ' -CAfile {}'.format(os.path.join(tmpdir, curve + '.cert'))
+	if cert:
+		cmd = cmd + ' -key {} -cert {}'.format(privkey, cert)
+	output = os.path.join(tmpdir, tag + '.cli')
+	cmd = cmd + ' >{} 2>&1'.format(output)
+	retcode, __, __ = openssl(cmd, prefix='(echo mtls; sleep 1) |', check=False)
+	return retcode
+
+def btls_mtls_test(tmpdir, curve):
+	privkey = os.path.join(tmpdir, 'client_' + curve + '.sk')
+	cert = os.path.join(tmpdir, 'client_' + curve + '.cert')
+	btls_gen_privkey(privkey, curve)
+	btls_issue_cert(cert, privkey, subj='/CN=btls-client/O=BCrypto/C=BY')
+
+	mtls_ciphersuites = [
+		('DHE-BIGN-WITH-BELT-CTR-MAC-HBELT', False),
+		('DHE-BIGN-WITH-BELT-DWP-HBELT', False),
+		('TLS_BELT_CHE256_BELT_HASH', True),
+		('TLS_BASH_PRG_AE2561_BASH256', True)]
+
+	for suite, is_tls13 in mtls_ciphersuites:
+		tag = 'mtls_' + suite + curve
+		output = btls_mtls_server(tmpdir, suite, is_tls13, curve, cert, tag)
+		time.sleep(1)
+		retcode = btls_mtls_client(tmpdir, suite, is_tls13, curve, privkey, cert, tag)
+		os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+		with open(output, 'r') as f:
+			srv_log = f.read()
+		process_result('mTLS {}[{}]'.format(suite, curve), retcode == 0 and srv_log.find('Peer certificate') != -1)
+
+		tag = 'mtls_nocert_' + suite + curve
+		btls_mtls_server(tmpdir, suite, is_tls13, curve, cert, tag)
+		time.sleep(1)
+		retcode = btls_mtls_client(tmpdir, suite, is_tls13, curve, None, None, tag)
+		os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+		process_result('mTLS {}[{}] no-cert rejected'.format(suite, curve), retcode != 0)
 
 def btls_test():
 	tmpdir = tempfile.mkdtemp()
@@ -176,5 +234,7 @@ def btls_test():
 				client.run()
 				# kill server
 				os.killpg(os.getpgid(g_server.pid), signal.SIGTERM)
+
+	btls_mtls_test(tmpdir, 'bign-curve256v1')
 
 	shutil.rmtree(tmpdir)

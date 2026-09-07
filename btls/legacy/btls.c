@@ -142,6 +142,9 @@ int btls_init()
 		return 0;
 	if (OBJ_new_nid(1) != NID_kxbdht_psk)
 		return 0;
+	if (OBJ_create("1.2.112.0.2.0.34.101.77.11", "bash256", "bash256") !=
+			NID_bash256)
+		return 0;
 	if (!EVP_add_digest(evpMDBeltMac256()))
 		return 0;
 	btls_inited++;
