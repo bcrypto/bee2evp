@@ -330,7 +330,7 @@ attach_bee2evp() {
       attach_bee2evp_darwin
       ;;
     *)
-      attach_bee2evp_other
+      attach_bee2evp_general
       ;;
   esac
 }
