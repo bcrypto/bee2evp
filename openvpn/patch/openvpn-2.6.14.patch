@@ -1,0 +1,242 @@
+OpenVPN 2.6.14: bee2evp engine support with OpenSSL 3.x
+
+OpenVPN 2.6 looks algorithms up with EVP_CIPHER_fetch()/EVP_MD_fetch() and
+lists them with EVP_*_do_all_provided() when built against OpenSSL 3.x.
+These functions search providers only, so the belt/bign/bash algorithms
+of the bee2evp engine stay invisible: --data-ciphers belt-cbc256 and
+--auth belt-hash fail with "not found".
+
+The patch:
+1. looks ciphers and digests up with EVP_get_cipherbyname() and
+   EVP_get_digestbyname(), which see engine algorithms too;
+2. initializes OpenSSL (openssl.cnf, engines) before options are checked,
+   loads the default and legacy providers and makes bee2evp the default
+   engine if it is available;
+3. lists engine ciphers in --show-ciphers.
+
+OpenVPN must be configured with --with-openssl-engine=yes: with OpenSSL 3.x
+engine support is disabled by default and the patched code is compiled out.
+
+Apply:  cd openvpn && git apply ../openvpn/patch/openvpn-2.6.14.patch
+
+---
+diff --git a/src/openvpn/crypto_openssl.c b/src/openvpn/crypto_openssl.c
+index 331af996..0f460732 100644
+--- a/src/openvpn/crypto_openssl.c
++++ b/src/openvpn/crypto_openssl.c
+@@ -107,8 +107,24 @@ setup_engine(const char *engine)
+ {
+     ENGINE *e = NULL;
+ 
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: load the legacy provider as well, so that algorithms
++     * moved there stay available next to the engine ones */
++    OSSL_PROVIDER *legacy_prov = OSSL_PROVIDER_load(NULL, "legacy");
++    if (!legacy_prov)
++    {
++        msg(M_WARN, "Warning: failed to load legacy provider. Engine support may not work.");
++    }
++#endif
++
+     ENGINE_load_builtin_engines();
+ 
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: enable the dynamic engine loader, it is used by
++     * engines configured in openssl.cnf (dynamic_path) */
++    ENGINE_load_dynamic();
++#endif
++
+     if (engine)
+     {
+         if (strcmp(engine, "auto") == 0)
+@@ -197,6 +213,37 @@ crypto_init_lib(void)
+ #else
+     OPENSSL_config(NULL);
+ #endif
++
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L && HAVE_OPENSSL_ENGINE
++    /* OpenSSL 3.0+: load the default provider explicitly (once any provider
++     * is loaded explicitly, the default one is no longer loaded implicitly)
++     * and the legacy one */
++    OSSL_PROVIDER *default_prov = OSSL_PROVIDER_load(NULL, "default");
++    if (!default_prov)
++    {
++        msg(M_WARN, "Warning: failed to load default provider. Some functionality may not work.");
++    }
++    OSSL_PROVIDER *legacy_prov = OSSL_PROVIDER_load(NULL, "legacy");
++    if (!legacy_prov)
++    {
++        /* The legacy provider is optional */
++    }
++    ENGINE_load_builtin_engines();
++    ENGINE_load_dynamic();
++    /* Register all engines, including the ones loaded from openssl.cnf */
++    ENGINE_register_all_complete();
++
++    /* If bee2evp is available (e.g. loaded from openssl.cnf), make it the
++     * default implementation of its algorithms (belt, bign, bash) even
++     * without the --engine option */
++    ENGINE *e = ENGINE_by_id("bee2evp");
++    if (e)
++    {
++        ENGINE_set_default(e, ENGINE_METHOD_ALL);
++        ENGINE_free(e);
++    }
++#endif
++
+     /*
+      * If you build the OpenSSL library and OpenVPN with
+      * CRYPTO_MDEBUG, you will get a listing of OpenSSL
+@@ -382,7 +429,42 @@ show_available_ciphers(void)
+ #endif
+ 
+ #if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: EVP_CIPHER_do_all_provided() lists provider ciphers
++     * only and does not see engine ones. If an engine is loaded, fall back
++     * to the pre-3.0 enumeration by NID */
++#if HAVE_OPENSSL_ENGINE
++    /* Engine is loaded either by --engine or from openssl.cnf */
++    ENGINE *e_check = ENGINE_by_id("bee2evp");
++    bool engine_loaded = (engine_initialized && engine_persist) || (e_check != NULL);
++    if (e_check)
++    {
++        ENGINE_free(e_check);
++    }
++
++    if (engine_loaded)
++    {
++        /* Pre-3.0 enumeration: sees both engine and provider ciphers */
++        for (int nid = 0; nid < 10000; ++nid)
++        {
++            const char *name = OBJ_nid2sn(nid);
++            if (name)
++            {
++                const EVP_CIPHER *cipher = EVP_get_cipherbyname(name);
++                if (cipher)
++                {
++                    collect_ciphers((EVP_CIPHER *) cipher, &cipher_list);
++                }
++            }
++        }
++    }
++    else
++    {
++        /* No engine: the upstream 3.0+ enumeration */
++        EVP_CIPHER_do_all_provided(NULL, collect_ciphers, &cipher_list);
++    }
++#else
+     EVP_CIPHER_do_all_provided(NULL, collect_ciphers, &cipher_list);
++#endif
+ #else
+     for (int nid = 0; nid < 10000; ++nid)
+     {
+@@ -614,7 +696,14 @@ cipher_get(const char *ciphername)
+     ASSERT(ciphername);
+ 
+     ciphername = translate_cipher_name_from_openvpn(ciphername);
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: EVP_CIPHER_fetch() searches providers only and does not
++     * see engine ciphers (belt-*), EVP_get_cipherbyname() sees both.
++     * EVP_CIPHER_free() on the result is a no-op, so callers stay as is */
++    return EVP_get_cipherbyname(ciphername);
++#else
+     return EVP_CIPHER_fetch(NULL, ciphername, NULL);
++#endif
+ }
+ 
+ bool
+@@ -732,14 +821,24 @@ cipher_kt_block_size(const char *ciphername)
+ 
+     strcpy(mode_str, "-CBC");
+ 
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: see cipher_get() */
++    cbc_cipher = EVP_get_cipherbyname(translate_cipher_name_from_openvpn(name));
++#else
+     cbc_cipher = EVP_CIPHER_fetch(NULL, translate_cipher_name_from_openvpn(name), NULL);
++#endif
+     if (cbc_cipher)
+     {
+         block_size = EVP_CIPHER_block_size(cbc_cipher);
+     }
+ 
+ cleanup:
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: cbc_cipher comes from EVP_get_cipherbyname(), it is
++     * not reference counted and must not be freed */
++#else
+     EVP_CIPHER_free(cbc_cipher);
++#endif
+     EVP_CIPHER_free(cipher);
+     free(name);
+     return block_size;
+@@ -1069,7 +1168,13 @@ md_get(const char *digest)
+ {
+     evp_md_type *md = NULL;
+     ASSERT(digest);
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: EVP_MD_fetch() does not see engine digests (belt-hash),
++     * EVP_get_digestbyname() does. See cipher_get() */
++    md = EVP_get_digestbyname(digest);
++#else
+     md = EVP_MD_fetch(NULL, digest, NULL);
++#endif
+     if (!md)
+     {
+         crypto_msg(M_FATAL, "Message hash algorithm '%s' not found", digest);
+@@ -1088,9 +1193,15 @@ md_get(const char *digest)
+ bool
+ md_valid(const char *digest)
+ {
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++    /* OpenSSL 3.0+: see md_get(); the result must not be freed */
++    evp_md_type *md = EVP_get_digestbyname(digest);
++    bool valid = (md != NULL);
++#else
+     evp_md_type *md = EVP_MD_fetch(NULL, digest, NULL);
+     bool valid = (md != NULL);
+     EVP_MD_free(md);
++#endif
+     return valid;
+ }
+ 
+diff --git a/src/openvpn/init.c b/src/openvpn/init.c
+index 103aa3c1..e7e5086d 100644
+--- a/src/openvpn/init.c
++++ b/src/openvpn/init.c
+@@ -854,6 +854,10 @@ init_static(void)
+ 
+     update_time();
+ 
++    /* Initialize OpenSSL (openssl.cnf, engines) early, so that engine
++     * algorithms are already known while options are parsed and checked
++     * (e.g. --data-ciphers belt-cbc256, --auth belt-hash) */
++    crypto_init_lib();
+     init_ssl_lib();
+ 
+ #ifdef SCHEDULE_TEST
+@@ -993,6 +997,12 @@ print_openssl_info(const struct options *options)
+     if (options->show_ciphers || options->show_digests || options->show_engines
+         || options->show_tls_ciphers || options->show_curves)
+     {
++        /* Load --engine before listing, so its algorithms are listed too */
++        if (options->engine && (options->show_ciphers || options->show_digests))
++        {
++            crypto_init_lib();
++            crypto_init_lib_engine(options->engine);
++        }
+         if (options->show_ciphers)
+         {
+             show_available_ciphers();
+@@ -1007,6 +1017,11 @@ print_openssl_info(const struct options *options)
+         }
+         if (options->show_tls_ciphers)
+         {
++            /* Same for TLS cipher suites (BTLS suites need the engine) */
++            if (options->engine)
++            {
++                crypto_init_lib_engine(options->engine);
++            }
+             show_available_tls_ciphers(options->cipher_list,
+                                        options->cipher_list_tls13,
+                                        options->tls_cert_profile);

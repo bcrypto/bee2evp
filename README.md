@@ -99,9 +99,20 @@ building, Bee2 and Bee2evp building and tests running.
 bash scripts/build.sh [-s -b -t] <OPENSSL_TAG>
 ```
 Available values for `OPENSSL_TAG` are patch names in directory `btls/patch`.
-Supported OS are Linux, MacOS and Windows (via MSYS).
+Supported OS are Linux, MacOS, FreeBSD and Windows (via MSYS).
 The script requires GNU binutils and GNU sed to be available via PATH 
 environment variable (additional packages can be installed on MacOS).
+On FreeBSD, the script uses GNU make (`gmake`) and the base system `sed`.
+
+## OpenVPN
+
+[OpenVPN](openvpn) with BTLS ciphersuites in the control channel and belt
+in the data channel can be built by the same script with the `-bv` option:
+```
+bash scripts/build.sh -s -b -bv openssl-3.3.1
+```
+See [openvpn/README.md](openvpn/README.md) for details, configuration and
+limitations.
 
 ### Build in Docker
 ```

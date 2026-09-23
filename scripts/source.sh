@@ -24,7 +24,10 @@ usage() {
   echo "  -bb,             build Bee2"
   echo "  -bo,             build OpenSSL"
   echo "  -be,             build Bee2evp"
-  echo "  -t,             test"
+  echo "  -bv,             build OpenVPN with Bee2evp support (see openvpn/)"
+  echo "  --openvpn-tag   OpenVPN tag, a patch openvpn/patch/openvpn-<tag>.patch"
+  echo "                  must exist (default: v2.6.14)"
+  echo "  -t,             test (+ OpenVPN, if built)"
   echo "  -h, --help      display this help and exit"
   exit 1
 }
@@ -36,8 +39,10 @@ default_opt() {
   enable_bee2=false
   enable_bee2evp=false
   enable_openssl=false
+  enable_openvpn=false
   enable_test=false
   openssl_tag=""
+  openvpn_tag=v2.6.14
 }
 
 parse_opt() {
@@ -76,6 +81,12 @@ parse_opt() {
     -be)
       enable_bee2evp=true
       ;;
+    -bv)
+      enable_openvpn=true
+      ;;
+    --openvpn-tag=*)
+      openvpn_tag="${1#*=}"
+      ;;
     -h|--help)
       ;;
     -*)
@@ -103,13 +114,16 @@ check_opt() {
     enable_bee2evp=true
   else
     if [[ $enable_bee2 == true || $enable_openssl == true || \
-        $enable_bee2evp == true ]]; then
+        $enable_bee2evp == true || $enable_openvpn == true ]]; then
       enable_build=true
     fi
   fi
 
   echo "build_type=$build_type"
   echo "openssl_tag=$openssl_tag"
+  if $enable_openvpn; then
+    echo "openvpn_tag=$openvpn_tag"
+  fi
 }
 
 # Check openssl major version
@@ -135,14 +149,18 @@ set_dir(){
   build_bee2evp=$build_root/bee2evp
   build_bee2=$build_root/bee2
   build_openssl=$build_root/openssl
+  # OpenVPN is built in its source tree (autotools)
+  build_openvpn=$build_root/openvpn
   local=${BEE2EVP_INSTALL_DIR:-$build_root/local}
   lib_path=$local/lib
   openssl_git_url=https://github.com/openssl/openssl.git
+  openvpn_git_url=https://github.com/OpenVPN/openvpn.git
 }
 
 system_opt(){
   ossl_config=""
   lib_name=libbee2evp.so
+  make=make
 
   os_name=$(uname -s)
   arch=$(uname -m)
@@ -158,6 +176,10 @@ system_opt(){
       # macOS detection
       lib_name=libbee2evp.dylib
       ossl_config="darwin64-$arch-cc"
+      ;;
+    FreeBSD)
+      # OpenSSL detects the target itself, its Makefile needs GNU make
+      make=gmake
       ;;
     CYGWIN*|MINGW*|MSYS*)
       # Windows via Cygwin/MSYS2/MinGW
@@ -180,7 +202,7 @@ clean(){
 check_prereq(){
   set +e
   green echo "[-] check prereq"
-  for package in git gcc cmake make python3
+  for package in git cc cmake $make python3
   do
     which $package &> /dev/null
     if [ $? -ne 0 ]; then
@@ -244,10 +266,10 @@ build_openssl(){
 
   if $is_openssl_3;
   then
-    make update
+    $make update
   fi
-  make -j$(nproc) all
-  make install > build.log 2>&1 || (cat build.log && exit 1)
+  $make -j$(nproc) all
+  $make install > build.log 2>&1 || (cat build.log && exit 1)
   ls -la $lib_path/*crypto.*
   ls -la $lib_path/*ssl.*
   ls -la $local/bin/openssl*
@@ -326,7 +348,8 @@ attach_bee2evp_general(){
 
 attach_bee2evp() {
   case "$os_name" in
-    Darwin)
+    Darwin|FreeBSD)
+      # BSD sed
       attach_bee2evp_darwin
       ;;
     *)
@@ -347,6 +370,48 @@ test_bee2evp(){
   python3 test.py
   export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | \
     sed -e "s|$lib_path:||")
+}
+
+# OpenVPN with the engine patch from openvpn/patch, see openvpn/README.md.
+# The engine is attached via $local/openssl.cnf (attach_bee2evp), which is
+# the default config of the OpenSSL built here, so -be must be done before.
+build_openvpn(){
+  green echo "[-] build openvpn"
+  openvpn_patch=$bee2evp/openvpn/patch/openvpn-${openvpn_tag#v}.patch
+  if [[ ! -f $openvpn_patch ]]; then
+    red echo "no patch for OpenVPN $openvpn_tag: $openvpn_patch" >&2
+    exit 1
+  fi
+  if [[ ! -d $build_openvpn ]]; then
+    git clone -b $openvpn_tag --depth 1 $openvpn_git_url $build_openvpn
+    git -C $build_openvpn apply $openvpn_patch
+  fi
+  cd $build_openvpn
+  autoreconf -fi
+  # --with-openssl-engine=yes: engine support is disabled by default with
+  #   OpenSSL 3.x, without it the patched code is compiled out;
+  # --disable-dco: DCO supports AES-GCM/ChaCha20-Poly1305 only, not belt;
+  # rpath: use libssl/libcrypto from $lib_path, not the system ones.
+  ./configure --prefix=$local --with-openssl-engine=yes \
+    --disable-lzo --disable-lz4 --disable-dco --disable-plugin-auth-pam \
+    OPENSSL_CFLAGS="-I$local/include" \
+    OPENSSL_LIBS="-L$lib_path -lssl -lcrypto" \
+    LDFLAGS="-Wl,-rpath,$lib_path"
+  $make -j$(nproc)
+  # no man pages: git sources lack them, they need python-docutils
+  $make install-exec
+  ls -la $local/sbin/openvpn
+}
+
+test_openvpn(){
+  if [[ ! -x $local/sbin/openvpn ]]; then
+    return 0
+  fi
+  green echo "[-] test openvpn"
+  # openvpn has rpath, the openssl binary may not
+  LD_LIBRARY_PATH="$lib_path:${LD_LIBRARY_PATH}" \
+    OPENSSL_CONF=$local/openssl.cnf \
+    sh $bee2evp/openvpn/check.sh $local
 }
 
 setup(){
@@ -370,6 +435,9 @@ build(){
   if $enable_bee2evp; then
     build_bee2evp
     attach_bee2evp
+  fi
+  if $enable_openvpn; then
+    build_openvpn
   fi
   green echo "Build ended"
 }
