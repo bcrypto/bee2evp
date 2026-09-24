@@ -258,7 +258,7 @@ build_openssl(){
   green echo "[-] build openssl"
   mkdir -p $build_openssl && cd $build_openssl
   ossl_opt="shared --prefix=$local --openssldir=$local --libdir=lib"
-  if [[ "$build_type" -eq "Debug" ]]; then
+  if [[ "$build_type" == "Debug" ]]; then
     $openssl/Configure $ossl_config $ossl_opt --debug
   else
     $openssl/Configure $ossl_config $ossl_opt
@@ -384,8 +384,10 @@ build_openvpn(){
   fi
   if [[ ! -d $build_openvpn ]]; then
     git clone -b $openvpn_tag --depth 1 $openvpn_git_url $build_openvpn
-    git -C $build_openvpn apply $openvpn_patch
   fi
+  # reapply the patch: an existing tree may hold an older version of it
+  git -C $build_openvpn checkout -- .
+  git -C $build_openvpn apply $openvpn_patch
   cd $build_openvpn
   autoreconf -fi
   # --with-openssl-engine=yes: engine support is disabled by default with
