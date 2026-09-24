@@ -37,4 +37,5 @@ fi
 
 if $enable_test; then
   test_bee2evp
+  test_openvpn
 fi

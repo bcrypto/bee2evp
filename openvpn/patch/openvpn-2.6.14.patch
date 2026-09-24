@@ -1,0 +1,161 @@
+OpenVPN 2.6.14: bee2evp engine support with OpenSSL 3.x
+
+OpenVPN 2.6 looks algorithms up with EVP_CIPHER_fetch()/EVP_MD_fetch() and
+lists them with EVP_*_do_all_provided() when built against OpenSSL 3.x.
+These functions search providers only, so the belt/bign/bash algorithms
+of the bee2evp engine stay invisible: --data-ciphers belt-cbc256 and
+--auth belt-hash fail with "not found".
+
+The patch:
+1. looks ciphers and digests up with EVP_get_cipherbyname() and
+   EVP_get_digestbyname() when engine support is compiled in
+   (HAVE_OPENSSL_ENGINE), and keeps EVP_*_fetch() otherwise, e.g. with
+   OpenSSL 4.0 which has no engines;
+2. lists ciphers and digests in --show-ciphers/--show-digests the same way,
+   so engine algorithms are shown;
+3. loads the --engine engine in init_early(), next to --providers, so that
+   its algorithms are available when options are checked.
+
+The engine is enabled by --engine bee2evp or by the engines section of
+openssl.cnf (default_algorithms = ALL), which OpenSSL loads at startup.
+
+OpenVPN must be configured with --with-openssl-engine=yes: with OpenSSL 3.x
+engine support is disabled by default and the patched code is compiled out.
+
+Apply:  cd openvpn && git apply ../openvpn/patch/openvpn-2.6.14.patch
+
+---
+diff --git a/src/openvpn/crypto_openssl.c b/src/openvpn/crypto_openssl.c
+index 331af996..0aef536b 100644
+--- a/src/openvpn/crypto_openssl.c
++++ b/src/openvpn/crypto_openssl.c
+@@ -381,9 +381,11 @@ show_available_ciphers(void)
+     printf("See also openssl list -cipher-algorithms\n\n");
+ #endif
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !HAVE_OPENSSL_ENGINE
+     EVP_CIPHER_do_all_provided(NULL, collect_ciphers, &cipher_list);
+ #else
++    /* EVP_CIPHER_do_all_provided() does not see engine ciphers, list them
++     * by nid, the same way cipher_get() looks them up */
+     for (int nid = 0; nid < 10000; ++nid)
+     {
+ #if defined(LIBRESSL_VERSION_NUMBER)
+@@ -447,9 +449,11 @@ show_available_digests(void)
+     printf("See also openssl list -digest-algorithms\n\n");
+ #endif
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !HAVE_OPENSSL_ENGINE
+     EVP_MD_do_all_provided(NULL, print_digest, NULL);
+ #else
++    /* EVP_MD_do_all_provided() does not see engine digests, list them
++     * by nid, the same way md_get() looks them up */
+     for (int nid = 0; nid < 10000; ++nid)
+     {
+         /* OpenBSD/LibreSSL reimplemented EVP_get_digestbyname and broke
+@@ -472,7 +476,7 @@ show_available_digests(void)
+             print_digest((EVP_MD *)digest, NULL);
+         }
+     }
+-#endif /* if OPENSSL_VERSION_NUMBER >= 0x30000000L */
++#endif /* if OPENSSL_VERSION_NUMBER >= 0x30000000L && !HAVE_OPENSSL_ENGINE */
+     printf("\n");
+ }
+ 
+@@ -614,7 +618,12 @@ cipher_get(const char *ciphername)
+     ASSERT(ciphername);
+ 
+     ciphername = translate_cipher_name_from_openvpn(ciphername);
++#if HAVE_OPENSSL_ENGINE
++    /* EVP_CIPHER_fetch() does not see engine ciphers */
++    return (evp_cipher_type *) EVP_get_cipherbyname(ciphername);
++#else
+     return EVP_CIPHER_fetch(NULL, ciphername, NULL);
++#endif
+ }
+ 
+ bool
+@@ -732,13 +741,19 @@ cipher_kt_block_size(const char *ciphername)
+ 
+     strcpy(mode_str, "-CBC");
+ 
++#if HAVE_OPENSSL_ENGINE
++    /* EVP_CIPHER_fetch() does not see engine ciphers */
++    cbc_cipher = (evp_cipher_type *) EVP_get_cipherbyname(translate_cipher_name_from_openvpn(name));
++#else
+     cbc_cipher = EVP_CIPHER_fetch(NULL, translate_cipher_name_from_openvpn(name), NULL);
++#endif
+     if (cbc_cipher)
+     {
+         block_size = EVP_CIPHER_block_size(cbc_cipher);
+     }
+ 
+ cleanup:
++    /* EVP_CIPHER_free() is a no-op for a cipher that was not fetched */
+     EVP_CIPHER_free(cbc_cipher);
+     EVP_CIPHER_free(cipher);
+     free(name);
+@@ -1069,7 +1084,12 @@ md_get(const char *digest)
+ {
+     evp_md_type *md = NULL;
+     ASSERT(digest);
++#if HAVE_OPENSSL_ENGINE
++    /* EVP_MD_fetch() does not see engine digests */
++    md = (evp_md_type *) EVP_get_digestbyname(digest);
++#else
+     md = EVP_MD_fetch(NULL, digest, NULL);
++#endif
+     if (!md)
+     {
+         crypto_msg(M_FATAL, "Message hash algorithm '%s' not found", digest);
+@@ -1088,8 +1108,14 @@ md_get(const char *digest)
+ bool
+ md_valid(const char *digest)
+ {
++#if HAVE_OPENSSL_ENGINE
++    /* EVP_MD_fetch() does not see engine digests */
++    evp_md_type *md = (evp_md_type *) EVP_get_digestbyname(digest);
++#else
+     evp_md_type *md = EVP_MD_fetch(NULL, digest, NULL);
++#endif
+     bool valid = (md != NULL);
++    /* EVP_MD_free() is a no-op for a digest that was not fetched */
+     EVP_MD_free(md);
+     return valid;
+ }
+diff --git a/src/openvpn/init.c b/src/openvpn/init.c
+index 103aa3c1..4d4b9dc3 100644
+--- a/src/openvpn/init.c
++++ b/src/openvpn/init.c
+@@ -2964,11 +2964,6 @@ key_schedule_free(struct key_schedule *ks, bool free_ssl_ctx)
+ static void
+ init_crypto_pre(struct context *c, const unsigned int flags)
+ {
+-    if (c->options.engine)
+-    {
+-        crypto_init_lib_engine(c->options.engine);
+-    }
+-
+     if (flags & CF_LOAD_PERSISTED_PACKET_ID)
+     {
+         /* load a persisted packet-id for cross-session replay-protection */
+diff --git a/src/openvpn/openvpn.c b/src/openvpn/openvpn.c
+index 06f44420..2d2a5c40 100644
+--- a/src/openvpn/openvpn.c
++++ b/src/openvpn/openvpn.c
+@@ -121,6 +121,13 @@ init_early(struct context *c)
+         c->options.providers.providers[j] =
+             crypto_load_provider(c->options.providers.names[j]);
+     }
++
++    /* The engine is needed this early for the same reason: option
++     * post-processing checks ciphers and digests it may provide */
++    if (c->options.engine)
++    {
++        crypto_init_lib_engine(c->options.engine);
++    }
+ }
+ 
+ static void
