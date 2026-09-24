@@ -22,11 +22,14 @@ so algorithms of the bee2evp engine are invisible:
 
 The patch (see comments in [patch/openvpn-2.6.14.patch](patch/openvpn-2.6.14.patch)):
 1. looks ciphers and digests up with `EVP_get_cipherbyname()` and
-   `EVP_get_digestbyname()`, which see engine algorithms too;
-2. initializes OpenSSL (`openssl.cnf`, engines) before options are checked,
-   loads the default and legacy providers and makes bee2evp the default
-   engine if it is available;
-3. lists engine ciphers in `--show-ciphers`.
+   `EVP_get_digestbyname()`, which see engine algorithms too, when engine
+   support is compiled in (`HAVE_OPENSSL_ENGINE`), and keeps
+   `EVP_*_fetch()` otherwise, e.g. with OpenSSL 4.0 which has no engines;
+2. lists engine ciphers and digests in `--show-ciphers`/`--show-digests`;
+3. loads the `--engine` engine before options are checked.
+
+The engine is enabled by `--engine bee2evp` or by the engines section of
+`openssl.cnf` (`default_algorithms = ALL`), which OpenSSL loads at startup.
 
 BTLS ciphersuites themselves come from the OpenSSL patch in [btls](../btls).
 
