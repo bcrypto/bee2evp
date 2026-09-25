@@ -14,7 +14,8 @@ from bign import bign_test
 from btls import btls_test
 from cms import cms_test
 from openssl import openssl
-from util import fail, process_result
+import util
+from util import process_result
 
 import os
 import re
@@ -52,5 +53,5 @@ if __name__ == '__main__':
 	cms_test()
 	if not provider or major >= 4:
 		btls_test()
-	if fail:
+	if util.fail:
 		sys.exit(1)

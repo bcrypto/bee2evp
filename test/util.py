@@ -87,6 +87,7 @@ else:
 fail = False
 
 def process_result(test_name, result):
+	global fail
 	if result:
 		stdout.write(test_name + ': ')
 		print_colored('success', bcolors.OKGREEN)
