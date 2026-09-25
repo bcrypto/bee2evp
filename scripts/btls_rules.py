@@ -381,27 +381,50 @@ RULES = [
         "id": "x509_set.sig_info_digest",
         "desc": "длина хэш-значения алгоритма провайдера",
         "file": "crypto/x509/x509_set.c",
-        "when": V3,
         "op": "replace",
-        "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
-                   r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
-                   r"            return 0;\n"
-                   r"        \}\n"
-                   r"        md_size = EVP_MD_get_size\(md\);\n"),
         "guard": "EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);",
-        "payload": (
-            "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
-            "            /* BTLS: belt-hash, bash are known only to providers */\n"
-            "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
-            "\n"
-            "            if (fetched == NULL) {\n"
-            "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
-            "                return 0;\n"
-            "            }\n"
-            "            md_size = EVP_MD_get_size(fetched);\n"
-            "            EVP_MD_free(fetched);\n"
-            "        } else\n"
-            "            md_size = EVP_MD_get_size(md);\n"),
+        "conditions": [
+            # 3.4+: длина хэш-значения -- в переменной md_size
+            {"when": ">=3.4",
+             "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
+                        r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
+                        r"            return 0;\n"
+                        r"        \}\n"
+                        r"        md_size = EVP_MD_get_size\(md\);\n"),
+             "payload": (
+                 "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
+                 "            /* BTLS: belt-hash, bash are known only to providers */\n"
+                 "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
+                 "\n"
+                 "            if (fetched == NULL) {\n"
+                 "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
+                 "                return 0;\n"
+                 "            }\n"
+                 "            md_size = EVP_MD_get_size(fetched);\n"
+                 "            EVP_MD_free(fetched);\n"
+                 "        } else\n"
+                 "            md_size = EVP_MD_get_size(md);\n")},
+            # 3.0 - 3.3: стойкость вычисляется одной строкой
+            {"when": ">=3.0,<3.4",
+             "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
+                        r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
+                        r"            return 0;\n"
+                        r"        \}\n"
+                        r"        siginf->secbits = EVP_MD_get_size\(md\) \* 4;\n"),
+             "payload": (
+                 "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
+                 "            /* BTLS: belt-hash, bash are known only to providers */\n"
+                 "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
+                 "\n"
+                 "            if (fetched == NULL) {\n"
+                 "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
+                 "                return 0;\n"
+                 "            }\n"
+                 "            siginf->secbits = EVP_MD_get_size(fetched) * 4;\n"
+                 "            EVP_MD_free(fetched);\n"
+                 "        } else\n"
+                 "            siginf->secbits = EVP_MD_get_size(md) * 4;\n")},
+        ],
     },
 
 
