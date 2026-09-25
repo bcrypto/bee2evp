@@ -3,9 +3,12 @@
 This folder contains what is needed to build [OpenVPN](https://openvpn.net)
 that protects both of its channels with Belarusian cryptography:
 
-- control channel: BTLS ciphersuites (STB 34.101.65), e.g.
-  `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT` or `DHE-BIGN-WITH-BELT-DWP-HBELT`,
-  bign certificates and keys;
+- control channel: BTLS ciphersuites (STB 34.101.65), bign certificates
+  and keys:
+  - TLS 1.2: `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT` or
+    `DHE-BIGN-WITH-BELT-DWP-HBELT`;
+  - TLS 1.3: `TLS_BELT_CHE256_BELT_HASH` or `TLS_BASH_PRG_AE2561_BASH256`
+    with the `bign-curve256v1` key exchange group;
 - data channel: `belt-cbc256` encryption and `belt-hash` HMAC.
 
 Files:
@@ -44,7 +47,8 @@ bash scripts/build.sh -t openssl-3.3.1      # includes the OpenVPN check
 The OpenVPN tag is set by `--openvpn-tag=<tag>` (default `v2.6.14`),
 `patch/openvpn-<tag without v>.patch` must exist. Everything is installed
 into `build/local` (`BEE2EVP_INSTALL_DIR`): `sbin/openvpn`, `bin/openssl`,
-`openssl.cnf` with the attached engine.
+`openssl.cnf` with the attached engine. An existing `build/openvpn` tree is
+reset and the patch is applied again, so a changed patch gets into the build.
 
 Important details of the build (see `build_openvpn` in
 [scripts/source.sh](../scripts/source.sh)):
@@ -75,10 +79,15 @@ pkg install -y bash git cmake gmake autoconf automake libtool pkgconf python3 pe
 ```
 sh openvpn/check.sh build/local
 ```
-The script checks the engine, BTLS ciphersuites in OpenSSL, `belt-cbc256` in
-OpenVPN, issues temporary bign certificates and makes OpenVPN handshakes
-over 127.0.0.1 for `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT` and
-`DHE-BIGN-WITH-BELT-DWP-HBELT`. It uses `dev null`, so no root is needed.
+The script checks the engine, BTLS ciphersuites in OpenSSL, `belt-cbc256`
+and `belt-hash` in OpenVPN, issues temporary bign certificates and makes
+OpenVPN handshakes over 127.0.0.1:
+- TLS 1.2: `DHE-BIGN-WITH-BELT-CTR-MAC-HBELT` and
+  `DHE-BIGN-WITH-BELT-DWP-HBELT`;
+- TLS 1.3: `TLS_BELT_CHE256_BELT_HASH` and `TLS_BASH_PRG_AE2561_BASH256`,
+  the key exchange must be bign.
+
+It uses `dev null`, so no root is needed.
 
 ## Configuration
 
@@ -86,11 +95,10 @@ Server and client share these options:
 ```
 engine bee2evp
 
-# BTLS ciphersuites exist in TLS 1.2 only: without tls-version-max
-# the control channel negotiates TLS 1.3 with standard ciphersuites
-tls-version-min 1.2
-tls-version-max 1.2
-tls-cipher DHE-BIGN-WITH-BELT-DWP-HBELT:DHE-BIGN-WITH-BELT-CTR-MAC-HBELT
+# TLS 1.3, see below for TLS 1.2
+tls-version-min 1.3
+tls-ciphersuites TLS_BELT_CHE256_BELT_HASH:TLS_BASH_PRG_AE2561_BASH256
+tls-groups bign-curve256v1
 
 data-ciphers belt-cbc256
 auth belt-hash
@@ -100,6 +108,23 @@ ca   ca.crt
 cert server.crt
 key  server.key
 dh   none
+remote-cert-tls client    # on the client: remote-cert-tls server
+```
+
+Both the TLS 1.3 ciphersuites and the key exchange group must be set explicitly.
+OpenSSL puts BTLS ciphersuites and bign groups after the standard ones, so
+with default options TLS 1.3 negotiates `TLS_AES_256_GCM_SHA384` and X25519,
+only certificates stay bign. Check the client log:
+```
+Control Channel: TLSv1.3, cipher TLSv1.3 TLS_BELT_CHE256_BELT_HASH, ... peer temporary key: 256 bits bign
+```
+
+TLS 1.2 (`tls-cipher` sets TLS 1.2 ciphersuites only, `tls-ciphersuites`
+TLS 1.3 ones):
+```
+tls-version-min 1.2
+tls-version-max 1.2
+tls-cipher DHE-BIGN-WITH-BELT-DWP-HBELT:DHE-BIGN-WITH-BELT-CTR-MAC-HBELT
 ```
 
 Keys and certificates are made by the built `openssl`:
@@ -108,12 +133,14 @@ openssl genpkey -genparam -algorithm bign -pkeyopt params:bign-curve256v1 -out p
 openssl genpkey -paramfile params.pem -out server.key
 openssl req -new -key server.key -subj /CN=server -out server.csr
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
-  -days 365 -extfile <(echo extendedKeyUsage=serverAuth) -out server.crt
+  -days 365 -out server.crt -extfile <(printf \
+  'keyUsage=digitalSignature,keyAgreement\nextendedKeyUsage=serverAuth\n')
 ```
+`remote-cert-tls` needs both extensions. For a client certificate use
+`extendedKeyUsage=clientAuth`.
 
 ## Limitations
 
-- `--show-digests` does not list `belt-hash`, though `auth belt-hash` works.
 - The data channel uses `belt-cbc256` + `belt-hash`. OpenVPN accepts AEAD
   data ciphers of GCM and ChaCha20-Poly1305 modes only, so `belt-dwp*` cannot
   be used there.
