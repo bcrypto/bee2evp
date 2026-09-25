@@ -12,6 +12,7 @@ from bash import bash_test
 from belt import belt_test
 from bign import bign_test
 from btls import btls_test
+from cms import cms_test
 from openssl import openssl
 from util import fail, process_result
 
@@ -48,6 +49,7 @@ if __name__ == '__main__':
 	bash_test()
 	belt_test()
 	bign_test()
+	cms_test()
 	if not provider or major >= 4:
 		btls_test()
 	if fail:

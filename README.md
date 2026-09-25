@@ -122,10 +122,21 @@ they are served by the provider: it implements the TLS editions of the
 ciphers (`belt-dwpt`, `belt-ctrt`, `belt-chet`, `bash-prg-aet`) and declares
 the bign curves as TLS groups. With OpenSSL 3 BTLS still requires the engine.
 
-Limitations (of OpenSSL, not of the provider): OpenSSL derives object
-identifiers of digests and ciphers from legacy tables, which algorithms of
-third-party providers are absent from. Therefore CMS/PKCS#7 and PKCS#12 with
-belt/bash algorithms do not work.
+Containers. The provider itself encodes and decodes keys in PKCS#8 (including
+encrypted ones: PBES2, PBKDF2 with belt-hmac, belt-kwp). CMS/PKCS#7 and
+PKCS#12 require the patched OpenSSL (the patcher, see below): unpatched
+OpenSSL derives object identifiers of digests and ciphers from legacy tables,
+which algorithms of third-party providers are absent from. With the patch
+the following work:
+* CMS SignedData (`bign-with-hbelt`, `bign-with-bashXXX`, NULL parameters),
+  EnvelopedData with KeyTransRecipientInfo (`bign-keytransport`),
+  KEKRecipientInfo (`belt-kwpXXX`, via `CMS_add0_recipient_key()`) and
+  PasswordRecipientInfo (`belt-cbcXXX`);
+* PKCS#7 signed and enveloped data (`openssl smime`);
+* PKCS#12 with belt ciphers and the MAC on belt-hash; PBES2 uses belt-hmac
+  by default for belt ciphers.
+
+CMS signing with provider keys requires OpenSSL 3.1 or later.
 
 ## BTLS
 

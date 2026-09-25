@@ -12,6 +12,7 @@ belt-dwp, belt-che, belt-kwp, bash-prg-ae
 */
 
 #include <openssl/evp.h>
+#include <openssl/objects.h>
 #include <bee2/core/blob.h>
 #include <bee2/core/mem.h>
 #include <bee2/core/rng.h>
@@ -455,7 +456,10 @@ static int cipherInit(void* vctx, const octet* key, size_t keylen,
 		memCopy(ctx->key, key, keylen);
 		ctx->key_set = 1;
 	}
-	if (key || iv && ctx->key_set)
+	// без ключа и синхропосылки CBC/CFB перезапускаются с исходной
+	// синхропосылкой, как в провайдере default (нужно для RFC 3211 в CMS)
+	if (key || ctx->key_set && (iv || ctx->d->kind == KIND_CBC ||
+		ctx->d->kind == KIND_CFB))
 		cipherStart(ctx);
 	return 1;
 }
@@ -611,6 +615,15 @@ static const OSSL_PARAM* cipherGettableParams(void* provctx)
 	return cipher_gettable_params;
 }
 
+/* синхропосылка: копией (OSSL_PARAM_OCTET_STRING) или указателем
+   (OSSL_PARAM_OCTET_PTR, так ее запрашивает EVP_CIPHER_CTX_original_iv()) */
+static int cipherSetIv(OSSL_PARAM* p, const octet* iv, size_t iv_len)
+{
+	if (p->data_type == OSSL_PARAM_OCTET_PTR)
+		return OSSL_PARAM_set_octet_ptr(p, iv, iv_len);
+	return OSSL_PARAM_set_octet_string(p, iv, iv_len);
+}
+
 static int cipherGetCtxParams(void* vctx, OSSL_PARAM params[])
 {
 	cipher_ctx* ctx = (cipher_ctx*)vctx;
@@ -628,10 +641,10 @@ static int cipherGetCtxParams(void* vctx, OSSL_PARAM params[])
 		!OSSL_PARAM_set_size_t(p, ctx->d->tag_len))
 		return 0;
 	if ((p = OSSL_PARAM_locate(params, OSSL_CIPHER_PARAM_IV)) &&
-		!OSSL_PARAM_set_octet_string(p, ctx->iv, ctx->iv_len))
+		!cipherSetIv(p, ctx->iv, ctx->iv_len))
 		return 0;
 	if ((p = OSSL_PARAM_locate(params, OSSL_CIPHER_PARAM_UPDATED_IV)) &&
-		!OSSL_PARAM_set_octet_string(p, ctx->iv, ctx->iv_len))
+		!cipherSetIv(p, ctx->iv, ctx->iv_len))
 		return 0;
 	if ((p = OSSL_PARAM_locate(params, OSSL_CIPHER_PARAM_RANDOM_KEY)))
 	{
@@ -640,11 +653,25 @@ static int cipherGetCtxParams(void* vctx, OSSL_PARAM params[])
 		if (!rngIsValid())
 			return 0;
 		rngStepR(key, ctx->key_len, 0);
-		ok = OSSL_PARAM_set_octet_string(p, key, ctx->key_len);
+		// EVP_CIPHER_CTX_rand_key() передает буфер нулевой длины: ключ
+		// пишется целиком (так же поступают шифры провайдера default)
+		if (p->data_type == OSSL_PARAM_OCTET_STRING && p->data &&
+			p->data_size == 0)
+		{
+			memCopy(p->data, key, ctx->key_len);
+			p->return_size = ctx->key_len;
+			ok = 1;
+		}
+		else
+			ok = OSSL_PARAM_set_octet_string(p, key, ctx->key_len);
 		memWipe(key, sizeof(key));
 		if (!ok)
 			return 0;
 	}
+	// PRF для PBKDF2 (как EVP_CTRL_PBE_PRF_NID в плагине)
+	if ((p = OSSL_PARAM_locate(params, PROV_CIPHER_PARAM_PBE_PRF_NID)) &&
+		!OSSL_PARAM_set_int(p, OBJ_sn2nid("belt-hmac")))
+		return 0;
 	if (cipherHasNullParams(ctx->d))
 	{
 		if ((p = OSSL_PARAM_locate(params,
@@ -666,6 +693,7 @@ static const OSSL_PARAM cipher_gettable_ctx_params[] = {
 	OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_IV, 0, 0),
 	OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_UPDATED_IV, 0, 0),
 	OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_RANDOM_KEY, 0, 0),
+	OSSL_PARAM_int(PROV_CIPHER_PARAM_PBE_PRF_NID, 0),
 	OSSL_PARAM_END,
 };
 
@@ -676,6 +704,7 @@ static const OSSL_PARAM cipher_gettable_ctx_params_null[] = {
 	OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_RANDOM_KEY, 0, 0),
 	OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_ALGORITHM_ID_PARAMS, 0, 0),
 	OSSL_PARAM_octet_string(ALGORITHM_ID_PARAMS_OLD, 0, 0),
+	OSSL_PARAM_int(PROV_CIPHER_PARAM_PBE_PRF_NID, 0),
 	OSSL_PARAM_END,
 };
 

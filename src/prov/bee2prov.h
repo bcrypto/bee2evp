@@ -96,6 +96,9 @@ CMS определяет алгоритм подписи (связку bign-with
 #define PROV_BIGN_PARAM_SIG "sig"				/*< deterministic */
 #define PROV_BIGN_PARAM_DER_PARAMS "bign-params"	/*< DomainParameters */
 
+/* PRF для PBKDF2, предпочтительный для шифра (NID, см. btls_rules.py) */
+#define PROV_CIPHER_PARAM_PBE_PRF_NID "pbe-prf-nid"
+
 /*
 *******************************************************************************
 Таблицы функций и алгоритмов
