@@ -37,10 +37,18 @@ extern "C" {
 
 #define SSL_aBIGN               0x00000100U
 
+/* в OpenSSL 4 биты 0x01000000, 0x02000000 заняты SSL_SM4GCM, SSL_SM4CCM */
+#if OPENSSL_VERSION_MAJOR >= 4
+#define SSL_BELTDWP				0x04000000U
+#define SSL_BELTCTR             0x08000000U
+#define SSL_BELTCHE				0x10000000U
+#define SSL_BASHPRGAE			0x20000000U
+#else
 #define SSL_BELTCTR             0x02000000U
 #define SSL_BELTDWP				0x01000000U
 #define SSL_BELTCHE				0x04000000U
 #define SSL_BASHPRGAE			0x08000000U
+#endif
 
 #define SSL_BELTMAC             0x00001000U
 #define SSL_HBELT               0x00002000U
@@ -48,11 +56,20 @@ extern "C" {
 #define SSL_BASH512             0x00008000U
 #define SSL_BASH256             0x00010000U
 
+/* в OpenSSL 4 индекс 14 занимает SM3 (SSL_MD_SM3_IDX) */
+#if OPENSSL_VERSION_MAJOR >= 4
+#define SSL_MD_BELTMAC_IDX 15
+#define SSL_MD_HBELT_IDX 16
+#define SSL_MD_BASH384_IDX 17
+#define SSL_MD_BASH512_IDX 18
+#define SSL_MD_BASH256_IDX 19
+#else
 #define SSL_MD_BELTMAC_IDX 14
 #define SSL_MD_HBELT_IDX 15
 #define SSL_MD_BASH384_IDX 16
 #define SSL_MD_BASH512_IDX 17
 #define SSL_MD_BASH256_IDX 18
+#endif
 
 #define SSL_HANDSHAKE_MAC_BELTMAC SSL_MD_BELTMAC_IDX
 #define SSL_HANDSHAKE_MAC_HBELT SSL_MD_HBELT_IDX
@@ -147,6 +164,9 @@ extern "C" {
 */
 
 int btls_init();
+
+int btls_pkey_set_type(EVP_PKEY* pkey, int nid, OSSL_LIB_CTX* libctx,
+    const char* propq);
 
 /*
 *******************************************************************************

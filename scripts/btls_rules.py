@@ -13,6 +13,9 @@ NEW = ">=3.5" # OpenSSL 3.5+ — исходники переформатиров
 OLD3 = ">=3.0,<3.5" # провайдеры, но старый стиль.
 V3 = ">=3.0" # любая 3.x — там, где стиль не важен.
 V111 = "<3.0" # 1.1.1 — до провайдеров
+V4 = ">=4.0" # OpenSSL 4: нет плагинов (engine), алгоритмы -- в провайдере
+NEW3 = ">=3.5,<4.0" # 3.5+, но не 4 (правки только для плагина)
+V3ONLY = ">=3.0,<4.0" # любая 3.x, но не 4 (правки только для плагина)
 
 STDERR = ">=3.5.6" # печатает через BIO_printf,
 STDOUT = "<3.5.6" # через printf
@@ -282,7 +285,7 @@ RULES = [
                 "переводит bign-curve256v1 в NID и ложит в p1, без этого"
                 "openssl genpkey -pkeyopt params:bign-curve256v1 не обработается при engine",
         "file": "crypto/evp/ctrl_params_translate.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "insert_before",
         "anchor": r"/\*-\n \* The translation table itself\n",
         "guard": "fix_bign_ecx",
@@ -293,7 +296,7 @@ RULES = [
         "id": "ctrl_params.bign_entries",
         "desc": "добавляем две записи в таблице трансляций: для генерации параметров и для генерации ключа",
         "file": "crypto/evp/ctrl_params_translate.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "replace",
         "anchor": (r"(    \{ (OSSL_ACTION_SET|SET), EVP_PKEY_X448, EVP_PKEY_X448,"
                    r" EVP_PKEY_OP_PARAMGEN, -1, NULL, NULL,\n"
@@ -313,7 +316,7 @@ RULES = [
         "desc": "до: разбирали PARAMETERS только если задан запрашивали ключ,"
                 "после: вдаже если не запрашивали (чтобы прочитать PEM с параметрами кривой bign)",
         "file": "crypto/pem/pem_pkey.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "replace",
         "anchor": (r"\} else if \(\(selection & EVP_PKEY_KEYPAIR\) == 0\n"
                    r"[ ]+&& \(slen = ossl_pem_check_suffix\(nm, \"PARAMETERS\"\)\) > 0\) \{"),
@@ -388,7 +391,7 @@ RULES = [
         "op": "insert_after",
         "guard": "0xFE01",
         "conditions": [
-            {"when": NEW,
+            {"when": NEW3,
              "anchor": r"    /\* 43 \*/ \{ OSSL_TLS_GROUP_ID_SecP384r1MLKEM1024,"
                        r" ML_KEM_1024_SECBITS, TLS1_3_VERSION, 0, -1, -1, 1 \},\n",
              "payload": (
@@ -410,7 +413,7 @@ RULES = [
         "file": "providers/common/capabilities.c",
         "guard": 'TLS_GROUP_ENTRY("bign-curve256v1"',
         "conditions": [
-            {"when": NEW, "op": "insert_after",
+            {"when": NEW3, "op": "insert_after",
              "anchor": r"#endif /\* !defined\(OPENSSL_NO_TLS_DEPRECATED_EC\) \*/\n",
              "payload": (
                  '    TLS_GROUP_ENTRY("bign-curve256v1", "bign-curve256v1", "bign-curve256v1", 44),\n'
@@ -499,6 +502,10 @@ RULES = [
         "file": "ssl/s3_lib.c",
         "guard": "BTLS1_3_RFC_BELT_CHE256_BELT_HASH",
         "conditions": [
+            # 4.x: ни одного #if вокруг криптонаборов TLS 1.3
+            {"when": V4, "op": "insert_before",
+             "anchor": r"^\};\n\n/\*\n \* The list of available ciphers,",
+             "payload_file": "tls13_ciphers.new.c"},
             {"when": NEW, "op": "insert_before",
              "anchor": r"^#endif\n\};\n\n/\*\n \* The list of available ciphers,",
              "payload_file": "tls13_ciphers.new.c"},
@@ -531,6 +538,15 @@ RULES = [
         "file": "ssl/s3_lib.c",
         "guard": "alg_k & SSL_kBDHE",
         "conditions": [
+            # 4.x: запроса по SSL_kDHE нет, alg_k объявлена только с GOST
+            {"when": V4, "op": "insert_before",
+             "anchor": r"^    if \(!\(alg_a & SSL_aRSA\) && "
+                       r"!WPACKET_put_bytes_u8\(pkt, SSL3_CT_RSA_SIGN\)\)",
+             "guard": "algorithm_mkey & (SSL_kBDHE | SSL_kBDHTPSK)",
+             "payload": (
+                 "    if (s->version >= TLS1_VERSION\n"
+                 "        && (s->s3.tmp.new_cipher->algorithm_mkey & (SSL_kBDHE | SSL_kBDHTPSK)))\n"
+                 "        return WPACKET_put_bytes_u8(pkt, TLS_CT_BIGN_SIGN);\n\n")},
             {"when": ">=3.3,<3.4", "op": "replace",
              "anchor": r"\n\n    if \(\(s->version == SSL3_VERSION\) && \(alg_k & SSL_kDHE\)\) \{",
              "payload": (
@@ -661,6 +677,14 @@ RULES = [
         "op": "insert_after",
         "guard": "NID_belt_dwpt",
         "conditions": [
+            # 4.x: после SM4 (индексы 26-29)
+            {"when": V4,
+             "anchor": r"    \{ SSL_SM4CCM, NID_sm4_ccm \}, /\* SSL_ENC_SM4CCM_IDX 25 \*/\n",
+             "payload": (
+                 "    { SSL_BELTDWP, NID_belt_dwpt }, /* 26 */\n"
+                 "    { SSL_BELTCTR, NID_belt_ctrt }, /* 27 */\n"
+                 "    { SSL_BELTCHE, NID_belt_chet }, /* 28 */\n"
+                 "    { SSL_BASHPRGAE, NID_bash_prg_aet }, /* 29 */\n")},
             {"when": NEW,
              "anchor": r"    \{ SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm \}, /\* SSL_ENC_KUZNYECHIK_IDX \*/\n",
              "payload": (
@@ -691,6 +715,16 @@ RULES = [
         "op": "replace",
         "guard": "SSL_MD_BELTMAC_IDX",
         "conditions": [
+            # 4.x: после SM3 (индексы 15-19, см. btls.h)
+            {"when": V4,
+             "anchor": r"    \{ 0, NID_sm3 \}, /\* SSL_MD_SM3_IDX 14 \*/\n",
+             "payload": (
+                 "    { 0, NID_sm3 }, /* SSL_MD_SM3_IDX 14 */\n"
+                 "    { SSL_BELTMAC, NID_belt_hash }, /* SSL_MD_BELTMAC_IDX 15 */\n"
+                 "    { SSL_HBELT, NID_belt_hash }, /* SSL_MD_HBELT_IDX 16 */\n"
+                 "    { SSL_BASH384, NID_bash384 }, /* SSL_MD_BASH384_IDX 17 */\n"
+                 "    { SSL_BASH512, NID_bash512 }, /* SSL_MD_BASH512_IDX 18 */\n"
+                 "    { SSL_BASH256, NID_bash256 }, /* SSL_MD_BASH256_IDX 19 */\n")},
             {"when": NEW,
              "anchor": r"    \{ SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac \} /\* SSL_MD_KUZNYECHIKOMAC_IDX \*/\n",
              "payload": (
@@ -774,6 +808,15 @@ RULES = [
         "op": "replace",
         "guard": "/* BELTMAC BELTHASH */",
         "conditions": [
+            # 4.x: дополнительно SM3 (индекс 14)
+            {"when": V4,
+             "anchor": r"    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef\n",
+             "payload": (
+                 "    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef,\n"
+                 "    /* SM3 */\n"
+                 "    NID_undef,\n"
+                 "    /* BELTMAC BELTHASH */\n"
+                 "    NID_bign_pubkey, NID_bign_pubkey, NID_undef, NID_undef, NID_undef\n")},
             {"when": V3,
              "anchor": r"    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef\n",
              "payload": ("    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef,\n"
@@ -869,6 +912,20 @@ RULES = [
         "op": "replace",
         "guard": 'get_optional_pkey_id("BIGN")',
         "conditions": [
+            # 4.x: get_optional_pkey_id() нет, алгоритмы bign -- в провайдере
+            {"when": V4,
+             "anchor": r"(^    if \(\(ctx->disabled_auth_mask & SSL_aGOST12\) ==[ ]+SSL_aGOST12\)\n"
+                       r"        ctx->disabled_mkey_mask \|= SSL_kGOST18;\n\n)",
+             "guard": 'EVP_SIGNATURE_fetch(ctx->libctx, "bign"',
+             "payload": (
+                 "$1    ERR_set_mark();\n"
+                 "    sig = EVP_SIGNATURE_fetch(ctx->libctx, \"bign\", ctx->propq);\n"
+                 "    if (sig == NULL) {\n"
+                 "        ctx->disabled_auth_mask |= SSL_aBIGN;\n"
+                 "        ctx->disabled_mkey_mask |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHEPSK | SSL_kBDHTPSK;\n"
+                 "    } else\n"
+                 "        EVP_SIGNATURE_free(sig);\n"
+                 "    ERR_pop_to_mark();\n\n")},
             {"when": NEW,
              "anchor": r"(^    if \(\(ctx->disabled_auth_mask & SSL_aGOST12\) ==[ ]+SSL_aGOST12\)\n"
                        r"        ctx->disabled_mkey_mask \|= SSL_kGOST18;\n\n)",
@@ -1089,6 +1146,8 @@ RULES = [
         "file": "ssl/ssl_local.h",
         "op": "replace",
         "conditions": [
+            {"when": V4, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)15",
+             "guard_re": r"#[ ]*define SSL_MAX_DIGEST[ ]+20", "payload": "${1}20"},
             {"when": V3, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)14",
              "guard_re": r"#[ ]*define SSL_MAX_DIGEST[ ]+19", "payload": "${1}19"},
             {"when": V111, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)12",
@@ -1108,11 +1167,13 @@ RULES = [
         "id": "ssl_local.enc_num_idx",
         "desc": "обновление счетчика",
         "file": "ssl/ssl_local.h",
-        "when": V3,
+        "conditions": [
+            {"when": V4, "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)26",
+             "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+30", "payload": "${1}30"},
+            {"when": V3ONLY, "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)24",
+             "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+28", "payload": "${1}28"},
+        ],
         "op": "replace",
-        "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)24",
-        "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+28",
-        "payload": "${1}28",
     },
 
     # ssl/statem/
@@ -1125,6 +1186,9 @@ RULES = [
         "op": "replace",
         "guard": "SSL_kECDHEPSK | SSL_kBDHE",
         "conditions": [
+            {"when": V4,
+             "anchor": r"int is_ec_ciphersuite = \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
+             "payload": "int is_ec_ciphersuite = ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHE | SSL_kBDHEPSK))"},
             {"when": NEW, "anchor": r"if \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
              "payload": "if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHE | SSL_kBDHEPSK))"},
             {"when": "<3.5", "anchor": r"if \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
@@ -1428,6 +1492,10 @@ RULES = [
         "desc": "",
         "file": "ssl/t1_lib.c",
         "conditions": [
+            {"when": V4, "op": "replace",
+             "anchor": r"    \"\?ffdhe2048:\?ffdhe3072\"\n",
+             "payload": ("    \"?ffdhe2048:?ffdhe3072 / \"                          \\\n"
+                         "    \"?bign-curve256v1:?bign-curve384v1:?bign-curve512v1\"\n")},
             {"when": NEW, "op": "replace",
              "anchor": r"    \"\?\*X25519MLKEM768 / \?\*X25519:\?secp256r1 / \?X448:\?secp384r1:\?secp521r1"
                        r" / \?ffdhe2048:\?ffdhe3072\"",
@@ -1454,7 +1522,7 @@ RULES = [
         "op": "replace",
         "guard": "    } else {\n        ctx->group_list_len++;",
         "conditions": [
-            {"when": NEW,
+            {"when": NEW3,
              "anchor": (r"        ctx->group_list_len\+\+;\n        ginf = NULL;\n"
                         r"        EVP_KEYMGMT_free\(keymgmt\);\n    \}\n"),
              "payload": ("        ctx->group_list_len++;\n        ginf = NULL;\n"
@@ -1480,13 +1548,43 @@ RULES = [
         "op": "replace",
         "guard": 'ginfo->algorithm, "bign"',
         "conditions": [
-            {"when": NEW, "anchor": r"        \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
+            {"when": NEW3, "anchor": r"        \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
              "payload": ("        || strcmp(ginfo->algorithm, \"X448\") == 0\n"
                          "        || strncmp(ginfo->algorithm, \"bign\", 4) == 0;")},
             {"when": OLD3, "anchor": r"           \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
              "payload": ("           || strcmp(ginfo->algorithm, \"X448\") == 0\n"
                          "           || strcmp(ginfo->algorithm, \"bign\") == 0;")},
         ],
+    },
+    # 4.x: EVP_PKEY_set_type() только для встроенных ключей, ключи bign --
+    # в провайдере (иначе алгоритмы подписи bign считаются недоступными).
+    {
+        "id": "t1_lib.setup_sigalgs_provider_keys",
+        "desc": "тип ключа bign задается через управление ключами провайдера",
+        "file": "ssl/t1_lib.c",
+        "when": V4,
+        "op": "replace",
+        "anchor": (r"        if \(!EVP_PKEY_set_type\(tmpkey, lu->sig\)\) \{\n"
+                   r"            cache\[i\]\.available = 0;\n"),
+        "guard": "btls_pkey_set_type(tmpkey, lu->sig, ctx->libctx",
+        "payload": (
+            "        if (!EVP_PKEY_set_type(tmpkey, lu->sig)\n"
+            "            && !btls_pkey_set_type(tmpkey, lu->sig, ctx->libctx, ctx->propq)) {\n"
+            "            cache[i].available = 0;\n"),
+    },
+    {
+        "id": "t1_lib.sigalgs_list_provider_keys",
+        "desc": "то же при выводе списка алгоритмов подписи",
+        "file": "ssl/t1_lib.c",
+        "when": V4,
+        "op": "replace",
+        "anchor": (r"        if \(!EVP_PKEY_set_type\(tmpkey, lu->sig\)\) \{\n"
+                   r"            enabled = 0;\n"),
+        "guard": "btls_pkey_set_type(tmpkey, lu->sig, libctx",
+        "payload": (
+            "        if (!EVP_PKEY_set_type(tmpkey, lu->sig)\n"
+            "            && !btls_pkey_set_type(tmpkey, lu->sig, libctx, NULL)) {\n"
+            "            enabled = 0;\n"),
     },
     {
         "id": "t1_lib.tls12_sigalgs",
@@ -1582,6 +1680,19 @@ RULES = [
         "op": "insert_after",
         "guard": "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT",
         "conditions": [
+            {"when": V4,
+             "anchor": r"    \{ 0xC101, \"GOST2012-MAGMA-MAGMAOMAC\" \},\n",
+             "payload": (
+                 '    { 0xFF15, "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF16, "BDHE-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF17, "BDHT-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF18, "BDHT-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF19, "BDHE-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF1A, "BDHE-PSK-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF1B, "BDHT-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF1C, "BDHT-PSK-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '\t{ 0xFF1D, "BELT-CHE256-BELT-HASH" },\n'
+                 '\t{ 0xFF1E, "BASH-PRG_AE256-BASH256" },\n')},
             {"when": OLD3, "anchor": r"    \{0xC102, \"GOST2012-GOST8912-IANA\"\},\n",
              "payload": (
                  '    {0xFF15, "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT"},\n'

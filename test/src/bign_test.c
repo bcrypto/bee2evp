@@ -29,6 +29,10 @@ static BIO* bio_err = NULL;
 
 int get_engine_pkey_id(const char *algname, ENGINE *e)
 {
+#if OPENSSL_VERSION_MAJOR >= 4
+    // методов EVP_PKEY_ASN1_METHOD нет: алгоритмы предоставляют провайдеры
+    return NID_undef;
+#else
     const EVP_PKEY_ASN1_METHOD *ameth;
     ENGINE *tmpeng = NULL;
     int pkey_id = NID_undef;
@@ -49,6 +53,7 @@ int get_engine_pkey_id(const char *algname, ENGINE *e)
     ERR_pop_to_mark();
     EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
     return pkey_id;
+#endif // OPENSSL_VERSION_MAJOR >= 4
 }
 
 int init_gen_str(
@@ -196,6 +201,7 @@ bool_t paramsPrintTest(const char* pem, const char* output)
 err:
 	ERR_print_errors(bio_err);
 	BIO_free_all(mem);
+	BIO_free(in);
 	EVP_PKEY_free(pkey_params);
 	return ret;
 }
@@ -410,6 +416,7 @@ err:
 	ERR_print_errors(bio_err);
 	BIO_free_all(bio_err);
 	EVP_PKEY_free(pkey);
+	EVP_PKEY_CTX_free(ctx);
 	return ret;
 }
 

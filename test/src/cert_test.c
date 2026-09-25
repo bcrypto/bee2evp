@@ -165,6 +165,7 @@ err:
 	BIO_free_all(bio_err);
 	if (pkey)
 		EVP_PKEY_free(pkey);
+	EVP_PKEY_free(privkey);
 	if (cert)
 		X509_free(cert);
 	return ret;

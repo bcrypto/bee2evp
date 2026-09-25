@@ -78,6 +78,55 @@ in the directory `/usr/local/{include|bin|lib}`.
 openssl engine -c -t bee2evp
 ```
 
+## Provider (OpenSSL 3 and 4)
+
+OpenSSL 4 has no engines. For OpenSSL 3 and later, Bee2evp is also built as
+an OpenSSL provider: the loadable module `bee2prov` (`bee2prov.so`,
+`bee2prov.dylib`), installed into `<libdir>/ossl-modules`. With OpenSSL 3 both
+the engine and the provider are built, with OpenSSL 4 only the provider
+(see the CMake options `BUILD_ENGINE`, `BUILD_PROVIDER`).
+
+The provider implements the same algorithms as the engine: belt-hash,
+bash256/384/512, belt-ecb/cbc/cfb/ctr/dwp/che/kwp, bash-prg-ae2561,
+belt-mac, belt-hmac, bign keys (DER/PEM/text encoding, PKCS#8 protected with
+PBKDF2 + belt-hmac), bign signatures, bign-keytransport and bign
+Diffie-Hellman. String options are the same: `-pkeyopt params:<curve>`,
+`-pkeyopt enc_params:specified|cofactor`, `-sigopt sig:deterministic`,
+`-macopt hexkey:<key>`.
+
+Attach the provider in `openssl.cnf` (the default provider must then be
+activated explicitly):
+```
+openssl_conf = openssl_init
+[openssl_init]
+providers = provider_sect
+[provider_sect]
+default = default_sect
+bee2prov = bee2prov_sect
+[default_sect]
+activate = 1
+[bee2prov_sect]
+module = /usr/local/lib/ossl-modules/bee2prov.so
+activate = 1
+```
+or on the command line:
+`openssl <cmd> -provider-path /usr/local/lib/ossl-modules -provider bee2prov -provider default`.
+
+Listing the capabilities:
+```
+openssl list -providers -digest-algorithms -cipher-algorithms -key-managers
+```
+
+BTLS ciphersuites require the patched OpenSSL (see below). With OpenSSL 4
+they are served by the provider: it implements the TLS editions of the
+ciphers (`belt-dwpt`, `belt-ctrt`, `belt-chet`, `bash-prg-aet`) and declares
+the bign curves as TLS groups. With OpenSSL 3 BTLS still requires the engine.
+
+Limitations (of OpenSSL, not of the provider): OpenSSL derives object
+identifiers of digests and ciphers from legacy tables, which algorithms of
+third-party providers are absent from. Therefore CMS/PKCS#7 and PKCS#12 with
+belt/bash algorithms do not work.
+
 ## BTLS
 
 In [this folder](btls), patches for different versions of OpenSSL are provided. 
@@ -98,7 +147,9 @@ building, Bee2 and Bee2evp building and tests running.
 ```
 bash scripts/build.sh [-s -b -t] <OPENSSL_TAG>
 ```
-Available values for `OPENSSL_TAG` are patch names in directory `btls/patch`.
+Available values for `OPENSSL_TAG` are patch names in directory `btls/patch`
+and `openssl-4.0.2` (the provider is used with OpenSSL 4). The option `-p`
+attaches the provider instead of the engine for OpenSSL 3.
 Supported OS are Linux, MacOS, FreeBSD and Windows (via MSYS).
 The script requires GNU binutils and GNU sed to be available via PATH 
 environment variable (additional packages can be installed on MacOS).

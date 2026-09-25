@@ -27,6 +27,8 @@ usage() {
   echo "  -bv,             build OpenVPN with Bee2evp support (see openvpn/)"
   echo "  --openvpn-tag   OpenVPN tag, a patch openvpn/patch/openvpn-<tag>.patch"
   echo "                  must exist (default: v2.6.14)"
+  echo "  -p,             use the provider instead of the engine (OpenSSL 3;"
+  echo "                  always with OpenSSL 4, which has no engines)"
   echo "  -t,             test (+ OpenVPN, if built)"
   echo "  -h, --help      display this help and exit"
   exit 1
@@ -41,6 +43,7 @@ default_opt() {
   enable_openssl=false
   enable_openvpn=false
   enable_test=false
+  use_provider=false
   openssl_tag=""
   openvpn_tag=v2.6.14
 }
@@ -68,6 +71,9 @@ parse_opt() {
       ;;
     -t)
       enable_test=true
+      ;;
+    -p)
+      use_provider=true
       ;;
     -b)
       enable_build=true
@@ -134,9 +140,16 @@ is_openssl_3() {
     openssl_major_version="${BASH_REMATCH[1]}"
   fi
 
-  if [[ "$openssl_major_version" = "3" ]];
+  # OpenSSL 4+: 3.x-style sources, providers only (no engines)
+  if [[ "$openssl_major_version" -ge "3" ]];
   then
     is_openssl_3=true
+  fi
+  is_openssl_4=false
+  if [[ "$openssl_major_version" -ge "4" ]];
+  then
+    is_openssl_4=true
+    use_provider=true
   fi
 }
 
@@ -160,6 +173,7 @@ set_dir(){
 system_opt(){
   ossl_config=""
   lib_name=libbee2evp.so
+  prov_name=bee2prov.so
   make=make
 
   os_name=$(uname -s)
@@ -175,6 +189,7 @@ system_opt(){
     Darwin)
       # macOS detection
       lib_name=libbee2evp.dylib
+      prov_name=bee2prov.dylib
       ossl_config="darwin64-$arch-cc"
       ;;
     FreeBSD)
@@ -184,6 +199,7 @@ system_opt(){
     CYGWIN*|MINGW*|MSYS*)
       # Windows via Cygwin/MSYS2/MinGW
       lib_name=msys-bee2evp-1.0.dll
+      prov_name=bee2prov.dll
       ossl_config="Cygwin-$arch"
       ;;
     *)
@@ -288,7 +304,22 @@ build_bee2evp(){
     -DCMAKE_INSTALL_PREFIX=$local $bee2evp
   cmake --build . --config $build_type
   cmake --install .
-  ls -la $lib_path/$lib_name
+  if $use_provider; then
+    ls -la $lib_path/ossl-modules/$prov_name
+  else
+    ls -la $lib_path/$lib_name
+  fi
+}
+
+# The provider is added to [provider_sect]; then the default provider must be
+# activated explicitly.
+attach_bee2prov(){
+  green echo "[-] attach bee2prov"
+  awk '{ if ($0 == "# activate = 1") print "activate = 1"; else print }
+    /^default = default_sect/ { print "bee2prov = bee2prov_sect" }' \
+    $local/openssl.cnf.dist > $local/openssl.cnf
+  printf "\n[ bee2prov_sect ]\nmodule = %s\nactivate = 1\n" \
+    $lib_path/ossl-modules/$prov_name >> $local/openssl.cnf
 }
 
 attach_bee2evp_darwin(){
@@ -347,6 +378,10 @@ attach_bee2evp_general(){
 }
 
 attach_bee2evp() {
+  if $use_provider; then
+    attach_bee2prov
+    return 0
+  fi
   case "$os_name" in
     Darwin|FreeBSD)
       # BSD sed
@@ -364,6 +399,9 @@ test_bee2evp(){
   export PATH=$local/bin:$PATH
   export OPENSSL_CONF=$local/openssl.cnf
   export LD_LIBRARY_PATH="$lib_path:${LD_LIBRARY_PATH}"
+  if $use_provider; then
+    export BEE2EVP_PROVIDER=1
+  fi
   green echo "[-] test evp"
   $build_bee2evp/test/testb2e
   green echo "[-] test bee2evp"
