@@ -488,9 +488,10 @@ static int evpBashPrgAET_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		memCopy(state->key, key, 32);
 	}
 
+	// синхропосылка S (анонс строится из нее при обработке заголовка)
 	if (iv)
 	{
-		memCopy(state->ann, iv, 16);
+		memCopy(state->iv, iv, 16);
 	}
 
 	return 1;
@@ -517,9 +518,21 @@ static int evpBashPrgAET_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 
 	if (!in && out)
 	{
-		bashPrgSqueeze(out, 32, state->state);
-		memCopy(state->tag, out, 32);
-		return len;
+		// установка защиты: выдать имитовставку
+		if (EVP_CIPHER_CTX_encrypting(ctx))
+		{
+			bashPrgSqueeze(state->tag, 32, state->state);
+			return 0;
+		}
+		// снятие защиты: проверить имитовставку (задана EVP_CTRL_AEAD_SET_TAG)
+		{
+			octet tag[32];
+			int ok;
+			bashPrgSqueeze(tag, 32, state->state);
+			ok = memEq(tag, state->tag, 32);
+			memWipe(tag, sizeof(tag));
+			return ok ? 0 : -1;
+		}
 	}
 
 	if (!out && in)
@@ -555,7 +568,7 @@ static int evpBashPrgAET_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob = blobCreate(sizeof(bash_prg_aet_ctx) + beltCHE_keep());
+		blob_t blob = blobCreate(sizeof(bash_prg_aet_ctx) + bashPrg_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);

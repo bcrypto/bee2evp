@@ -65,6 +65,8 @@ bool_t cipher_encrypt(const char* cipher_name,
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
 	}
+	// тестовые векторы -- целые блоки без дополнения
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
 
 	if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
 	{
@@ -129,6 +131,8 @@ bool_t cipher_decrypt(const char* cipher_name,
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
 	}
+	// тестовые векторы -- целые блоки без дополнения
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
 
 	if (EVP_DecryptUpdate(ctx, out, &len, x, x_len) != 1)
 	{

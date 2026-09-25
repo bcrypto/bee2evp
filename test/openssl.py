@@ -12,8 +12,14 @@ import os, subprocess
 
 OPENSSL_EXE_PATH = 'openssl'
 
+# bee2evp attached as a provider: no -engine option (removed in OpenSSL 4)
+PROVIDER = os.environ.get('BEE2EVP_PROVIDER') == '1'
+
+def adjust(cmd):
+	return cmd.replace('-engine bee2evp ', '') if PROVIDER else cmd
+
 def openssl(cmd, prefix='', echo=False, check=True):
-	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)
+	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, adjust(cmd))
 	if echo:
 		print(cmd)
 
@@ -31,7 +37,7 @@ def openssl(cmd, prefix='', echo=False, check=True):
 	return retcode, out, err_out
 
 def openssl2(cmd, prefix='', echo=False):
-	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, cmd)
+	cmd = '{} {} {}'.format(prefix, OPENSSL_EXE_PATH, adjust(cmd))
 	if echo:
 		print(cmd)
 	p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)

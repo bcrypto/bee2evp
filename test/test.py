@@ -12,9 +12,12 @@ from bash import bash_test
 from belt import belt_test
 from bign import bign_test
 from btls import btls_test
+from cms import cms_test
 from openssl import openssl
-from util import fail, process_result
+import util
+from util import process_result
 
+import os
 import re
 import sys
 
@@ -33,12 +36,22 @@ def engine_test():
 	process_result('engine', retcode == 0)
 	print(out.decode())
 
+def provider_test():
+	retcode, out, er__ = openssl('list -providers')
+	process_result('provider', retcode == 0 and b'bee2prov' in out)
+	print(out.decode())
+
 if __name__ == '__main__':
-	version_test()
-	engine_test()
+	# BEE2EVP_PROVIDER: bee2evp is attached as a provider. With OpenSSL 3 the
+	# patched libssl finds bign via the engine only, so btls is skipped
+	provider = os.environ.get('BEE2EVP_PROVIDER') == '1'
+	major = int(version_test())
+	provider_test() if provider else engine_test()
 	bash_test()
 	belt_test()
 	bign_test()
-	btls_test()
-	if fail:
+	cms_test()
+	if not provider or major >= 4:
+		btls_test()
+	if util.fail:
 		sys.exit(1)

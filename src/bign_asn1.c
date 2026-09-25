@@ -248,10 +248,16 @@ static int evpBign_asn1_params2curve(BIGN_CURVE* curve,
 	// установить seed (optional)
 	if (!curve->seed && !(curve->seed = ASN1_BIT_STRING_new()))
 		return 0;
+#if OPENSSL_VERSION_MAJOR >= 4
+	// ASN1_STRING закрыт, число неиспользуемых битов задается явно
+	if (!ASN1_BIT_STRING_set1(curve->seed, params->seed, 8, 0))
+		return 0;
+#else
 	curve->seed->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT | 7);
 	curve->seed->flags |= ASN1_STRING_FLAG_BITS_LEFT;
 	if (!ASN1_BIT_STRING_set(curve->seed, (octet*)params->seed, 8))
 		return 0;
+#endif
 	return 1;
 }
 
@@ -392,25 +398,23 @@ static int evpBign_asn1_ecp2params(bign_params* params,
 		goto err;
 	memRev(params->p, params->l / 4);
 	// загрузить a и b
-	if (!ecp->curve || !ecp->curve->a || !ecp->curve->a->data ||
-		!ecp->curve->b || !ecp->curve->b->data ||
-		ecp->curve->a->length != (int)params->l / 4 ||
-		ecp->curve->b->length != (int)params->l / 4)
+	if (!ecp->curve || !ecp->curve->a || !ecp->curve->b ||
+		ASN1_STRING_length(ecp->curve->a) != (int)params->l / 4 ||
+		ASN1_STRING_length(ecp->curve->b) != (int)params->l / 4)
 		goto err;
-	memCopy(params->a, ecp->curve->a->data, params->l / 4);
-	memCopy(params->b, ecp->curve->b->data, params->l / 4);
+	memCopy(params->a, ASN1_STRING_get0_data(ecp->curve->a), params->l / 4);
+	memCopy(params->b, ASN1_STRING_get0_data(ecp->curve->b), params->l / 4);
 	// загрузить seed (optional)
 	if (ecp->curve->seed)
 	{
-		if (ecp->curve->seed->length != 8)
+		if (ASN1_STRING_length(ecp->curve->seed) != 8)
 			goto err;
-		memCopy(params->seed, ecp->curve->seed->data, 8);
+		memCopy(params->seed, ASN1_STRING_get0_data(ecp->curve->seed), 8);
 	}
 	// загрузить base
-	if (!ecp->base || !ecp->base->data ||
-		ecp->base->length != (int)params->l / 4)
+	if (!ecp->base || ASN1_STRING_length(ecp->base) != (int)params->l / 4)
 		goto err;
-	memCopy(params->yG, ecp->base->data, params->l / 4);
+	memCopy(params->yG, ASN1_STRING_get0_data(ecp->base), params->l / 4);
 	// загрузить order
 	if ((p = ASN1_INTEGER_to_BN(ecp->order, p)) == NULL)
 		goto err;

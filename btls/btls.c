@@ -76,6 +76,29 @@ int btls_init()
 
 /*
 *******************************************************************************
+Тип ключа по идентификатору
+
+В OpenSSL 4 функция EVP_PKEY_set_type() работает только для ключей
+со встроенными (legacy) методами. Ключи bign реализуются провайдером, и
+тип задается через управление ключами с именем OBJ_nid2sn(nid). Функция
+используется при проверке доступности алгоритмов подписи TLS
+(ssl_setup_sigalgs() и др. в t1_lib.c).
+*******************************************************************************
+*/
+
+int btls_pkey_set_type(EVP_PKEY* pkey, int nid, OSSL_LIB_CTX* libctx,
+    const char* propq)
+{
+    EVP_KEYMGMT* keymgmt;
+    int ret;
+    keymgmt = EVP_KEYMGMT_fetch(libctx, OBJ_nid2sn(nid), propq);
+    ret = keymgmt != NULL && EVP_PKEY_set_type_by_keymgmt(pkey, keymgmt);
+    EVP_KEYMGMT_free(keymgmt);
+    return ret;
+}
+
+/*
+*******************************************************************************
 Механизм BIGN_DHE
 
 Протокол:
@@ -146,7 +169,7 @@ err:
      }
      if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE);
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
@@ -164,7 +187,7 @@ int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey)
     // загрузить эфемерный открытый ключ сервера
     if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt))
         return 0;
-    if (!EVP_PKEY_set1_tls_encodedpoint(s->s3.peer_tmp,
+    if (!EVP_PKEY_set1_encoded_public_key(s->s3.peer_tmp,
         PACKET_data(&encoded_pt), PACKET_remaining(&encoded_pt)))
         return 0;
     // завершить
@@ -207,12 +230,10 @@ int btls_process_ske_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY* *pkey)
 - BIGN_CURVE512V1_ID (33)
 из резервного диапазона.
 
-\warning В функции btls_construct_ske_psk_bign_dhe() вызывается ctrl-функция
-ключа Bign с идентификатором EVP_PKEY_ALG_CTRL + 1. Эта функция должна
-устанавливать долговременные параметры Bign (см. код
-EVP_BIGN_PEKEY_CTRL_SET_PARAMS в bign_pmeth.c). Другими словами,
-считается, что
-	EVP_BIGN_PEKEY_CTRL_SET_PARAMS = EVP_PKEY_ALG_CTRL + 1.
+\remark Кривая эфемерного ключа задается именем группы
+(EVP_PKEY_CTX_set_group_name()). Провайдер принимает имя напрямую, для плагина
+имя транслируется в ctrl-команду EVP_BIGN_PKEY_CTRL_SET_PARAMS
+(= EVP_PKEY_ALG_CTRL + 1, см. fix_bign_ecx в ctrl_params_translate.c).
 
 \remark Обработка psk_identity_hint выполняется в функции
 tls_process_ske_psk_preamble до вызова btls_process_ske_psk_bign_dhe.
@@ -227,13 +248,20 @@ ssl/statem/statem_clnt.c (см. обработку флага SSL_kBDHEPSK).
 *******************************************************************************
 */
 
+#if OPENSSL_VERSION_MAJOR >= 4
+#define btls_tls1_shared_group(s, n) \
+    tls1_shared_group(s, n, TLS1_GROUPS_ALL_GROUPS)
+#else
+#define btls_tls1_shared_group(s, n) tls1_shared_group(s, n)
+#endif
+
 static int btls_shared_group(SSL_CONNECTION *s)
 {
     int i = 0;
-    int num = tls1_shared_group(s, -1);
+    int num = btls_tls1_shared_group(s, -1);
     while (i < num) 
     {
-        int group_id = tls1_shared_group(s, i);
+        int group_id = btls_tls1_shared_group(s, i);
         if (group_id == BIGN_CURVE256V1_ID ||
             group_id == BIGN_CURVE384V1_ID ||
             group_id == BIGN_CURVE512V1_ID)
@@ -288,8 +316,8 @@ int btls_construct_ske_psk_bign_dhe(SSL_CONNECTION *s, WPACKET *pkt)
     pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL);
 	if (!pctx ||
 		EVP_PKEY_keygen_init(pctx) <= 0 ||
-		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1,
-			tls1_group_id2nid(ginf->group_id,0), NULL) <= 0 ||
+		EVP_PKEY_CTX_set_group_name(pctx,
+			OBJ_nid2sn(tls1_group_id2nid(ginf->group_id, 0))) <= 0 ||
 		EVP_PKEY_keygen(pctx, &pk) <= 0)
         goto err;
 	// записать эфемерный ключ
@@ -313,7 +341,7 @@ err:
 	OPENSSL_free(oid);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_SERVER_KEY_EXCHANGE);
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
@@ -339,14 +367,13 @@ int btls_process_ske_psk_bign_dhe(SSL_CONNECTION *s, PACKET *pkt, EVP_PKEY **pke
 		goto err;
 	if (!(pctx = EVP_PKEY_CTX_new_id(NID_bign_pubkey, NULL)) ||
 		EVP_PKEY_paramgen_init(pctx) <= 0 ||
-		EVP_PKEY_CTX_ctrl(pctx, -1, -1, EVP_PKEY_ALG_CTRL + 1,
-			params_nid, NULL) <= 0 ||
+		EVP_PKEY_CTX_set_group_name(pctx, OBJ_nid2sn(params_nid)) <= 0 ||
 	    EVP_PKEY_paramgen(pctx, &pk) <= 0 ||
 		!EVP_PKEY_copy_parameters(s->s3.peer_tmp, pk))
 		goto err;
     // загрузить эфемерный открытый ключ сервера
     if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt) ||
-		!EVP_PKEY_set1_tls_encodedpoint(s->s3.peer_tmp,
+		!EVP_PKEY_set1_encoded_public_key(s->s3.peer_tmp,
 			PACKET_data(&encoded_pt),
 			PACKET_remaining(&encoded_pt)))
 		goto err;
@@ -433,7 +460,7 @@ err:
         EVP_PKEY_CTX_free(pkey_ctx);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_CONSTRUCT_CLIENT_KEY_EXCHANGE);
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 
@@ -477,7 +504,7 @@ err:
         OPENSSL_free(pms);
     if (ret == 0)
         SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-            SSL_F_TLS_PROCESS_CLIENT_KEY_EXCHANGE);
+            ERR_R_INTERNAL_ERROR);
     return ret;
 }
 

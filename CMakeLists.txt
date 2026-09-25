@@ -81,6 +81,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
       -fprofile-arcs -ftest-coverage")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} \
+      -fprofile-arcs -ftest-coverage")
   endif()
 endif()
 
@@ -131,38 +133,90 @@ set(libs ${BEE2_LIBRARIES} ${OPENSSL_LIBRARIES})
 
 add_subdirectory(include)
 
-set(src
-  src/bee2evp.c
-  src/bash_cipher.c
-  src/bash_md.c
-  src/belt_ameth.c
-  src/belt_cipher.c
-  src/belt_md.c
-  src/belt_pbkdf.c
-  src/belt_pmeth.c
-  src/belt_tls.c
-  src/bign_ameth.c
-  src/bign_asn1.c
-  src/bign_pmeth.c
-)
-
 if(NOT BIN_INSTALL_DIR)
   set(BIN_INSTALL_DIR bin)
 endif()
 
-add_library(bee2evp SHARED ${src})
-target_link_libraries(bee2evp ${libs})
+# Engines are removed in OpenSSL 4, providers appear in OpenSSL 3
 
-set_target_properties(bee2evp PROPERTIES
-  INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
-  VERSION ${BEE2EVP_VERSION} SOVERSION 1.0
-)
+include(CheckCSourceCompiles)
+set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIRS})
+check_c_source_compiles("#include <openssl/opensslv.h>
+  #if OPENSSL_VERSION_MAJOR >= 4
+  #error
+  #endif
+  int main(void) { return 0; }" OPENSSL_HAS_ENGINES)
+check_c_source_compiles("#include <openssl/opensslv.h>
+  #if !defined(OPENSSL_VERSION_MAJOR) || OPENSSL_VERSION_MAJOR < 3
+  #error
+  #endif
+  int main(void) { return 0; }" OPENSSL_HAS_PROVIDERS)
+unset(CMAKE_REQUIRED_INCLUDES)
 
-install(TARGETS bee2evp
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE
-)
+option(BUILD_ENGINE "Build the engine (OpenSSL < 4)." ${OPENSSL_HAS_ENGINES})
+option(BUILD_PROVIDER "Build the provider (OpenSSL >= 3)."
+  ${OPENSSL_HAS_PROVIDERS})
+
+if(BUILD_ENGINE)
+  set(src
+    src/bee2evp.c
+    src/bash_cipher.c
+    src/bash_md.c
+    src/belt_ameth.c
+    src/belt_cipher.c
+    src/belt_md.c
+    src/belt_pbkdf.c
+    src/belt_pmeth.c
+    src/belt_tls.c
+    src/bign_ameth.c
+    src/bign_asn1.c
+    src/bign_pmeth.c
+  )
+
+  add_library(bee2evp SHARED ${src})
+  target_link_libraries(bee2evp ${libs})
+
+  set_target_properties(bee2evp PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
+    VERSION ${BEE2EVP_VERSION} SOVERSION 1.0
+  )
+
+  install(TARGETS bee2evp
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
+      WORLD_READ WORLD_EXECUTE
+  )
+endif()
+
+if(BUILD_PROVIDER)
+  set(prov_src
+    src/bign_asn1.c
+    src/prov/bee2prov.c
+    src/prov/bign_codec.c
+    src/prov/bign_keymgmt.c
+    src/prov/bign_ops.c
+    src/prov/cipher.c
+    src/prov/cipher_tls.c
+    src/prov/mac.c
+    src/prov/md.c
+  )
+
+  # loadable module: openssl ... -provider-path <dir> -provider bee2prov
+  add_library(bee2prov MODULE ${prov_src})
+  target_link_libraries(bee2prov ${libs})
+
+  set_target_properties(bee2prov PROPERTIES
+    PREFIX ""
+    SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
+  )
+
+  install(TARGETS bee2prov
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/ossl-modules
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
+      WORLD_READ WORLD_EXECUTE
+  )
+endif()
 
 if(BUILD_DOC)
   add_subdirectory(doc)

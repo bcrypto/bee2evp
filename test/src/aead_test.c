@@ -95,7 +95,9 @@ bool_t aead_encrypt(const char* cipher_name,
 		}
 	}
 
-	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	// шифр не указывается повторно: иначе OpenSSL 3 сбросит контекст
+	// (и длину синхропосылки)
+	if (EVP_EncryptInit_ex(ctx, NULL, NULL, key, s) != 1)
 	{
 		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
@@ -199,7 +201,9 @@ bool_t aead_decrypt(const char* cipher_name,
 		}
 	}
 
-	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	// шифр не указывается повторно: иначе OpenSSL 3 сбросит контекст
+	// (и длину синхропосылки)
+	if (EVP_DecryptInit_ex(ctx, NULL, NULL, key, s) != 1)
 	{
 		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;

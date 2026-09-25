@@ -13,6 +13,9 @@ NEW = ">=3.5" # OpenSSL 3.5+ — исходники переформатиров
 OLD3 = ">=3.0,<3.5" # провайдеры, но старый стиль.
 V3 = ">=3.0" # любая 3.x — там, где стиль не важен.
 V111 = "<3.0" # 1.1.1 — до провайдеров
+V4 = ">=4.0" # OpenSSL 4: нет плагинов (engine), алгоритмы -- в провайдере
+NEW3 = ">=3.5,<4.0" # 3.5+, но не 4 (правки только для плагина)
+V3ONLY = ">=3.0,<4.0" # любая 3.x, но не 4 (правки только для плагина)
 
 STDERR = ">=3.5.6" # печатает через BIO_printf,
 STDOUT = "<3.5.6" # через printf
@@ -282,7 +285,7 @@ RULES = [
                 "переводит bign-curve256v1 в NID и ложит в p1, без этого"
                 "openssl genpkey -pkeyopt params:bign-curve256v1 не обработается при engine",
         "file": "crypto/evp/ctrl_params_translate.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "insert_before",
         "anchor": r"/\*-\n \* The translation table itself\n",
         "guard": "fix_bign_ecx",
@@ -293,7 +296,7 @@ RULES = [
         "id": "ctrl_params.bign_entries",
         "desc": "добавляем две записи в таблице трансляций: для генерации параметров и для генерации ключа",
         "file": "crypto/evp/ctrl_params_translate.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "replace",
         "anchor": (r"(    \{ (OSSL_ACTION_SET|SET), EVP_PKEY_X448, EVP_PKEY_X448,"
                    r" EVP_PKEY_OP_PARAMGEN, -1, NULL, NULL,\n"
@@ -313,12 +316,542 @@ RULES = [
         "desc": "до: разбирали PARAMETERS только если задан запрашивали ключ,"
                 "после: вдаже если не запрашивали (чтобы прочитать PEM с параметрами кривой bign)",
         "file": "crypto/pem/pem_pkey.c",
-        "when": V3,
+        "when": V3ONLY,
         "op": "replace",
         "anchor": (r"\} else if \(\(selection & EVP_PKEY_KEYPAIR\) == 0\n"
                    r"[ ]+&& \(slen = ossl_pem_check_suffix\(nm, \"PARAMETERS\"\)\) > 0\) \{"),
         "guard": '} else if ((slen = ossl_pem_check_suffix(nm, "PARAMETERS")) > 0) {',
         "payload": '} else if ((slen = ossl_pem_check_suffix(nm, "PARAMETERS")) > 0) {',
+    },
+
+
+    # "алгоритм -> NID". NID алгоритмов провайдеров выводится из
+    # legacy-таблиц, поэтому у belt и bash его нет, и OpenSSL не может
+    # закодировать их идентификаторы (PKCS#5/8/12, CMS, PKCS#7, X509_ALGOR).
+    {
+        "id": "md.name2nid_fn",
+        "desc": "колбэк: NID алгоритма по его именам",
+        "file": "crypto/evp/digest.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"^static void \*evp_md_from_algorithm\(",
+        "guard": "static void btls_name2nid(",
+        "payload": "/*\n * BTLS: NID of an algorithm known only to providers (belt, bash, ...) is\n * taken from its names. Otherwise EVP_MD_get_type(), EVP_CIPHER_get_type()\n * return NID_undef and PKCS#5/8/12, CMS, PKCS#7 can't encode the algorithm.\n */\nstatic void btls_name2nid(const char *name, void *vnid)\n{\n    int *nid = vnid;\n\n    if (*nid == NID_undef)\n        *nid = OBJ_txt2nid(name);\n}\n\n",
+    },
+    {
+        "id": "md.nid_from_names",
+        "desc": "алгоритм без legacy-метода получает NID по именам",
+        "file": "crypto/evp/digest.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": (r"    if \(!evp_names_do_all\(prov, name_id, set_legacy_nid, &md->type\)\n"
+                   r".*?\n    \}\n"),
+        "guard": "btls_name2nid, &md->type)",
+        "payload": (
+            "    /* BTLS: algorithms without legacy methods (belt, bash) */\n"
+            "    if (md->type == NID_undef)\n"
+            "        evp_names_do_all(prov, name_id, btls_name2nid, &md->type);\n"),
+    },
+    {
+        "id": "cipher.name2nid_fn",
+        "desc": "колбэк: NID алгоритма по его именам",
+        "file": "crypto/evp/evp_enc.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"^static void \*evp_cipher_from_algorithm\(",
+        "guard": "static void btls_name2nid(",
+        "payload": "/*\n * BTLS: NID of an algorithm known only to providers (belt, bash, ...) is\n * taken from its names. Otherwise EVP_MD_get_type(), EVP_CIPHER_get_type()\n * return NID_undef and PKCS#5/8/12, CMS, PKCS#7 can't encode the algorithm.\n */\nstatic void btls_name2nid(const char *name, void *vnid)\n{\n    int *nid = vnid;\n\n    if (*nid == NID_undef)\n        *nid = OBJ_txt2nid(name);\n}\n\n",
+    },
+    {
+        "id": "cipher.nid_from_names",
+        "desc": "алгоритм без legacy-метода получает NID по именам",
+        "file": "crypto/evp/evp_enc.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": (r"    if \(!evp_names_do_all\(prov, name_id, set_legacy_nid, &cipher->nid\)\n"
+                   r".*?\n    \}\n"),
+        "guard": "btls_name2nid, &cipher->nid)",
+        "payload": (
+            "    /* BTLS: algorithms without legacy methods (belt, bash) */\n"
+            "    if (cipher->nid == NID_undef)\n"
+            "        evp_names_do_all(prov, name_id, btls_name2nid, &cipher->nid);\n"),
+    },
+
+    # PRF для PBKDF2 (PKCS#5/8/12): плагин объявлял belt-hmac через
+    # EVP_CTRL_PBE_PRF_NID. Для шифров провайдеров команда не транслируется,
+    # и OpenSSL берет hmacWithSHA256. Провайдер отдает PRF параметром
+    # "pbe-prf-nid"; если шифр его не знает -- поведение OpenSSL прежнее.
+    {
+        "id": "cipher.pbe_prf_nid",
+        "desc": "EVP_CTRL_PBE_PRF_NID -> параметр pbe-prf-nid шифра провайдера",
+        "file": "crypto/evp/evp_enc.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"^    case EVP_CTRL_INIT:\n",
+        "guard": "\"pbe-prf-nid\"",
+        "payload": (
+            "    case EVP_CTRL_PBE_PRF_NID: {\n"
+            "        /* BTLS: PRF preferred by the cipher (belt-hmac for belt) */\n"
+            "        int prf_nid = NID_undef;\n"
+            "\n"
+            "        params[0] = OSSL_PARAM_construct_int(\"pbe-prf-nid\", &prf_nid);\n"
+            "        if (evp_do_ciph_ctx_getparams(ctx->cipher, ctx->algctx, params) <= 0\n"
+            "            || prf_nid == NID_undef)\n"
+            "            return 0;\n"
+            "        *(int *)ptr = prf_nid;\n"
+            "        return 1;\n"
+            "    }\n"),
+    },
+
+    # CMS SignedData с ключами провайдера (bign).
+    # 1) Хэш по умолчанию (belt-hash, bash384, bash512) ищется через
+    #    EVP_get_digestbynid() и не находится: запрашиваем его по имени
+    #    до штатного выбора и освобождаем на выходе из CMS_add1_signer().
+    # 2) signatureAlgorithm = bign-with-* с параметром NULL (СТБ 34.101.45,
+    #    Д.2; так кодировал плагин). OpenSSL опускает параметры.
+    # Функция cms_generic_sign() появилась в OpenSSL 3.1.
+    {
+        "id": "cms_sd.fetched_md_decl",
+        "desc": "переменная для запрошенного хэша по умолчанию",
+        "file": "crypto/cms/cms_sd.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": r"\{\n    CMS_SignedData \*sd;\n    CMS_SignerInfo \*si = NULL;\n",
+        "guard": "EVP_MD *btls_fetched_md = NULL;",
+        "payload": "    EVP_MD *btls_fetched_md = NULL;\n",
+    },
+    {
+        "id": "cms_sd.fetch_default_md",
+        "desc": "хэш по умолчанию, известный только провайдеру",
+        "file": "crypto/cms/cms_sd.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": r"    if \(!X509_check_private_key\(signer, pk\)\) \{\n.*?\n    \}\n",
+        "guard": "md = btls_fetched_md = EVP_MD_fetch(",
+        "payload": (
+            "\n"
+            "    /* BTLS: default digest known only to providers (bign) */\n"
+            "    if (md == NULL) {\n"
+            "        int def_nid = NID_undef;\n"
+            "\n"
+            "        ERR_set_mark();\n"
+            "        if (EVP_PKEY_get_default_digest_nid(pk, &def_nid) > 0\n"
+            "            && def_nid != NID_undef\n"
+            "            && EVP_get_digestbynid(def_nid) == NULL)\n"
+            "            md = btls_fetched_md = EVP_MD_fetch(ossl_cms_ctx_get0_libctx(ctx),\n"
+            "                OBJ_nid2sn(def_nid), ossl_cms_ctx_get0_propq(ctx));\n"
+            "        ERR_pop_to_mark();\n"
+            "    }\n"),
+    },
+    {
+        "id": "cms_sd.free_md_ok",
+        "desc": "освобождение хэша (успех)",
+        "file": "crypto/cms/cms_sd.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": r"    return si;\n(\n?)( merr:| err:|err:)",
+        "guard": "    EVP_MD_free(btls_fetched_md);\n    return si;",
+        "payload": "    EVP_MD_free(btls_fetched_md);\n    return si;\n$1$2",
+    },
+    {
+        "id": "cms_sd.free_md_err",
+        "desc": "освобождение хэша (ошибка)",
+        "file": "crypto/cms/cms_sd.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": r"err:\n    M_ASN1_free_of\(si, CMS_SignerInfo\);\n",
+        "guard": "M_ASN1_free_of(si, CMS_SignerInfo);\n    EVP_MD_free(btls_fetched_md);",
+        "payload": "    EVP_MD_free(btls_fetched_md);\n",
+    },
+    {
+        "id": "cms_sd.sigalg_null_params",
+        "desc": "signatureAlgorithm bign-with-* с параметром NULL",
+        "file": "crypto/cms/cms_sd.c",
+        "when": ">=3.1",
+        "op": "replace",
+        "anchor": r"return X509_ALGOR_set0\(alg2, OBJ_nid2obj\(snid\), V_ASN1_UNDEF, NULL\);",
+        "guard": "EVP_PKEY_is_a(pkey, \"bign\") ? V_ASN1_NULL",
+        "payload": (
+            "/* BTLS: bign-with-* carry NULL parameters (STB 34.101.45) */\n"
+            "        return X509_ALGOR_set0(alg2, OBJ_nid2obj(snid),\n"
+            "            EVP_PKEY_is_a(pkey, \"bign\") ? V_ASN1_NULL : V_ASN1_UNDEF, NULL);"),
+    },
+
+    # CMS EnvelopedData с ключами провайдера (bign).
+    # 1) keyEncryptionAlgorithm = bign-keytransport с параметром NULL
+    #    (СТБ 34.101.23, Б.4; плагин делал это через ameth). Для ключей
+    #    провайдеров OpenSSL алгоритм не выставляет.
+    # 2) Шифр содержимого (belt) при расшифровании ищется через
+    #    EVP_get_cipherbyobj(): при неудаче запрашиваем его по имени.
+    {
+        "id": "cms_env.bign_keytransport",
+        "desc": "keyEncryptionAlgorithm для ключей bign",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"    /\* Something else\? We'll give engines etc a chance to handle this \*/\n"
+                  r"    if \(pkey->ameth == NULL \|\| pkey->ameth->pkey_ctrl == NULL\)\n",
+        "guard": "OBJ_sn2nid(\"bign-keytransport\")",
+        "payload": (
+            "    /* BTLS: bign-keytransport with NULL parameters (STB 34.101.23) */\n"
+            "    if (ri->type == CMS_RECIPINFO_TRANS && EVP_PKEY_is_a(pkey, \"bign\")) {\n"
+            "        X509_ALGOR *alg = ri->d.ktri->keyEncryptionAlgorithm;\n"
+            "        int nid = OBJ_sn2nid(\"bign-keytransport\");\n"
+            "\n"
+            "        if (cmd == 0)\n"
+            "            return X509_ALGOR_set0(alg, OBJ_nid2obj(nid), V_ASN1_NULL, NULL);\n"
+            "        return OBJ_obj2nid(alg->algorithm) == nid;\n"
+            "    }\n"
+            "\n"),
+    },
+    # KEKRecipientInfo: OpenSSL знает только AES-wrap. Добавляем belt-kwp
+    # (заголовок 16 октетов вместо 8, параметры NULL, как в engine).
+    {
+        "id": "cms_env.kwp_helper",
+        "desc": "belt-kwp в KEKRecipientInfo: вспомогательная функция",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"/\* For now hard code AES key wrap info \*/\n",
+        "guard": "static int btls_is_kwp(",
+        "payload": (
+            "/* BTLS: belt-kwp128/192/256 (STB 34.101.31) */\n"
+            "static int btls_is_kwp(int nid)\n"
+            "{\n"
+            "    const char *sn = OBJ_nid2sn(nid);\n"
+            "\n"
+            "    return sn != NULL && strncmp(sn, \"belt-kwp\", 8) == 0;\n"
+            "}\n"
+            "\n"),
+    },
+    {
+        "id": "cms_env.kwp_keylen",
+        "desc": "belt-kwp в KEKRecipientInfo: длина ключа",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"(?<=    case NID_id_aes256_wrap:\n        return 32;\n\n"
+                   r"    default:\n)        return 0;\n"),
+        "guard": "btls_is_kwp(nid) ? (size_t)atoi(OBJ_nid2sn(nid) + 8) / 8 : 0;",
+        "payload": ("        /* BTLS: belt-kwp */\n"
+                    "        return btls_is_kwp(nid) ? (size_t)atoi(OBJ_nid2sn(nid) + 8) / 8 : 0;\n"),
+    },
+    {
+        "id": "cms_env.kwp_null_params",
+        "desc": "belt-kwp в KEKRecipientInfo: параметры NULL",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": r"(?<=OBJ_nid2obj\(nid\),)\s*V_ASN1_UNDEF, NULL\)",
+        "guard": "btls_is_kwp(nid) ? V_ASN1_NULL : V_ASN1_UNDEF",
+        "payload": "\n        btls_is_kwp(nid) ? V_ASN1_NULL : V_ASN1_UNDEF, NULL)",
+    },
+    {
+        "id": "cms_env.kwp_cipher_fn",
+        "desc": "belt-kwp в KEKRecipientInfo: шифр по keyEncryptionAlgorithm",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"/\* Encrypt content key in KEK recipient info \*/\n",
+        "guard": "static EVP_CIPHER *btls_kek_cipher(",
+        "payload": (
+            "/* BTLS: belt-kwp by name, AES-wrap by key length */\n"
+            "static EVP_CIPHER *btls_kek_cipher(const CMS_KEKRecipientInfo *kekri,\n"
+            "    const CMS_CTX *ctx)\n"
+            "{\n"
+            "    int nid = OBJ_obj2nid(kekri->keyEncryptionAlgorithm->algorithm);\n"
+            "\n"
+            "    if (btls_is_kwp(nid))\n"
+            "        return EVP_CIPHER_fetch(ossl_cms_ctx_get0_libctx(ctx),\n"
+            "            OBJ_nid2sn(nid), ossl_cms_ctx_get0_propq(ctx));\n"
+            "    return cms_get_key_wrap_cipher(kekri->keylen, ctx);\n"
+            "}\n"
+            "\n"),
+    },
+    {
+        "id": "cms_env.kwp_cipher",
+        "desc": "belt-kwp в KEKRecipientInfo: выбор шифра",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "replace",
+        "count": 2,
+        "anchor": r"cipher = cms_get_key_wrap_cipher\(kekri->keylen, cms_ctx\);",
+        "guard": "cipher = btls_kek_cipher(kekri, cms_ctx);",
+        "payload": "cipher = btls_kek_cipher(kekri, cms_ctx);",
+    },
+    {
+        "id": "cms_env.kwp_header",
+        "desc": "belt-kwp в KEKRecipientInfo: заголовок 16 октетов",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "replace",
+        "count": 2,
+        "anchor": r"ec->keylen \+ 8\)",
+        "guard": "ec->keylen + BTLS_KEK_HDR(cipher))",
+        "payload": "ec->keylen + BTLS_KEK_HDR(cipher))",
+    },
+    {
+        "id": "cms_env.kwp_header_def",
+        "desc": "belt-kwp в KEKRecipientInfo: длина заголовка",
+        "file": "crypto/cms/cms_env.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": r"/\* BTLS: belt-kwp by name, AES-wrap by key length \*/\n",
+        "guard": "#define BTLS_KEK_HDR(",
+        "payload": (
+            "/* BTLS: belt-kwp header is 16 octets, AES-wrap IV is 8 */\n"
+            "#define BTLS_KEK_HDR(c) (EVP_CIPHER_get_block_size(c) == 16 ? 16 : 8)\n"
+            "\n"),
+    },
+    {
+        "id": "cms_enc.cipher_by_name",
+        "desc": "шифр содержимого, известный только провайдеру",
+        "file": "crypto/cms/cms_enc.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"        cipher = EVP_get_cipherbyobj\(calg->algorithm\);\n"
+                   r"    \}\n"
+                   r"    if \(cipher != NULL\) \{\n"),
+        "guard": "if (cipher != NULL && fetched_ciph == NULL) {",
+        "payload": (
+            "        cipher = EVP_get_cipherbyobj(calg->algorithm);\n"
+            "        /* BTLS: ciphers known only to providers (belt) */\n"
+            "        if (cipher == NULL)\n"
+            "            cipher = fetched_ciph = EVP_CIPHER_fetch(libctx,\n"
+            "                OBJ_nid2sn(OBJ_obj2nid(calg->algorithm)), propq);\n"
+            "    }\n"
+            "    if (cipher != NULL && fetched_ciph == NULL) {\n"),
+    },
+
+    # PKCS#7: то же, что в CMS (engine делал через ASN1_PKEY_CTRL_PKCS7_*).
+    {
+        "id": "pk7_lib.bign_sign",
+        "desc": "digestEncryptionAlgorithm для ключей bign",
+        "file": "crypto/pkcs7/pk7_lib.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": (r"    if \(pkey->ameth != NULL && pkey->ameth->pkey_ctrl != NULL\) \{\n"
+                   r"        ret = pkey->ameth->pkey_ctrl\(pkey, ASN1_PKEY_CTRL_PKCS7_SIGN"),
+        "guard": "/* BTLS: bign-with-* with NULL parameters (STB 34.101.45) */\n    if (EVP_PKEY_is_a(pkey, \"bign\")) {\n        int snid",
+        "payload": (
+            "    /* BTLS: bign-with-* with NULL parameters (STB 34.101.45) */\n"
+            "    if (EVP_PKEY_is_a(pkey, \"bign\")) {\n"
+            "        int snid, hnid = OBJ_obj2nid(p7i->digest_alg->algorithm);\n"
+            "\n"
+            "        if (OBJ_find_sigid_by_algs(&snid, hnid,\n"
+            "                OBJ_txt2nid(EVP_PKEY_get0_type_name(pkey))))\n"
+            "            return X509_ALGOR_set0(p7i->digest_enc_alg,\n"
+            "                OBJ_nid2obj(snid), V_ASN1_NULL, NULL);\n"
+            "        return X509_ALGOR_set0(p7i->digest_enc_alg,\n"
+            "            OBJ_nid2obj(OBJ_sn2nid(\"bign-with-hspec\")), V_ASN1_OBJECT,\n"
+            "            OBJ_dup(p7i->digest_alg->algorithm));\n"
+            "    }\n"
+            "\n"),
+    },
+    {
+        "id": "pk7_lib.fetched_md_decl",
+        "desc": "хэш по умолчанию, известный только провайдеру",
+        "file": "crypto/pkcs7/pk7_lib.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": (r"    const EVP_MD \*dgst\)\n"
+                   r"\{\n"
+                   r"    PKCS7_SIGNER_INFO \*si = NULL;\n"),
+        "guard": "EVP_MD *btls_fetched_md = NULL;",
+        "payload": "    EVP_MD *btls_fetched_md = NULL;\n",
+    },
+    {
+        "id": "pk7_lib.fetch_default_md",
+        "desc": "хэш по умолчанию, известный только провайдеру",
+        "file": "crypto/pkcs7/pk7_lib.c",
+        "when": V3,
+        "op": "insert_after",
+        "anchor": r"        dgst = EVP_get_digestbynid\(def_nid\);\n",
+        "guard": "dgst = btls_fetched_md = EVP_MD_fetch(",
+        "payload": (
+            "        /* BTLS: digests known only to providers (belt, bash) */\n"
+            "        if (dgst == NULL) {\n"
+            "            const PKCS7_CTX *ctx = ossl_pkcs7_get0_ctx(p7);\n"
+            "\n"
+            "            dgst = btls_fetched_md = EVP_MD_fetch(\n"
+            "                ossl_pkcs7_ctx_get0_libctx(ctx), OBJ_nid2sn(def_nid),\n"
+            "                ossl_pkcs7_ctx_get0_propq(ctx));\n"
+            "        }\n"),
+    },
+    {
+        "id": "pk7_lib.free_md",
+        "desc": "хэш по умолчанию, известный только провайдеру",
+        "file": "crypto/pkcs7/pk7_lib.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"    if \(!PKCS7_add_signer\(p7, si\)\)\n"
+                   r"        goto err;\n"
+                   r"    return si;\n"
+                   r" ?err:\n"),
+        "guard": "    EVP_MD_free(btls_fetched_md);\n    return si;\nerr:\n    EVP_MD_free(btls_fetched_md);\n",
+        "payload": (
+            "    if (!PKCS7_add_signer(p7, si))\n"
+            "        goto err;\n"
+            "    EVP_MD_free(btls_fetched_md);\n"
+            "    return si;\n"
+            "err:\n"
+            "    EVP_MD_free(btls_fetched_md);\n"),
+    },
+    {
+        "id": "pk7_doit.sign_md_name",
+        "desc": "хэш подписи, известный только провайдеру",
+        "file": "crypto/pkcs7/pk7_doit.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"    const PKCS7_CTX \*ctx = si->ctx;\n"
+                   r"\n"
+                   r"    md = EVP_get_digestbyobj\(si->digest_alg->algorithm\);\n"
+                   r"    if \(md == NULL\)\n"
+                   r"        return 0;\n"),
+        "guard": "const char *btls_mdname;",
+        "payload": (
+            "    const PKCS7_CTX *ctx = si->ctx;\n"
+            "    const char *btls_mdname;\n"
+            "\n"
+            "    md = EVP_get_digestbyobj(si->digest_alg->algorithm);\n"
+            "    /* BTLS: digests known only to providers (belt, bash) */\n"
+            "    btls_mdname = md != NULL ? EVP_MD_get0_name(md)\n"
+            "        : OBJ_nid2sn(OBJ_obj2nid(si->digest_alg->algorithm));\n"
+            "    if (btls_mdname == NULL)\n"
+            "        return 0;\n"),
+    },
+    {
+        "id": "pk7_doit.sign_md_name_use",
+        "desc": "хэш подписи, известный только провайдеру",
+        "file": "crypto/pkcs7/pk7_doit.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": r"EVP_DigestSignInit_ex\(mctx, &pctx, EVP_MD_get0_name\(md\),",
+        "guard": "EVP_DigestSignInit_ex(mctx, &pctx, btls_mdname,",
+        "payload": "EVP_DigestSignInit_ex(mctx, &pctx, btls_mdname,",
+    },
+    {
+        "id": "pk7_lib.bign_keytransport",
+        "desc": "keyEncryptionAlgorithm для ключей bign",
+        "file": "crypto/pkcs7/pk7_lib.c",
+        "when": V3,
+        "op": "insert_before",
+        "anchor": (r"    if \(pkey->ameth == NULL \|\| pkey->ameth->pkey_ctrl == NULL\) \{\n"
+                   r"        ERR_raise\(ERR_LIB_PKCS7,\s*"
+                   r"PKCS7_R_ENCRYPTION_NOT_SUPPORTED_FOR_THIS_KEY_TYPE\);\n"),
+        "guard": "OBJ_sn2nid(\"bign-keytransport\")",
+        "payload": (
+            "    /* BTLS: bign-keytransport with NULL parameters (STB 34.101.23) */\n"
+            "    if (EVP_PKEY_is_a(pkey, \"bign\")) {\n"
+            "        if (!X509_ALGOR_set0(p7i->key_enc_algor,\n"
+            "                OBJ_nid2obj(OBJ_sn2nid(\"bign-keytransport\")),\n"
+            "                V_ASN1_NULL, NULL))\n"
+            "            goto err;\n"
+            "        goto finished;\n"
+            "    }\n"
+            "\n"),
+    },
+
+    # Проверка подписей X.509 (сертификаты, запросы, СОС): алгоритм
+    # хэширования ищется через EVP_get_digestbynid(), который видит только
+    # встроенные алгоритмы. belt-hash и bash реализуются провайдером (или
+    # плагином), поэтому при неудаче алгоритм запрашивается по имени.
+    {
+        "id": "a_verify.fetched_decl",
+        "desc": "переменная для запрошенного алгоритма хэширования",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": r"^    \} else \{\n        const EVP_MD \*type = NULL;\n",
+        "guard": "EVP_MD *fetched = NULL;",
+        "payload": ("    } else {\n"
+                    "        const EVP_MD *type = NULL;\n"
+                    "        EVP_MD *fetched = NULL;\n"),
+    },
+    {
+        "id": "a_verify.fetch_digest",
+        "desc": "алгоритм хэширования провайдера по имени",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"                type = EVP_get_digestbynid\(mdnid\);\n"
+                   r"                if \(type == NULL\) \{\n"),
+        "guard": "type = fetched = EVP_MD_fetch(",
+        "payload": (
+            "                type = EVP_get_digestbynid(mdnid);\n"
+            "                /* BTLS: belt-hash, bash are known only to providers */\n"
+            "                if (type == NULL)\n"
+            "                    type = fetched = EVP_MD_fetch(\n"
+            "                        EVP_MD_CTX_get_pkey_ctx(ctx)->libctx,\n"
+            "                        OBJ_nid2sn(mdnid),\n"
+            "                        EVP_MD_CTX_get_pkey_ctx(ctx)->propquery);\n"
+            "                if (type == NULL) {\n"),
+    },
+    {
+        "id": "a_verify.free_digest",
+        "desc": "освобождение запрошенного алгоритма хэширования",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"            if \(!EVP_DigestVerifyInit\(ctx, NULL, type, NULL, pkey\)\) \{\n"),
+        "guard": "EVP_MD_free(fetched);",
+        "payload": (
+            "            ret = EVP_DigestVerifyInit(ctx, NULL, type, NULL, pkey);\n"
+            "            EVP_MD_free(fetched);\n"
+            "            if (!ret) {\n"),
+    },
+    # Стойкость подписи сертификата (уровни безопасности TLS) оценивается
+    # по длине хэш-значения; алгоритм ищется так же, через
+    # EVP_get_digestbynid(). Без правки сертификаты bign отвергаются как
+    # "CA signature digest algorithm too weak".
+    {
+        "id": "x509_set.sig_info_digest",
+        "desc": "длина хэш-значения алгоритма провайдера",
+        "file": "crypto/x509/x509_set.c",
+        "op": "replace",
+        "guard": "EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);",
+        "conditions": [
+            # 3.4+: длина хэш-значения -- в переменной md_size
+            {"when": ">=3.4",
+             "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
+                        r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
+                        r"            return 0;\n"
+                        r"        \}\n"
+                        r"        md_size = EVP_MD_get_size\(md\);\n"),
+             "payload": (
+                 "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
+                 "            /* BTLS: belt-hash, bash are known only to providers */\n"
+                 "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
+                 "\n"
+                 "            if (fetched == NULL) {\n"
+                 "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
+                 "                return 0;\n"
+                 "            }\n"
+                 "            md_size = EVP_MD_get_size(fetched);\n"
+                 "            EVP_MD_free(fetched);\n"
+                 "        } else\n"
+                 "            md_size = EVP_MD_get_size(md);\n")},
+            # 3.0 - 3.3: стойкость вычисляется одной строкой
+            {"when": ">=3.0,<3.4",
+             "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
+                        r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
+                        r"            return 0;\n"
+                        r"        \}\n"
+                        r"        siginf->secbits = EVP_MD_get_size\(md\) \* 4;\n"),
+             "payload": (
+                 "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
+                 "            /* BTLS: belt-hash, bash are known only to providers */\n"
+                 "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
+                 "\n"
+                 "            if (fetched == NULL) {\n"
+                 "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
+                 "                return 0;\n"
+                 "            }\n"
+                 "            siginf->secbits = EVP_MD_get_size(fetched) * 4;\n"
+                 "            EVP_MD_free(fetched);\n"
+                 "        } else\n"
+                 "            siginf->secbits = EVP_MD_get_size(md) * 4;\n")},
+        ],
     },
 
 
@@ -388,7 +921,7 @@ RULES = [
         "op": "insert_after",
         "guard": "0xFE01",
         "conditions": [
-            {"when": NEW,
+            {"when": NEW3,
              "anchor": r"    /\* 43 \*/ \{ OSSL_TLS_GROUP_ID_SecP384r1MLKEM1024,"
                        r" ML_KEM_1024_SECBITS, TLS1_3_VERSION, 0, -1, -1, 1 \},\n",
              "payload": (
@@ -410,7 +943,7 @@ RULES = [
         "file": "providers/common/capabilities.c",
         "guard": 'TLS_GROUP_ENTRY("bign-curve256v1"',
         "conditions": [
-            {"when": NEW, "op": "insert_after",
+            {"when": NEW3, "op": "insert_after",
              "anchor": r"#endif /\* !defined\(OPENSSL_NO_TLS_DEPRECATED_EC\) \*/\n",
              "payload": (
                  '    TLS_GROUP_ENTRY("bign-curve256v1", "bign-curve256v1", "bign-curve256v1", 44),\n'
@@ -499,6 +1032,10 @@ RULES = [
         "file": "ssl/s3_lib.c",
         "guard": "BTLS1_3_RFC_BELT_CHE256_BELT_HASH",
         "conditions": [
+            # 4.x: ни одного #if вокруг криптонаборов TLS 1.3
+            {"when": V4, "op": "insert_before",
+             "anchor": r"^\};\n\n/\*\n \* The list of available ciphers,",
+             "payload_file": "tls13_ciphers.new.c"},
             {"when": NEW, "op": "insert_before",
              "anchor": r"^#endif\n\};\n\n/\*\n \* The list of available ciphers,",
              "payload_file": "tls13_ciphers.new.c"},
@@ -531,6 +1068,15 @@ RULES = [
         "file": "ssl/s3_lib.c",
         "guard": "alg_k & SSL_kBDHE",
         "conditions": [
+            # 4.x: запроса по SSL_kDHE нет, alg_k объявлена только с GOST
+            {"when": V4, "op": "insert_before",
+             "anchor": r"^    if \(!\(alg_a & SSL_aRSA\) && "
+                       r"!WPACKET_put_bytes_u8\(pkt, SSL3_CT_RSA_SIGN\)\)",
+             "guard": "algorithm_mkey & (SSL_kBDHE | SSL_kBDHTPSK)",
+             "payload": (
+                 "    if (s->version >= TLS1_VERSION\n"
+                 "        && (s->s3.tmp.new_cipher->algorithm_mkey & (SSL_kBDHE | SSL_kBDHTPSK)))\n"
+                 "        return WPACKET_put_bytes_u8(pkt, TLS_CT_BIGN_SIGN);\n\n")},
             {"when": ">=3.3,<3.4", "op": "replace",
              "anchor": r"\n\n    if \(\(s->version == SSL3_VERSION\) && \(alg_k & SSL_kDHE\)\) \{",
              "payload": (
@@ -661,6 +1207,14 @@ RULES = [
         "op": "insert_after",
         "guard": "NID_belt_dwpt",
         "conditions": [
+            # 4.x: после SM4 (индексы 26-29)
+            {"when": V4,
+             "anchor": r"    \{ SSL_SM4CCM, NID_sm4_ccm \}, /\* SSL_ENC_SM4CCM_IDX 25 \*/\n",
+             "payload": (
+                 "    { SSL_BELTDWP, NID_belt_dwpt }, /* 26 */\n"
+                 "    { SSL_BELTCTR, NID_belt_ctrt }, /* 27 */\n"
+                 "    { SSL_BELTCHE, NID_belt_chet }, /* 28 */\n"
+                 "    { SSL_BASHPRGAE, NID_bash_prg_aet }, /* 29 */\n")},
             {"when": NEW,
              "anchor": r"    \{ SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm \}, /\* SSL_ENC_KUZNYECHIK_IDX \*/\n",
              "payload": (
@@ -691,6 +1245,16 @@ RULES = [
         "op": "replace",
         "guard": "SSL_MD_BELTMAC_IDX",
         "conditions": [
+            # 4.x: после SM3 (индексы 15-19, см. btls.h)
+            {"when": V4,
+             "anchor": r"    \{ 0, NID_sm3 \}, /\* SSL_MD_SM3_IDX 14 \*/\n",
+             "payload": (
+                 "    { 0, NID_sm3 }, /* SSL_MD_SM3_IDX 14 */\n"
+                 "    { SSL_BELTMAC, NID_belt_hash }, /* SSL_MD_BELTMAC_IDX 15 */\n"
+                 "    { SSL_HBELT, NID_belt_hash }, /* SSL_MD_HBELT_IDX 16 */\n"
+                 "    { SSL_BASH384, NID_bash384 }, /* SSL_MD_BASH384_IDX 17 */\n"
+                 "    { SSL_BASH512, NID_bash512 }, /* SSL_MD_BASH512_IDX 18 */\n"
+                 "    { SSL_BASH256, NID_bash256 }, /* SSL_MD_BASH256_IDX 19 */\n")},
             {"when": NEW,
              "anchor": r"    \{ SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac \} /\* SSL_MD_KUZNYECHIKOMAC_IDX \*/\n",
              "payload": (
@@ -774,6 +1338,15 @@ RULES = [
         "op": "replace",
         "guard": "/* BELTMAC BELTHASH */",
         "conditions": [
+            # 4.x: дополнительно SM3 (индекс 14)
+            {"when": V4,
+             "anchor": r"    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef\n",
+             "payload": (
+                 "    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef,\n"
+                 "    /* SM3 */\n"
+                 "    NID_undef,\n"
+                 "    /* BELTMAC BELTHASH */\n"
+                 "    NID_bign_pubkey, NID_bign_pubkey, NID_undef, NID_undef, NID_undef\n")},
             {"when": V3,
              "anchor": r"    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef\n",
              "payload": ("    NID_undef, NID_undef, NID_undef, NID_undef, NID_undef,\n"
@@ -869,6 +1442,20 @@ RULES = [
         "op": "replace",
         "guard": 'get_optional_pkey_id("BIGN")',
         "conditions": [
+            # 4.x: get_optional_pkey_id() нет, алгоритмы bign -- в провайдере
+            {"when": V4,
+             "anchor": r"(^    if \(\(ctx->disabled_auth_mask & SSL_aGOST12\) ==[ ]+SSL_aGOST12\)\n"
+                       r"        ctx->disabled_mkey_mask \|= SSL_kGOST18;\n\n)",
+             "guard": 'EVP_SIGNATURE_fetch(ctx->libctx, "bign"',
+             "payload": (
+                 "$1    ERR_set_mark();\n"
+                 "    sig = EVP_SIGNATURE_fetch(ctx->libctx, \"bign\", ctx->propq);\n"
+                 "    if (sig == NULL) {\n"
+                 "        ctx->disabled_auth_mask |= SSL_aBIGN;\n"
+                 "        ctx->disabled_mkey_mask |= SSL_kBDHE | SSL_kBDHT | SSL_kBDHEPSK | SSL_kBDHTPSK;\n"
+                 "    } else\n"
+                 "        EVP_SIGNATURE_free(sig);\n"
+                 "    ERR_pop_to_mark();\n\n")},
             {"when": NEW,
              "anchor": r"(^    if \(\(ctx->disabled_auth_mask & SSL_aGOST12\) ==[ ]+SSL_aGOST12\)\n"
                        r"        ctx->disabled_mkey_mask \|= SSL_kGOST18;\n\n)",
@@ -1089,6 +1676,8 @@ RULES = [
         "file": "ssl/ssl_local.h",
         "op": "replace",
         "conditions": [
+            {"when": V4, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)15",
+             "guard_re": r"#[ ]*define SSL_MAX_DIGEST[ ]+20", "payload": "${1}20"},
             {"when": V3, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)14",
              "guard_re": r"#[ ]*define SSL_MAX_DIGEST[ ]+19", "payload": "${1}19"},
             {"when": V111, "anchor": r"(#[ ]*define SSL_MAX_DIGEST[ ]+)12",
@@ -1108,11 +1697,13 @@ RULES = [
         "id": "ssl_local.enc_num_idx",
         "desc": "обновление счетчика",
         "file": "ssl/ssl_local.h",
-        "when": V3,
+        "conditions": [
+            {"when": V4, "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)26",
+             "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+30", "payload": "${1}30"},
+            {"when": V3ONLY, "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)24",
+             "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+28", "payload": "${1}28"},
+        ],
         "op": "replace",
-        "anchor": r"(#[ ]*define SSL_ENC_NUM_IDX[ ]+)24",
-        "guard_re": r"#[ ]*define SSL_ENC_NUM_IDX[ ]+28",
-        "payload": "${1}28",
     },
 
     # ssl/statem/
@@ -1125,6 +1716,9 @@ RULES = [
         "op": "replace",
         "guard": "SSL_kECDHEPSK | SSL_kBDHE",
         "conditions": [
+            {"when": V4,
+             "anchor": r"int is_ec_ciphersuite = \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
+             "payload": "int is_ec_ciphersuite = ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHE | SSL_kBDHEPSK))"},
             {"when": NEW, "anchor": r"if \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
              "payload": "if ((alg_k & (SSL_kECDHE | SSL_kECDHEPSK | SSL_kBDHE | SSL_kBDHEPSK))"},
             {"when": "<3.5", "anchor": r"if \(\(alg_k & \(SSL_kECDHE \| SSL_kECDHEPSK\)\)",
@@ -1428,6 +2022,10 @@ RULES = [
         "desc": "",
         "file": "ssl/t1_lib.c",
         "conditions": [
+            {"when": V4, "op": "replace",
+             "anchor": r"    \"\?ffdhe2048:\?ffdhe3072\"\n",
+             "payload": ("    \"?ffdhe2048:?ffdhe3072 / \"                          \\\n"
+                         "    \"?bign-curve256v1:?bign-curve384v1:?bign-curve512v1\"\n")},
             {"when": NEW, "op": "replace",
              "anchor": r"    \"\?\*X25519MLKEM768 / \?\*X25519:\?secp256r1 / \?X448:\?secp384r1:\?secp521r1"
                        r" / \?ffdhe2048:\?ffdhe3072\"",
@@ -1454,7 +2052,7 @@ RULES = [
         "op": "replace",
         "guard": "    } else {\n        ctx->group_list_len++;",
         "conditions": [
-            {"when": NEW,
+            {"when": NEW3,
              "anchor": (r"        ctx->group_list_len\+\+;\n        ginf = NULL;\n"
                         r"        EVP_KEYMGMT_free\(keymgmt\);\n    \}\n"),
              "payload": ("        ctx->group_list_len++;\n        ginf = NULL;\n"
@@ -1480,13 +2078,43 @@ RULES = [
         "op": "replace",
         "guard": 'ginfo->algorithm, "bign"',
         "conditions": [
-            {"when": NEW, "anchor": r"        \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
+            {"when": NEW3, "anchor": r"        \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
              "payload": ("        || strcmp(ginfo->algorithm, \"X448\") == 0\n"
                          "        || strncmp(ginfo->algorithm, \"bign\", 4) == 0;")},
             {"when": OLD3, "anchor": r"           \|\| strcmp\(ginfo->algorithm, \"X448\"\) == 0;",
              "payload": ("           || strcmp(ginfo->algorithm, \"X448\") == 0\n"
                          "           || strcmp(ginfo->algorithm, \"bign\") == 0;")},
         ],
+    },
+    # 4.x: EVP_PKEY_set_type() только для встроенных ключей, ключи bign --
+    # в провайдере (иначе алгоритмы подписи bign считаются недоступными).
+    {
+        "id": "t1_lib.setup_sigalgs_provider_keys",
+        "desc": "тип ключа bign задается через управление ключами провайдера",
+        "file": "ssl/t1_lib.c",
+        "when": V4,
+        "op": "replace",
+        "anchor": (r"        if \(!EVP_PKEY_set_type\(tmpkey, lu->sig\)\) \{\n"
+                   r"            cache\[i\]\.available = 0;\n"),
+        "guard": "btls_pkey_set_type(tmpkey, lu->sig, ctx->libctx",
+        "payload": (
+            "        if (!EVP_PKEY_set_type(tmpkey, lu->sig)\n"
+            "            && !btls_pkey_set_type(tmpkey, lu->sig, ctx->libctx, ctx->propq)) {\n"
+            "            cache[i].available = 0;\n"),
+    },
+    {
+        "id": "t1_lib.sigalgs_list_provider_keys",
+        "desc": "то же при выводе списка алгоритмов подписи",
+        "file": "ssl/t1_lib.c",
+        "when": V4,
+        "op": "replace",
+        "anchor": (r"        if \(!EVP_PKEY_set_type\(tmpkey, lu->sig\)\) \{\n"
+                   r"            enabled = 0;\n"),
+        "guard": "btls_pkey_set_type(tmpkey, lu->sig, libctx",
+        "payload": (
+            "        if (!EVP_PKEY_set_type(tmpkey, lu->sig)\n"
+            "            && !btls_pkey_set_type(tmpkey, lu->sig, libctx, NULL)) {\n"
+            "            enabled = 0;\n"),
     },
     {
         "id": "t1_lib.tls12_sigalgs",
@@ -1582,6 +2210,19 @@ RULES = [
         "op": "insert_after",
         "guard": "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT",
         "conditions": [
+            {"when": V4,
+             "anchor": r"    \{ 0xC101, \"GOST2012-MAGMA-MAGMAOMAC\" \},\n",
+             "payload": (
+                 '    { 0xFF15, "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF16, "BDHE-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF17, "BDHT-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF18, "BDHT-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF19, "BDHE-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF1A, "BDHE-PSK-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '    { 0xFF1B, "BDHT-PSK-BIGN_WITH-BELT-CTR-MAC-HBELT" },\n'
+                 '    { 0xFF1C, "BDHT-PSK-BIGN_WITH-BELT-DWP-HBELT" },\n'
+                 '\t{ 0xFF1D, "BELT-CHE256-BELT-HASH" },\n'
+                 '\t{ 0xFF1E, "BASH-PRG_AE256-BASH256" },\n')},
             {"when": OLD3, "anchor": r"    \{0xC102, \"GOST2012-GOST8912-IANA\"\},\n",
              "payload": (
                  '    {0xFF15, "BDHE-BIGN_WITH-BELT-CTR-MAC-HBELT"},\n'
