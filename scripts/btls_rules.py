@@ -325,6 +325,86 @@ RULES = [
     },
 
 
+    # Проверка подписей X.509 (сертификаты, запросы, СОС): алгоритм
+    # хэширования ищется через EVP_get_digestbynid(), который видит только
+    # встроенные алгоритмы. belt-hash и bash реализуются провайдером (или
+    # плагином), поэтому при неудаче алгоритм запрашивается по имени.
+    {
+        "id": "a_verify.fetched_decl",
+        "desc": "переменная для запрошенного алгоритма хэширования",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": r"^    \} else \{\n        const EVP_MD \*type = NULL;\n",
+        "guard": "EVP_MD *fetched = NULL;",
+        "payload": ("    } else {\n"
+                    "        const EVP_MD *type = NULL;\n"
+                    "        EVP_MD *fetched = NULL;\n"),
+    },
+    {
+        "id": "a_verify.fetch_digest",
+        "desc": "алгоритм хэширования провайдера по имени",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"                type = EVP_get_digestbynid\(mdnid\);\n"
+                   r"                if \(type == NULL\) \{\n"),
+        "guard": "type = fetched = EVP_MD_fetch(",
+        "payload": (
+            "                type = EVP_get_digestbynid(mdnid);\n"
+            "                /* BTLS: belt-hash, bash are known only to providers */\n"
+            "                if (type == NULL)\n"
+            "                    type = fetched = EVP_MD_fetch(\n"
+            "                        EVP_MD_CTX_get_pkey_ctx(ctx)->libctx,\n"
+            "                        OBJ_nid2sn(mdnid),\n"
+            "                        EVP_MD_CTX_get_pkey_ctx(ctx)->propquery);\n"
+            "                if (type == NULL) {\n"),
+    },
+    {
+        "id": "a_verify.free_digest",
+        "desc": "освобождение запрошенного алгоритма хэширования",
+        "file": "crypto/asn1/a_verify.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"            if \(!EVP_DigestVerifyInit\(ctx, NULL, type, NULL, pkey\)\) \{\n"),
+        "guard": "EVP_MD_free(fetched);",
+        "payload": (
+            "            ret = EVP_DigestVerifyInit(ctx, NULL, type, NULL, pkey);\n"
+            "            EVP_MD_free(fetched);\n"
+            "            if (!ret) {\n"),
+    },
+    # Стойкость подписи сертификата (уровни безопасности TLS) оценивается
+    # по длине хэш-значения; алгоритм ищется так же, через
+    # EVP_get_digestbynid(). Без правки сертификаты bign отвергаются как
+    # "CA signature digest algorithm too weak".
+    {
+        "id": "x509_set.sig_info_digest",
+        "desc": "длина хэш-значения алгоритма провайдера",
+        "file": "crypto/x509/x509_set.c",
+        "when": V3,
+        "op": "replace",
+        "anchor": (r"        if \(\(md = EVP_get_digestbynid\(mdnid\)\) == NULL\) \{\n"
+                   r"            ERR_raise\(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID\);\n"
+                   r"            return 0;\n"
+                   r"        \}\n"
+                   r"        md_size = EVP_MD_get_size\(md\);\n"),
+        "guard": "EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);",
+        "payload": (
+            "        if ((md = EVP_get_digestbynid(mdnid)) == NULL) {\n"
+            "            /* BTLS: belt-hash, bash are known only to providers */\n"
+            "            EVP_MD *fetched = EVP_MD_fetch(NULL, OBJ_nid2sn(mdnid), NULL);\n"
+            "\n"
+            "            if (fetched == NULL) {\n"
+            "                ERR_raise(ERR_LIB_X509, X509_R_ERROR_GETTING_MD_BY_NID);\n"
+            "                return 0;\n"
+            "            }\n"
+            "            md_size = EVP_MD_get_size(fetched);\n"
+            "            EVP_MD_free(fetched);\n"
+            "        } else\n"
+            "            md_size = EVP_MD_get_size(md);\n"),
+    },
+
+
     # include/openssl
 
     # Новый тип сертификата TLS_CT_BIGN_SIGN.
