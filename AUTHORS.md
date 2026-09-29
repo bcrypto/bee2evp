@@ -32,6 +32,8 @@ Contributors*
   - [RPM packages](https://copr.fedorainfracloud.org/coprs/kashcheyeu/bee2evp/)
 - Maxim Kostyshin
   - code review
+- Alexandr Kitaev [makavity231@gmail.com]
+  - OpenVPN support
 
 ---
 *in chronological order of the first contribution
