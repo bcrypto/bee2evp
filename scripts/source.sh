@@ -108,6 +108,9 @@ check_opt() {
     red echo "openssl tag name is required" >&2
     usage
   fi
+  if ! $is_openssl_3; then
+    enable_openvpn=false
+  fi
   if $enable_build; then
     enable_bee2=true
     enable_openssl=true
@@ -296,27 +299,32 @@ attach_bee2evp_darwin(){
   cp $local/openssl.cnf.dist $local/openssl.cnf
   if $is_openssl_3;
   then
-    sed -i '' "/providers = provider_sect/a\\
-engines = engine_sect\\
-\\
-[ engine_sect]\\
-bee2evp = bee2evp_section\\
-\\
-[ bee2evp_section ]\\
-engine_id = bee2evp\\
-dynamic_path = $lib_path/$lib_name\\
-default_algorithms = ALL" "$local/openssl.cnf"
+    sed -i "" '/providers = provider_sect/a\
+engines = engine_sect\
+\
+[ engine_sect ]\
+bee2evp = bee2evp_section\
+\
+[ bee2evp_section ]\
+engine_id = bee2evp\
+dynamic_path = '"$lib_path/$lib_name"'\
+default_algorithms = ALL
+' "$local/openssl.cnf"
   else
-    sed -i '' "/\[ new\_oids \]/i openssl_conf = openssl_init\
-\n[ openssl_init ]\
-\nengines = engine_section\
-\n[ engine_section ]\
-\nbee2evp = bee2evp_section\
-\n[ bee2evp_section ]\
-\nengine_id = bee2evp\
-\ndynamic_path = $lib_path/$lib_name\
-\ndefault_algorithms = ALL\
-\n" $local/openssl.cnf
+    sed -i "" '/\[ new_oids \]/i\
+openssl_conf = openssl_init\
+\
+[ openssl_init ]\
+engines = engine_section\
+\
+[ engine_section ]\
+bee2evp = bee2evp_section\
+\
+[ bee2evp_section ]\
+engine_id = bee2evp\
+dynamic_path = '"$lib_path/$lib_name"'\
+default_algorithms = ALL\
+' "$local/openssl.cnf"
   fi
 }
 

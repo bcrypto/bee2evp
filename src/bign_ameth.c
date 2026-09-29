@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Data formats for bign
 \created 2014.10.14
-\version 2026.01.19
+\version 2026.09.29
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -966,20 +966,52 @@ int evpBign_item_sign(EVP_MD_CTX* ctx, const ASN1_ITEM* it, CONST3 void* asn,
 static int evpBign_set_pubkey(EVP_PKEY* pkey, const octet* pubkey, size_t len)
 {
 	bign_key* key;
-	EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pkey, NULL);
-	if ((EVP_PKEY_paramgen_init(ctx) <= 0) ||
-		(EVP_PKEY_paramgen(ctx, &pkey) <= 0))
-	{
-		EVP_PKEY_CTX_free(ctx);
-		return 0;
-	}
-	EVP_PKEY_CTX_free(ctx);
-	if (evpBign_param_missing(pkey))
-		return 0;
+	int nid = EVP_PKEY_id(pkey);
+	int ret;
+	//printf("Start %d\n", nid);
 	key = (bign_key*)EVP_PKEY_get0(pkey);
+	if (!key) {
+		//printf("Create key\n");
+		key = (bign_key*)blobCreate(sizeof(bign_key));
+		if (!key) 
+			return 0;
+		//printf("Load params to %p\n", key->params);
+		if (nid == NID_bign_pubkey) {
+			switch(len) {
+			case 64: 
+				nid = NID_bign_curve256v1;
+				break;
+			case 96: 
+				nid = NID_bign_curve384v1;
+				break;
+			case 128: 
+				nid = NID_bign_curve512v1;
+				break;
+			default:
+				return 0;
+			}
+		}
+		// загрузить параметры
+		ret = evpBign_nid2params(key->params, nid);
+		if (!ret)
+		{
+			blobClose(key);
+			return 0;
+		}
+		//printf("Assign key to %p\n", pkey);
+		if (!EVP_PKEY_assign(pkey, EVP_PKEY_id(pkey), key)) {
+            blobClose(key);
+            return 0;
+		}
+	} else {
+		if (evpBign_param_missing(pkey))
+			return 0;
+	}
+	//printf("Set key\n");
 	if (len != key->params->l / 2)
 		return 0;
 	memCopy(key->pubkey, pubkey, len);
+	//printf("Key is set\n");
 	return 1;
 }
 
@@ -1010,17 +1042,42 @@ static int evpBign_get_pubkey(const EVP_PKEY* pkey, octet* pubkey, size_t* len)
 static int evpBign_set_privkey(EVP_PKEY* pkey, const octet* privkey, size_t len)
 {
 	bign_key* key;
-	EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pkey, NULL);
-	if ((EVP_PKEY_paramgen_init(ctx) <= 0) ||
-		(EVP_PKEY_paramgen(ctx, &pkey) <= 0))
-	{
-		EVP_PKEY_CTX_free(ctx);
-		return 0;
-	}
-	EVP_PKEY_CTX_free(ctx);
-	if (evpBign_param_missing(pkey))
-		return 0;
+	int nid = EVP_PKEY_id(pkey);
 	key = (bign_key*)EVP_PKEY_get0(pkey);
+	if (!key) {
+		key = (bign_key*)blobCreate(sizeof(bign_key));
+		if (!key) 
+			return 0;
+
+		// загрузить параметры
+		if (nid == NID_bign_pubkey) {
+			switch(len) {
+			case 32: 
+				nid = NID_bign_curve256v1;
+				break;
+			case 48: 
+				nid = NID_bign_curve384v1;
+				break;
+			case 64: 
+				nid = NID_bign_curve512v1;
+				break;
+			default:
+				return 0;
+			}
+		}
+		if (!evpBign_nid2params(key->params, nid))
+		{
+			blobClose(key);
+			return 0;
+		}
+		if (!EVP_PKEY_assign(pkey, EVP_PKEY_id(pkey), key)) {
+            blobClose(key);
+            return 0;
+		}	
+	} else {
+		if (evpBign_param_missing(pkey))
+			return 0;
+	}
 	if (len != key->params->l / 4)
 		return 0;
 	if (bignPubkeyCalc(key->pubkey, key->params, privkey) != ERR_OK)

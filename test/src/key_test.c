@@ -13,11 +13,14 @@ bool_t pub_key_set_get(const char* alg, const char* key)
     size_t raw_len = strlen(key) / 2;
     size_t out_len = 0;
     int nid = OBJ_txt2nid(alg);
-    unsigned char *raw_in = malloc(raw_len);
+    unsigned char *raw_in = NULL;
     unsigned char *raw_out = NULL;
     bool_t res = FALSE;
     EVP_PKEY *pkey;
     if (nid == 0)
+        return FALSE;
+    raw_in = malloc(raw_len);
+    if (!raw_in)
         return FALSE;
     hexTo(raw_in, key);
 
@@ -34,6 +37,12 @@ bool_t pub_key_set_get(const char* alg, const char* key)
     // Get required buffer size first
     EVP_PKEY_get_raw_public_key(pkey, NULL, &out_len);
     raw_out = malloc(out_len);
+    if (!raw_out) {
+        printf("Error: Failed to allocate %zu bytes\n", out_len);
+        EVP_PKEY_free(pkey);
+        free(raw_in);
+        return FALSE;
+    }
     
     // Extract the actual bytes
     EVP_PKEY_get_raw_public_key(pkey, raw_out, &out_len);

@@ -19,9 +19,9 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-check_opt
-
 is_openssl_3 
+
+check_opt
 
 set_dir
 
@@ -37,5 +37,7 @@ fi
 
 if $enable_test; then
   test_bee2evp
-  test_openvpn
+  if $enable_openvpn; then
+    test_openvpn
+  fi
 fi
