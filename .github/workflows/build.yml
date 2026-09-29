@@ -35,9 +35,9 @@ jobs:
         apt install -y git cmake curl bash gpg
         git config --global --add safe.directory '*'
     - name: Get source
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
     - name: Setup Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: 3.12
     - name: Build
@@ -48,7 +48,7 @@ jobs:
       run: |
         bash ./scripts/build.sh -t ${{ matrix.openssl-config.tag }}
     - name: Upload report to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v7
       with:
         directory: ${{github.workspace}}/build
         fail_ci_if_error: true
