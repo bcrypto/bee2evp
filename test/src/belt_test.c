@@ -15,6 +15,7 @@
 
 #include <bee2/defs.h>
 #include <bee2/core/hex.h>
+#include <bee2/core/mem.h>
 #include <bee2/crypto/belt.h>
 
 /*
@@ -365,4 +366,119 @@ bool_t beltKWPTest()
 		return FALSE;
 	// все нормально
 	return TRUE;
+}
+
+
+/*
+*******************************************************************************
+Смена синхропосылки без смены ключа
+
+Вызов EVP_CipherInit_ex(ctx, NULL, NULL, NULL, iv, -1) перезапускает
+шифрование на прежнем ключе с новой синхропосылкой (bee2evp#59).
+До смены синхропосылки обрабатываются 13 октетов, чтобы в контексте
+осталось незавершенное состояние (в CBC -- буфер OpenSSL, в DWP/CHE --
+кэш имитовставки при снятии защиты).
+*******************************************************************************
+*/
+
+static bool_t cipher_reinit_iv_enc(const char* cipher_name)
+{
+	bool_t ret = FALSE;
+	const octet* key = beltH() + 128;
+	const octet* iv1 = beltH() + 192;
+	const octet* iv2 = beltH() + 208;
+	octet out1[64];
+	octet out2[64];
+	int len1 = 0;
+	int len2 = 0;
+	const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipher_name);
+	EVP_CIPHER_CTX* ctx1 = EVP_CIPHER_CTX_new();
+	EVP_CIPHER_CTX* ctx2 = EVP_CIPHER_CTX_new();
+
+	if (!cipher || !ctx1 || !ctx2)
+	{
+		fprintf(stderr, "failed to prepare cipher (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx1, cipher, NULL, key, iv1) != 1 ||
+		EVP_EncryptUpdate(ctx1, out1, &len1, beltH(), 13) != 1 ||
+		EVP_CipherInit_ex(ctx1, NULL, NULL, NULL, iv2, -1) != 1 ||
+		EVP_EncryptUpdate(ctx1, out1, &len1, beltH(), 48) != 1 ||
+		EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1 ||
+		EVP_EncryptUpdate(ctx2, out2, &len2, beltH(), 48) != 1)
+	{
+		fprintf(stderr, "failed to encrypt (%s)\n", cipher_name);
+		goto err;
+	}
+	ret = len1 == 48 && len2 == 48 && memEq(out1, out2, 48);
+	if (!ret)
+		fprintf(stderr, "iv ignored on re-init without key (%s)\n",
+			cipher_name);
+err:
+	EVP_CIPHER_CTX_free(ctx2);
+	EVP_CIPHER_CTX_free(ctx1);
+	return ret;
+}
+
+static bool_t cipher_reinit_iv_dec(const char* cipher_name)
+{
+	bool_t ret = FALSE;
+	const octet* key = beltH() + 128;
+	const octet* iv1 = beltH() + 192;
+	const octet* iv2 = beltH() + 208;
+	octet ct[80];
+	octet pt[80];
+	int ct_len = 0;
+	int pt_len = 0;
+	int len = 0;
+	const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipher_name);
+	EVP_CIPHER_CTX* ctx1 = EVP_CIPHER_CTX_new();
+	EVP_CIPHER_CTX* ctx2 = EVP_CIPHER_CTX_new();
+
+	if (!cipher || !ctx1 || !ctx2)
+	{
+		fprintf(stderr, "failed to prepare cipher (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1 ||
+		EVP_EncryptUpdate(ctx2, ct, &ct_len, beltH(), 48) != 1 ||
+		EVP_EncryptFinal_ex(ctx2, ct + ct_len, &len) != 1)
+	{
+		fprintf(stderr, "failed to encrypt (%s)\n", cipher_name);
+		goto err;
+	}
+	ct_len += len;
+	if (EVP_DecryptInit_ex(ctx1, cipher, NULL, key, iv1) != 1 ||
+		EVP_DecryptUpdate(ctx1, pt, &len, beltH(), 13) != 1 ||
+		EVP_CipherInit_ex(ctx1, NULL, NULL, NULL, iv2, -1) != 1 ||
+		EVP_DecryptUpdate(ctx1, pt, &pt_len, ct, ct_len) != 1 ||
+		EVP_DecryptFinal_ex(ctx1, pt + pt_len, &len) != 1)
+	{
+		fprintf(stderr, "failed to decrypt after iv re-init (%s)\n",
+			cipher_name);
+		goto err;
+	}
+	pt_len += len;
+	ret = pt_len == 48 && memEq(pt, beltH(), 48);
+	if (!ret)
+		fprintf(stderr, "iv ignored on re-init without key (%s)\n",
+			cipher_name);
+err:
+	EVP_CIPHER_CTX_free(ctx2);
+	EVP_CIPHER_CTX_free(ctx1);
+	return ret;
+}
+
+bool_t beltIVTest()
+{
+	const char* names[] = { "belt-cbc256", "belt-cfb256", "belt-ctr256",
+		"belt-dwp256", "belt-che256" };
+	bool_t ret = TRUE;
+	size_t i;
+	for (i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
+	{
+		ret &= cipher_reinit_iv_enc(names[i]);
+		ret &= cipher_reinit_iv_dec(names[i]);
+	}
+	return ret;
 }

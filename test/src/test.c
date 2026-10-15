@@ -59,6 +59,7 @@ extern bool_t beltDWPTest();
 extern bool_t beltCHETest();
 extern bool_t bashPrgTest();
 extern bool_t beltKWPTest();
+extern bool_t beltIVTest();
 
 int testCiphers()
 {
@@ -79,6 +80,8 @@ int testCiphers()
 	printf("bash-prg: %s\n", (code = bashPrgTest()) ? "OK" : "Err");
 	ret |= !code;
 	printf("belt-kwp: %s\n", (code = beltKWPTest()) ? "OK" : "Err");
+	ret |= !code;
+	printf("belt-iv: %s\n", (code = beltIVTest()) ? "OK" : "Err");
 	ret |= !code;
 	return ret;
 }

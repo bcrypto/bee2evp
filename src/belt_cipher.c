@@ -120,6 +120,11 @@ ASN.1-кодирования), алгоритмы режимов CBC и CFB об
 EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 
+\remark В режимах CBC, CFB, CTR, DWP, CHE ключ хранится в контексте. Поэтому
+вызов EVP_CipherInit_ex() с нулевым key и ненулевым iv перезапускает режим
+на прежнем ключе с новой синхропосылкой. Для этого алгоритмы режимов
+объявляются с флагом EVP_CIPH_ALWAYS_CALL_INIT.
+
 \remark Обращение к cleanup-функциям почему-то может выполняться два раза.
 Поэтому вызов EVP_CIPHER_CTX_set_blob(ctx, 0) необходим.
 
@@ -291,8 +296,8 @@ const char SN_belt_cbc256[] = "belt-cbc256";
 const char LN_belt_cbc256[] = "belt-cbc256";
 
 #define FLAGS_belt_cbc                                                         \
-	(EVP_CIPH_CBC_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_RAND_KEY |              \
-		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
+	(EVP_CIPH_CBC_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |      \
+		EVP_CIPH_RAND_KEY | EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
 
 static EVP_CIPHER* EVP_belt_cbc128;
 const EVP_CIPHER* evpBeltCBC128()
@@ -312,13 +317,25 @@ const EVP_CIPHER* evpBeltCBC256()
 	return EVP_belt_cbc256;
 }
 
+typedef struct belt_cbc_ctx
+{
+	octet key[32];		 /*< ключ */
+	size_t key_len;		 /*< длина ключа */
+	mem_align_t state[]; /*< состояние beltCBC */
+} belt_cbc_ctx;
+
 static int
 evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_cbc_ctx* state = (belt_cbc_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
-		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
+		state->key_len = EVP_CIPHER_CTX_key_length(ctx);
+		memCopy(state->key, key, state->key_len);
+	}
+	if ((key || iv) && state->key_len)
+	{
+		beltCBCStart(state->state, state->key, state->key_len,
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
@@ -327,12 +344,12 @@ evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 static int evpBeltCBC_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_cbc_ctx* state = (belt_cbc_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
-		beltCBCStepE(out, inlen, state);
+		beltCBCStepE(out, inlen, state->state);
 	else
-		beltCBCStepD(out, inlen, state);
+		beltCBCStepD(out, inlen, state->state);
 	return 1;
 }
 
@@ -349,7 +366,7 @@ static int evpBeltCBC_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob = blobCreate(beltCBC_keep());
+		blob_t blob = blobCreate(sizeof(belt_cbc_ctx) + beltCBC_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
@@ -392,8 +409,8 @@ const char SN_belt_cfb256[] = "belt-cfb256";
 const char LN_belt_cfb256[] = "belt-cfb256";
 
 #define FLAGS_belt_cfb                                                         \
-	(EVP_CIPH_CFB_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_RAND_KEY |              \
-		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
+	(EVP_CIPH_CFB_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |      \
+		EVP_CIPH_RAND_KEY | EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
 
 static EVP_CIPHER* EVP_belt_cfb128;
 const EVP_CIPHER* evpBeltCFB128()
@@ -413,13 +430,25 @@ const EVP_CIPHER* evpBeltCFB256()
 	return EVP_belt_cfb256;
 }
 
+typedef struct belt_cfb_ctx
+{
+	octet key[32];		 /*< ключ */
+	size_t key_len;		 /*< длина ключа */
+	mem_align_t state[]; /*< состояние beltCFB */
+} belt_cfb_ctx;
+
 static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_cfb_ctx* state = (belt_cfb_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
 	{
-		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
+		state->key_len = EVP_CIPHER_CTX_key_length(ctx);
+		memCopy(state->key, key, state->key_len);
+	}
+	if ((key || iv) && state->key_len)
+	{
+		beltCFBStart(state->state, state->key, state->key_len,
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
@@ -428,12 +457,12 @@ static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltCFB_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_cfb_ctx* state = (belt_cfb_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
-		beltCFBStepE(out, inlen, state);
+		beltCFBStepE(out, inlen, state->state);
 	else
-		beltCFBStepD(out, inlen, state);
+		beltCFBStepD(out, inlen, state->state);
 	return 1;
 }
 
@@ -450,7 +479,7 @@ static int evpBeltCFB_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob = blobCreate(beltCFB_keep());
+		blob_t blob = blobCreate(sizeof(belt_cfb_ctx) + beltCFB_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
@@ -519,17 +548,29 @@ const EVP_CIPHER* evpBeltCTR256()
 	return EVP_belt_ctr256;
 }
 
+typedef struct belt_ctr_ctx
+{
+	octet key[32];		 /*< ключ */
+	size_t key_len;		 /*< длина ключа */
+	mem_align_t state[]; /*< состояние beltCTR */
+} belt_ctr_ctx;
+
 static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_ctr_ctx* state = (belt_ctr_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
+		state->key_len = EVP_CIPHER_CTX_key_length(ctx);
+		memCopy(state->key, key, state->key_len);
+	}
+	if ((key || iv) && state->key_len)
+	{
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx), 
 			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
+		beltCTRStart(state->state, state->key, state->key_len,
 			EVP_CIPHER_CTX_iv(ctx));
 	}
 	return 1;
@@ -538,12 +579,12 @@ static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key,
 static int evpBeltCTR_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
-	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
+	belt_ctr_ctx* state = (belt_ctr_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	memMove(out, in, inlen);
 	if (EVP_CIPHER_CTX_encrypting(ctx))
-		beltCTRStepE(out, inlen, state);
+		beltCTRStepE(out, inlen, state->state);
 	else
-		beltCTRStepD(out, inlen, state);
+		beltCTRStepD(out, inlen, state->state);
 	return 1;
 }
 
@@ -560,7 +601,7 @@ int evpBeltCTR_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	{
 	case EVP_CTRL_INIT:
 	{
-		blob_t blob = blobCreate(beltCTR_keep());
+		blob_t blob = blobCreate(sizeof(belt_ctr_ctx) + beltCTR_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
@@ -637,6 +678,8 @@ const EVP_CIPHER* evpBeltDWP256()
 
 typedef struct belt_dwp_ctx
 {
+	octet key[32];		 /*< ключ */
+	size_t key_len;		 /*< длина ключа */
 	octet block[8];		 /*< блок данных (ловим имитовставку) */
 	size_t block_len;	 /*< длина блока */
 	mem_align_t state[]; /*< состояние beltDWP */
@@ -650,10 +693,16 @@ static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
+		state->key_len = EVP_CIPHER_CTX_key_length(ctx);
+		memCopy(state->key, key, state->key_len);
+	}
+	if ((key || iv) && state->key_len)
+	{
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
 			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltDWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
+		beltDWPStart(state->state, state->key, state->key_len,
 			EVP_CIPHER_CTX_iv(ctx));
+		state->block_len = 0;
 	}
 	return 1;
 }
@@ -813,6 +862,8 @@ const EVP_CIPHER* evpBeltCHE256()
 
 typedef struct belt_che_ctx
 {
+	octet key[32];		 /*< ключ */
+	size_t key_len;		 /*< длина ключа */
 	octet block[8];		 /*< блок данных (ловим имитовставку) */
 	size_t block_len;	 /*< длина блока */
 	mem_align_t state[]; /*< состояние beltCHE */
@@ -826,10 +877,16 @@ static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
 	{
+		state->key_len = EVP_CIPHER_CTX_key_length(ctx);
+		memCopy(state->key, key, state->key_len);
+	}
+	if ((key || iv) && state->key_len)
+	{
 		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
 			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltCHEStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
+		beltCHEStart(state->state, state->key, state->key_len,
 			EVP_CIPHER_CTX_iv(ctx));
+		state->block_len = 0;
 	}
 	return 1;
 }
