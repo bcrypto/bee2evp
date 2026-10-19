@@ -333,6 +333,193 @@ err:
 	return ret;
 }
 
+
+/*
+*******************************************************************************
+Смена синхропосылки без смены ключа
+
+Вызов EVP_CipherInit_ex(ctx, NULL, NULL, NULL, iv, -1) перезапускает
+шифрование на прежнем ключе с новой синхропосылкой (bee2evp#59).
+До смены синхропосылки обрабатываются один блок + 13 октетов, чтобы в контексте
+осталось незавершенное состояние.
+*******************************************************************************
+*/
+
+static bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len, 
+	int aead)
+{
+	bool_t ret = FALSE;
+	const octet* key = beltH();
+	const octet* iv1 = beltH() + 128;
+	const octet* iv2 = beltH() + 192;
+	octet in[512];
+	octet out1[512];
+	octet out2[512];
+	int len1 = 0;
+	int len2 = 0;
+	const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipher_name);
+	EVP_CIPHER_CTX* ctx1 = EVP_CIPHER_CTX_new();
+	EVP_CIPHER_CTX* ctx2 = EVP_CIPHER_CTX_new();
+
+	if (!cipher || !ctx1 || !ctx2)
+	{
+		fprintf(stderr, "failed to prepare cipher (%s)\n", cipher_name);
+		goto err;
+	}
+	memSet(in, 0xA5, sizeof(in));
+	if (EVP_EncryptInit_ex(ctx1, cipher, NULL, key, NULL) != 1)
+	{
+		fprintf(stderr, "failed to init key (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx1, NULL, NULL, NULL, iv1) != 1)
+	{
+		fprintf(stderr, "failed to init iv (%s)\n", cipher_name);
+		goto err;
+	}
+	if (aead && EVP_EncryptUpdate(ctx1, NULL, &len1, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptUpdate(ctx1, out1, &len1, in, block_len + 13) != 1)
+	{
+		fprintf(stderr, "failed to first encrypt  (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_CipherInit_ex(ctx1, NULL, NULL, NULL, iv2, -1) != 1)
+	{
+		fprintf(stderr, "failed to reinit context (%s)\n", cipher_name);
+		goto err;
+	}	
+	if (aead && EVP_EncryptUpdate(ctx1, NULL, &len1, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD second time (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptUpdate(ctx1, out1, &len1, in + block_len + 13, 48) != 1)
+	{
+		fprintf(stderr, "failed to second encrypt(%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1)
+	{
+		fprintf(stderr, "failed to control init (%s)\n", cipher_name);
+		goto err;
+	}
+	if (aead && EVP_EncryptUpdate(ctx2, NULL, &len2, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD control time (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptUpdate(ctx2, out2, &len2, in + block_len + 13, 48) != 1)
+	{
+		fprintf(stderr, "failed to control encrypt (%s)\n", cipher_name);
+		goto err;
+	}
+	ret = len1 == 48 && len2 == 48 && memEq(out1, out2, 48);
+	if (!ret)
+		fprintf(stderr, "iv ignored on re-init without key (%s)\n",
+			cipher_name);
+err:
+	EVP_CIPHER_CTX_free(ctx2);
+	EVP_CIPHER_CTX_free(ctx1);
+	return ret;
+}
+
+static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len, 
+	int aead)
+{
+	bool_t ret = FALSE;
+	const octet* key = beltH();
+	const octet* iv1 = beltH() + 128;
+	const octet* iv2 = beltH() + 192;
+	octet in[512];
+	octet ct[512];
+	octet pt[512];
+	int ct_len = 0;
+	int pt_len = 0;
+	int len = 0;
+	const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipher_name);
+	EVP_CIPHER_CTX* ctx1 = EVP_CIPHER_CTX_new();
+	EVP_CIPHER_CTX* ctx2 = EVP_CIPHER_CTX_new();
+
+	if (!cipher || !ctx1 || !ctx2)
+	{
+		fprintf(stderr, "failed to prepare cipher (%s)\n", cipher_name);
+		goto err;
+	}
+	memSet(in, 0xE7, sizeof(in));
+	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1)
+	{
+		fprintf(stderr, "failed to init (%s)\n", cipher_name);
+		goto err;
+	}
+	if (aead && EVP_EncryptUpdate(ctx2, NULL, &ct_len, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptUpdate(ctx2, ct, &ct_len, in, 48) != 1 ||
+		EVP_EncryptFinal_ex(ctx2, ct + ct_len, &len) != 1)
+	{
+		fprintf(stderr, "failed to encrypt (%s)\n", cipher_name);
+		goto err;
+	}
+	ct_len += len;
+	if (EVP_DecryptInit_ex(ctx1, cipher, NULL, key, NULL) != 1)
+	{
+		fprintf(stderr, "failed to init key (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_DecryptInit_ex(ctx1, NULL, NULL, NULL, iv1) != 1)
+	{
+		fprintf(stderr, "failed to init iv (%s)\n", cipher_name);
+		goto err;
+	}
+	if (aead && EVP_DecryptUpdate(ctx1, NULL, &len, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD second time (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_DecryptUpdate(ctx1, pt, &len, in, block_len + 13) != 1 )
+	{
+		fprintf(stderr, "failed to first decrypt  (%s)\n", cipher_name);
+		goto err;
+	}	
+
+	if (EVP_CipherInit_ex(ctx1, NULL, NULL, NULL, iv2, -1) != 1)
+	{
+		fprintf(stderr, "failed to reinit context (%s)\n", cipher_name);
+		goto err;
+	}
+	if (aead && EVP_DecryptUpdate(ctx1, NULL, &pt_len, beltH() + 96, 32) != 1)
+	{
+		fprintf(stderr, "failed to get AD control time (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_DecryptUpdate(ctx1, pt, &pt_len, ct, ct_len) != 1)
+	{
+		fprintf(stderr, "failed to control decrypt (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_DecryptFinal_ex(ctx1, pt + pt_len, &len) != 1)
+	{
+		fprintf(stderr, "failed to decrypt after iv re-init (%s)\n",
+			cipher_name);
+		goto err;
+	}
+	pt_len += len;
+	ret = pt_len == 48 && memEq(pt, in, 48);
+	if (!ret)
+		fprintf(stderr, "iv ignored on re-init without key (%s)\n",
+			cipher_name);
+err:
+	EVP_CIPHER_CTX_free(ctx2);
+	EVP_CIPHER_CTX_free(ctx1);
+	return ret;
+}
+
 /*
 *******************************************************************************
 Тестирование
@@ -403,6 +590,10 @@ bool_t beltCHETest()
 		return FALSE;
 	if (!cipher_unittest("belt-che128", "belt-hmac"))
 		return FALSE;
+	// if (!cipher_reinit_iv_enc("belt-che256", 16, 1))
+	// 	return FALSE;
+	// if (!cipher_reinit_iv_dec("belt-che256", 16, 1))
+	// 	return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -454,6 +645,10 @@ bool_t bashPrgTest()
     )) return FALSE;
 
 	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
+		return FALSE;
+	if (!cipher_reinit_iv_enc("bash-prg-ae2561", 168, 1))
+		return FALSE;
+	if (!cipher_reinit_iv_dec("bash-prg-ae2561", 168, 1))
 		return FALSE;
 	// все нормально
 	return TRUE;
