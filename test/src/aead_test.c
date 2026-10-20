@@ -4,7 +4,7 @@
 \brief Tests for aead ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.11.17
+\version 2026.10.20
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -31,6 +31,18 @@
 Функции проверки AEAD-шифрования
 *******************************************************************************
 */
+
+int set_aead_ctx(EVP_CIPHER_CTX* ctx, const EVP_CIPHER* cipher, int key_len, 
+	int s_len)
+{
+	if ((EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1) ||
+		(s_len != 0)  && (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, 
+			s_len, NULL) != 1) ||
+		(key_len != 0)  && (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, 
+			key_len, NULL) != 1))
+			return -1;
+	return 1;
+}
 
 bool_t aead_encrypt(const char* cipher_name,
 	const unsigned char* x,
@@ -72,27 +84,10 @@ bool_t aead_encrypt(const char* cipher_name,
 		return FALSE;
 	}
 
-	if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
+	if (set_aead_ctx(ctx, cipher, key_len, s_len) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
-	}
-	if (s_len)
-	{
-		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
-		{
-			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
-			goto err;
-		}
-	}
-	if (key_len)
-	{
-		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
-			!= 1)
-		{
-			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
-			goto err;
-		}
 	}
 
 	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
@@ -176,27 +171,10 @@ bool_t aead_decrypt(const char* cipher_name,
 		return FALSE;
 	}
 
-	if (EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) != 1)
+	if (set_aead_ctx(ctx, cipher, key_len, s_len) != 1)
 	{
-		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
+		fprintf(stderr, "failed to init decrypt(%s)\n", cipher_name);
 		goto err;
-	}
-	if (s_len)
-	{
-		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, s_len, NULL) != 1)
-		{
-			fprintf(stderr, "failed to set iv length(%s)\n", cipher_name);
-			goto err;
-		}
-	}
-	if (key_len)
-	{
-		if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, key_len, NULL) 
-			!= 1)
-		{
-			fprintf(stderr, "failed to set key length(%s)\n", cipher_name);
-			goto err;
-		}
 	}
 
 	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
@@ -346,7 +324,7 @@ err:
 */
 
 static bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len, 
-	int aead)
+	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
 	const octet* key = beltH();
@@ -367,7 +345,12 @@ static bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len,
 		goto err;
 	}
 	memSet(in, 0xA5, sizeof(in));
-	if (EVP_EncryptInit_ex(ctx1, cipher, NULL, key, NULL) != 1)
+	if (set_aead_ctx(ctx1, cipher, key_len, iv_len) != 1)
+	{
+		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx1, NULL, NULL, key, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init key (%s)\n", cipher_name);
 		goto err;
@@ -402,7 +385,12 @@ static bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len,
 		fprintf(stderr, "failed to second encrypt(%s)\n", cipher_name);
 		goto err;
 	}
-	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1)
+	if (set_aead_ctx(ctx2, cipher, key_len, iv_len) != 1)
+	{
+		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx2, NULL, NULL, key, iv2) != 1)
 	{
 		fprintf(stderr, "failed to control init (%s)\n", cipher_name);
 		goto err;
@@ -428,7 +416,7 @@ err:
 }
 
 static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len, 
-	int aead)
+	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
 	const octet* key = beltH();
@@ -450,6 +438,11 @@ static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len,
 		goto err;
 	}
 	memSet(in, 0xE7, sizeof(in));
+	if (set_aead_ctx(ctx2, cipher, key_len, iv_len) != 1)
+	{
+		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
+		goto err;
+	}
 	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1)
 	{
 		fprintf(stderr, "failed to init (%s)\n", cipher_name);
@@ -467,6 +460,11 @@ static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len,
 		goto err;
 	}
 	ct_len += len;
+	if (set_aead_ctx(ctx1, cipher, key_len, iv_len) != 1)
+	{
+		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
+		goto err;
+	}
 	if (EVP_DecryptInit_ex(ctx1, cipher, NULL, key, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init key (%s)\n", cipher_name);
@@ -646,9 +644,9 @@ bool_t bashPrgTest()
 
 	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
 		return FALSE;
-	if (!cipher_reinit_iv_enc("bash-prg-ae2561", 168, 1))
+	if (!cipher_reinit_iv_enc("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
-	if (!cipher_reinit_iv_dec("bash-prg-ae2561", 168, 1))
+	if (!cipher_reinit_iv_dec("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
 	// все нормально
 	return TRUE;

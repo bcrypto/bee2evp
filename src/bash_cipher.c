@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Bash encryption algorithms
 \created 2025.10.29
-\version 2026.05.06
+\version 2026.10.20
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -59,22 +59,20 @@ static int evpBashPrgAe_init(EVP_CIPHER_CTX* ctx, const octet* key,
 {
 	bash_prg_ae_ctx* state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	state->stage = 0;
+	state->block_len = 0;
 
-	if (!key & !iv)
-	{
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-		int cipher_nid = EVP_CIPHER_CTX_get_nid(ctx);
+	int cipher_nid = EVP_CIPHER_CTX_get_nid(ctx);
 #else
-		int cipher_nid = EVP_CIPHER_CTX_nid(ctx);
+	int cipher_nid = EVP_CIPHER_CTX_nid(ctx);
 #endif
-		if (cipher_nid == NID_bash_prg_ae2561)
-		{
-			state->tag_len = 32;
-			state->d = 1;
-		}
-
-		return 1;
+	if (cipher_nid == NID_bash_prg_ae2561)
+	{
+		state->tag_len = 32;
+		state->d = 1;
 	}
+	if (!key & !iv)
+		return 1;
 
 	if (key)
 	{
@@ -104,6 +102,7 @@ static int evpBashPrgAe_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 		if (EVP_CIPHER_CTX_encrypting(ctx)) 
 		{
 			bashPrgSqueeze(out, state->tag_len, state->state);
+			return state->tag_len;
 		}
 		else
 		{
@@ -113,8 +112,8 @@ static int evpBashPrgAe_cipher(EVP_CIPHER_CTX* ctx, octet* out,
 			bashPrgSqueeze(state->tag, state->tag_len, state->state);
 			if (!memEq(state->block, state->tag, state->tag_len))
 				return -1;
-		}
-		return state->tag_len;
+			return 0;
+		}		
 	}
 
 	if (!out)
@@ -198,13 +197,11 @@ static int evpBashPrgAe_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-	{
 		blob_t blob = blobCreate(sizeof(bash_prg_ae_ctx) + bashPrg_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
 		return 0;
-	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
@@ -217,6 +214,15 @@ static int evpBashPrgAe_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	case EVP_CTRL_PBE_PRF_NID:
 		*(int*)p2 = NID_belt_hmac;
 		break;
+	case EVP_CTRL_SET_KEY_LENGTH:
+		// Проверяем, подходит ли длина (от 16 до 60 байт)
+		if (p1 < 16 || p1 > 60)
+			return 0; // Недопустимая длина ключа
+		
+		state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+		if (!state) return 0;
+		state->key_len = (size_t)p1;
+		return 1;
 	case EVP_CTRL_AEAD_SET_IVLEN:
 		state = (bash_prg_ae_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 		state->ann_len = (size_t)p1;
