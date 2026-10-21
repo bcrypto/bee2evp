@@ -2,3 +2,6 @@
 	path = bee2
 	url = https://github.com/agievich/bee2
 	shallow = true
+[submodule "bpatch"]
+	path = bpatch
+	url = https://github.com/bcrypto/bpatch.git

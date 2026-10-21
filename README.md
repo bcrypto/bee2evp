@@ -98,7 +98,8 @@ building, Bee2 and Bee2evp building and tests running.
 ```
 bash scripts/build.sh [-s -b -t] <OPENSSL_TAG>
 ```
-Available values for `OPENSSL_TAG` are patch names in directory `btls/patch`.
+Available values for `OPENSSL_TAG` are patch names in directory `bpatch/patch`
+(OpenSSL is patched by [bpatch](https://github.com/bcrypto/bpatch)).
 Supported OS are Linux, MacOS, FreeBSD and Windows (via MSYS).
 The script requires GNU binutils and GNU sed to be available via PATH 
 environment variable (additional packages can be installed on MacOS).
