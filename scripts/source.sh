@@ -233,17 +233,7 @@ update_repos(){
 
 patch_openssl(){
   green echo "[-] patch openssl"
-  cd $openssl
-  if $is_openssl_3;
-  then
-    btls_srcs_path=$bee2evp/btls
-    cat $btls_srcs_path/objects.txt >> $openssl/crypto/objects/objects.txt
-  else
-    btls_srcs_path=$bee2evp/btls/legacy
-  fi
-  cp $btls_srcs_path/btls.c ./ssl/
-  cp $btls_srcs_path/btls.h ./ssl/
-  python3 $bee2evp/scripts/patcher.py --root $openssl --rules $bee2evp/scripts/btls_rules.py --apply
+  $bee2evp/bpatch/apply.sh $openssl
 }
 
 build_bee2(){
