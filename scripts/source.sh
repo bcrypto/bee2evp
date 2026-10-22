@@ -227,7 +227,8 @@ check_openssl_tag(){
 update_repos(){
   green echo "[-] update repos"
   git submodule update --init
-  git clone -b $openssl_tag --depth 1 $openssl_git_url $openssl
+  git_opt="-c advice.detachedHead=false --depth 1"
+  git clone -b $openssl_tag $git_opt $openssl_git_url $openssl
 }
 
 patch_openssl(){

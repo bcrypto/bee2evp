@@ -120,6 +120,11 @@ ASN.1-кодирования), алгоритмы режимов CBC и CFB об
 EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 
+\remark В режимах CBC, CFB, CTR, DWP, CHE ключ хранится в контексте. Поэтому
+вызов EVP_CipherInit_ex() с нулевым key и ненулевым iv перезапускает режим
+на прежнем ключе с новой синхропосылкой. Для этого алгоритмы режимов
+объявляются с флагом EVP_CIPH_ALWAYS_CALL_INIT.
+
 \remark Обращение к cleanup-функциям почему-то может выполняться два раза.
 Поэтому вызов EVP_CIPHER_CTX_set_blob(ctx, 0) необходим.
 
@@ -291,8 +296,8 @@ const char SN_belt_cbc256[] = "belt-cbc256";
 const char LN_belt_cbc256[] = "belt-cbc256";
 
 #define FLAGS_belt_cbc                                                         \
-	(EVP_CIPH_CBC_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_RAND_KEY |              \
-		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
+	(EVP_CIPH_CBC_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |      \
+		EVP_CIPH_RAND_KEY | EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
 
 static EVP_CIPHER* EVP_belt_cbc128;
 const EVP_CIPHER* evpBeltCBC128()
@@ -392,8 +397,8 @@ const char SN_belt_cfb256[] = "belt-cfb256";
 const char LN_belt_cfb256[] = "belt-cfb256";
 
 #define FLAGS_belt_cfb                                                         \
-	(EVP_CIPH_CFB_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_RAND_KEY |              \
-		EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
+	(EVP_CIPH_CFB_MODE | EVP_CIPH_CTRL_INIT | EVP_CIPH_ALWAYS_CALL_INIT |      \
+		EVP_CIPH_RAND_KEY | EVP_CIPH_CUSTOM_COPY | EVP_CIPH_FLAG_DEFAULT_ASN1)
 
 static EVP_CIPHER* EVP_belt_cfb128;
 const EVP_CIPHER* evpBeltCFB128()
@@ -635,17 +640,18 @@ const EVP_CIPHER* evpBeltDWP256()
 	return EVP_belt_dwp256;
 }
 
-typedef struct belt_dwp_ctx
+typedef struct belt_aead_ctx
 {
 	octet block[8];		 /*< блок данных (ловим имитовставку) */
 	size_t block_len;	 /*< длина блока */
 	mem_align_t state[]; /*< состояние beltDWP */
-} belt_dwp_ctx;
+} belt_aead_ctx;
 
 static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	state->block_len = 0;
 	if (iv)
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
@@ -655,13 +661,15 @@ static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		beltDWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
+	if (!key && iv)
+		beltDWPRefresh(state->state, iv);
 	return 1;
 }
 
 static int evpBeltDWP_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
-	belt_dwp_ctx* state = (belt_dwp_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
 	// завершение?
 	if (!in)
@@ -744,13 +752,11 @@ static int evpBeltDWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-	{
-		blob_t blob = blobCreate(sizeof(belt_dwp_ctx) + beltDWP_keep());
+		blob_t blob = blobCreate(sizeof(belt_aead_ctx) + beltDWP_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
 		return 0;
-	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
@@ -811,17 +817,11 @@ const EVP_CIPHER* evpBeltCHE256()
 	return EVP_belt_che256;
 }
 
-typedef struct belt_che_ctx
-{
-	octet block[8];		 /*< блок данных (ловим имитовставку) */
-	size_t block_len;	 /*< длина блока */
-	mem_align_t state[]; /*< состояние beltCHE */
-} belt_che_ctx;
-
 static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key, 
 	const octet* iv, int enc)
 {
-	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	state->block_len = 0;
 	if (iv)
 		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
 	if (key)
@@ -831,13 +831,15 @@ static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		beltCHEStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
+	if (!key && iv)
+		beltCHERefresh(state->state, iv);
 	return 1;
 }
 
 static int evpBeltCHE_cipher(EVP_CIPHER_CTX* ctx, octet* out, const octet* in,
 	size_t inlen)
 {
-	belt_che_ctx* state = (belt_che_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
+	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	size_t outlen = 0;
 	// завершение?
 	if (!in)
@@ -920,13 +922,11 @@ static int evpBeltCHE_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
-	{
-		blob_t blob = blobCreate(sizeof(belt_che_ctx) + beltCHE_keep());
+		blob_t blob = blobCreate(sizeof(belt_aead_ctx) + beltCHE_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
 		return 0;
-	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
@@ -1288,7 +1288,7 @@ int evpBeltCipher_bind(ENGINE* e)
 	BELT_CIPHER_DESCR(belt_dwp256, 8, 32, 16, FLAGS_belt_dwp,
 		evpBeltDWP_init, evpBeltDWP_cipher, evpBeltDWP_cleanup, 
 		0, 0, evpBeltDWP_ctrl);
-BELT_CIPHER_DESCR(belt_che128, 8, 16, 16, FLAGS_belt_che,
+	BELT_CIPHER_DESCR(belt_che128, 8, 16, 16, FLAGS_belt_che,
 		evpBeltCHE_init, evpBeltCHE_cipher, evpBeltCHE_cleanup,
 		0, 0, evpBeltCHE_ctrl);
 	BELT_CIPHER_DESCR(belt_che192, 8, 24, 16, FLAGS_belt_che,

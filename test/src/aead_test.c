@@ -90,7 +90,7 @@ bool_t aead_encrypt(const char* cipher_name,
 		goto err;
 	}
 
-	if (EVP_EncryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	if (EVP_EncryptInit_ex(ctx, NULL, NULL, key, s) != 1)
 	{
 		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
@@ -177,7 +177,7 @@ bool_t aead_decrypt(const char* cipher_name,
 		goto err;
 	}
 
-	if (EVP_DecryptInit_ex(ctx, cipher, NULL, key, s) != 1)
+	if (EVP_DecryptInit_ex(ctx, NULL, NULL, key, s) != 1)
 	{
 		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
@@ -323,7 +323,7 @@ err:
 *******************************************************************************
 */
 
-static bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len, 
+static bool_t aead_reinit_iv_enc(const char* cipher_name, int block_len, 
 	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
@@ -415,7 +415,7 @@ err:
 	return ret;
 }
 
-static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len, 
+static bool_t aead_reinit_iv_dec(const char* cipher_name, int block_len, 
 	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
@@ -443,7 +443,7 @@ static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len,
 		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
 		goto err;
 	}
-	if (EVP_EncryptInit_ex(ctx2, cipher, NULL, key, iv2) != 1)
+	if (EVP_EncryptInit_ex(ctx2, NULL, NULL, key, iv2) != 1)
 	{
 		fprintf(stderr, "failed to init (%s)\n", cipher_name);
 		goto err;
@@ -465,7 +465,7 @@ static bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len,
 		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
 		goto err;
 	}
-	if (EVP_DecryptInit_ex(ctx1, cipher, NULL, key, NULL) != 1)
+	if (EVP_DecryptInit_ex(ctx1, NULL, NULL, key, NULL) != 1)
 	{
 		fprintf(stderr, "failed to init key (%s)\n", cipher_name);
 		goto err;
@@ -554,6 +554,10 @@ bool_t beltDWPTest()
 		return FALSE;
 	if (!cipher_unittest("belt-dwp128", "belt-hmac"))
 		return FALSE;
+	if (!aead_reinit_iv_enc("belt-dwp256", 8, 0, 0, 1))
+	 	return FALSE;
+	if (!aead_reinit_iv_dec("belt-dwp256", 8, 0, 0, 1))
+	 	return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -588,10 +592,10 @@ bool_t beltCHETest()
 		return FALSE;
 	if (!cipher_unittest("belt-che128", "belt-hmac"))
 		return FALSE;
-	// if (!cipher_reinit_iv_enc("belt-che256", 16, 1))
-	// 	return FALSE;
-	// if (!cipher_reinit_iv_dec("belt-che256", 16, 1))
-	// 	return FALSE;
+	if (!aead_reinit_iv_enc("belt-che256", 16, 0, 0, 1))
+	 	return FALSE;
+	if (!aead_reinit_iv_dec("belt-che256", 16, 0, 0, 1))
+	 	return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -644,9 +648,9 @@ bool_t bashPrgTest()
 
 	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
 		return FALSE;
-	if (!cipher_reinit_iv_enc("bash-prg-ae2561", 168, 32, 32, 1))
+	if (!aead_reinit_iv_enc("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
-	if (!cipher_reinit_iv_dec("bash-prg-ae2561", 168, 32, 32, 1))
+	if (!aead_reinit_iv_dec("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
 	// все нормально
 	return TRUE;
