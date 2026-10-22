@@ -23,6 +23,10 @@
 *******************************************************************************
 */
 bool_t cipher_unittest(const char* cipher_name, const char* prf);
+bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len, 
+	int key_len, int iv_len, int aead);
+bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len, 
+	int key_len, int iv_len, int aead);
 
 bool_t cipher_encrypt(const char* cipher_name,
 	const unsigned char* x,
@@ -257,6 +261,10 @@ bool_t beltCBCTest()
 		return FALSE;
 	if (!cipher_unittest("belt-cbc128", "belt-hmac"))
 		return FALSE;
+	if (!cipher_reinit_iv_enc("belt-cbc256", 16, 0, 0, 0))
+	 	return FALSE;
+	if (!cipher_reinit_iv_dec("belt-cbc256", 16, 0, 0, 0))
+	 	return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -291,6 +299,10 @@ bool_t beltCFBTest()
 		return FALSE;
 	if (!cipher_unittest("belt-cfb128", "belt-hmac"))
 		return FALSE;
+	if (!cipher_reinit_iv_enc("belt-cfb256", 16, 0, 0, 0))
+	 	return FALSE;
+	if (!cipher_reinit_iv_dec("belt-cfb256", 16, 0, 0, 0))
+	 	return FALSE;
 	// все нормально
 	return TRUE;
 }
@@ -325,6 +337,10 @@ bool_t beltCTRTest()
 		return FALSE;
 	if (!cipher_unittest("belt-ctr128", "belt-hmac"))
 		return FALSE;
+	if (!cipher_reinit_iv_enc("belt-ctr256", 16, 0, 0, 0))
+	 	return FALSE;
+	if (!cipher_reinit_iv_dec("belt-ctr256", 16, 0, 0, 0))
+	 	return FALSE;
 	// все нормально
 	return TRUE;
 }

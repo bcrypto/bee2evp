@@ -326,6 +326,8 @@ evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
 		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
+	if (!key && iv)
+		beltCBCRefresh(state, iv);	
 	return 1;
 }
 
@@ -427,6 +429,8 @@ static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
+	if (!key && iv)
+		beltCFBRefresh(state, iv);	
 	return 1;
 }
 
@@ -537,6 +541,8 @@ static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key,
 		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
 			EVP_CIPHER_CTX_iv(ctx));
 	}
+	if (!key && iv)
+		beltCTRRefresh(state, iv);	
 	return 1;
 }
 

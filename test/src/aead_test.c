@@ -323,7 +323,7 @@ err:
 *******************************************************************************
 */
 
-static bool_t aead_reinit_iv_enc(const char* cipher_name, int block_len, 
+bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len, 
 	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
@@ -415,7 +415,7 @@ err:
 	return ret;
 }
 
-static bool_t aead_reinit_iv_dec(const char* cipher_name, int block_len, 
+bool_t cipher_reinit_iv_dec(const char* cipher_name, int block_len, 
 	int key_len, int iv_len, int aead)
 {
 	bool_t ret = FALSE;
@@ -554,9 +554,9 @@ bool_t beltDWPTest()
 		return FALSE;
 	if (!cipher_unittest("belt-dwp128", "belt-hmac"))
 		return FALSE;
-	if (!aead_reinit_iv_enc("belt-dwp256", 8, 0, 0, 1))
+	if (!cipher_reinit_iv_enc("belt-dwp256", 8, 0, 0, 1))
 	 	return FALSE;
-	if (!aead_reinit_iv_dec("belt-dwp256", 8, 0, 0, 1))
+	if (!cipher_reinit_iv_dec("belt-dwp256", 8, 0, 0, 1))
 	 	return FALSE;
 	// все нормально
 	return TRUE;
@@ -592,9 +592,9 @@ bool_t beltCHETest()
 		return FALSE;
 	if (!cipher_unittest("belt-che128", "belt-hmac"))
 		return FALSE;
-	if (!aead_reinit_iv_enc("belt-che256", 16, 0, 0, 1))
+	if (!cipher_reinit_iv_enc("belt-che256", 16, 0, 0, 1))
 	 	return FALSE;
-	if (!aead_reinit_iv_dec("belt-che256", 16, 0, 0, 1))
+	if (!cipher_reinit_iv_dec("belt-che256", 16, 0, 0, 1))
 	 	return FALSE;
 	// все нормально
 	return TRUE;
@@ -648,9 +648,9 @@ bool_t bashPrgTest()
 
 	if (!cipher_unittest("bash-prg-ae2561", "belt-hmac"))
 		return FALSE;
-	if (!aead_reinit_iv_enc("bash-prg-ae2561", 168, 32, 32, 1))
+	if (!cipher_reinit_iv_enc("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
-	if (!aead_reinit_iv_dec("bash-prg-ae2561", 168, 32, 32, 1))
+	if (!cipher_reinit_iv_dec("bash-prg-ae2561", 168, 32, 32, 1))
 		return FALSE;
 	// все нормально
 	return TRUE;
