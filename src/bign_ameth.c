@@ -86,6 +86,8 @@ static int evpBign_param_missing(const EVP_PKEY* pkey)
 	if (!key)
 		return 1;
 	ASSERT(memIsValid(key, sizeof(bign_key)));
+	if (key->flags & EVP_BIGN_PKEY_PARAMS_IMPLICIT)
+		return 1;
 	if (key->params->l != 128 && key->params->l != 192 && key->params->l != 256)
 		return 1;
 	return 0;
@@ -105,7 +107,12 @@ static int evpBign_param_copy(EVP_PKEY* to, const EVP_PKEY* from)
 			return 0;
 		}
 	}
+	// наследуемые параметры: уровень стойкости должен согласовываться с ключом
+	if ((keyto->flags & EVP_BIGN_PKEY_PARAMS_IMPLICIT) &&
+		keyto->params->l != 0 && keyto->params->l != keyfrom->params->l)
+		return 0;
 	memCopy(keyto->params, keyfrom->params, sizeof(bign_params));
+	keyto->flags &= ~EVP_BIGN_PKEY_PARAMS_IMPLICIT;
 	return 1;
 }
 
@@ -282,6 +289,13 @@ static int evpBign_pub_decode0(bign_key* key, int params_type,
 		int nid = OBJ_obj2nid((const ASN1_OBJECT*)params);
 		return evpBign_nid2params(key->params, nid);
 	}
+	// параметры наследуются от издателя (implicit NULL, СТБ 34.101.45)?
+	if (params_type == V_ASN1_NULL || params_type == V_ASN1_UNDEF)
+	{
+		memSetZero(key->params, sizeof(bign_params));
+		key->flags |= EVP_BIGN_PKEY_PARAMS_IMPLICIT;
+		return 1;
+	}
 	return 0;
 }
 
@@ -304,6 +318,13 @@ static int evpBign_pub_decode(EVP_PKEY* pkey, CONST3 X509_PUBKEY* pk)
 	// декодировать параметры открытого ключа
 	if (!evpBign_pub_decode0(key, params_type, params))
 		goto err;
+	// параметры наследуются? восстановить уровень стойкости по длине ключа
+	if (key->flags & EVP_BIGN_PKEY_PARAMS_IMPLICIT)
+	{
+		if (pubkey_len != 64 && pubkey_len != 96 && pubkey_len != 128)
+			goto err;
+		key->params->l = (size_t)pubkey_len * 2;
+	}
 	// декодировать открытый ключ
 	if (!evpBign_asn1_o2i_pubkey(key, &pubkey, pubkey_len))
 		goto err;

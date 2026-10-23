@@ -498,6 +498,9 @@ int evpBign_asn1_i2d_params(octet** out, bool_t* specified, const bign_key* key)
 	// входной контроль
 	if (!key || !specified)
 		return 0;
+	// параметры еще не наследованы от издателя? кодирование невозможно
+	if (key->flags & EVP_BIGN_PKEY_PARAMS_IMPLICIT)
+		return 0;
 	// преобразовать в стандартную структуру
 	*specified = key->flags & EVP_BIGN_PKEY_ENC_PARAMS_SPECIFIED;
 	cofactor = key->flags & EVP_BIGN_PKEY_ENC_PARAMS_COFACTOR;
