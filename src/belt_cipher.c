@@ -4,7 +4,7 @@
 \project bee2evp [EVP-interfaces over bee2 / engine of OpenSSL]
 \brief Belt encryption algorithms
 \created 2014.10.14
-\version 2026.01.19
+\version 2026.10.23
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -42,7 +42,7 @@
 		memcpy(EVP_CIPHER_CTX_original_iv(ctx),
 			iv, EVP_CIPHER_CTX_iv_length(ctx));
 	if (key)
-		memcpy(EVP_CIPHER_CTX_iv(ctx), EVP_CIPHER_CTX_original_iv(ctx),
+		memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), EVP_CIPHER_CTX_original_iv(ctx),
 			EVP_CIPHER_CTX_iv_length(ctx));
 \endcode
 
@@ -54,7 +54,7 @@
 при зашифровании / расшифровании: размер выходного буфера на block_size
 больше входного (см., например, функцию PKCS12_pbe_crypt() в модуле
 p12_decr.c). Поэтому, чтобы иметь возможность расширения шифртекста,
-block_size == 8 в режиме DWP и block_size == 16 в режиме KWP.
+block_size == 8 в режимах DWP, CHE и block_size == 16 в режиме KWP.
 Объявленная длина блока не влияет на гранулярность при обработке данных,
 поскольку режимы объявлены с флагом EVP_CIPH_FLAG_CUSTOM_CIPHER.
 
@@ -117,7 +117,7 @@ EVP_CIPH_FLAG_DEFAULT_ASN1, то параметры (гипотетическа�
 Чтобы обеспечить обязательное попадание синхропосылки в
 EVP_CIPHER_CTX_original_iv(ctx) (с учетом возможного последующего
 ASN.1-кодирования), алгоритмы режимов CBC и CFB объявляются без флага
-EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR и DWP -- с флагами
+EVP_CIPH_CUSTOM_IV, а алгоритмы режимов CTR, DWP и CHE -- с флагами
 EVP_CIPH_CUSTOM_IV и EVP_CIPH_ALWAYS_CALL_INIT.
 
 \remark В режимах CBC, CFB, CTR, DWP, CHE ключ хранится в контексте. Поэтому
@@ -317,16 +317,13 @@ const EVP_CIPHER* evpBeltCBC256()
 	return EVP_belt_cbc256;
 }
 
-static int
-evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, const octet* iv, int enc)
+static int evpBeltCBC_init(EVP_CIPHER_CTX* ctx, const octet* key, 
+	const octet* iv, int enc) 
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
-	{
-		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
-			EVP_CIPHER_CTX_iv(ctx));
-	}
-	if (!key && iv)
+		beltCBCStart(state, key, EVP_CIPHER_CTX_key_length(ctx), iv);
+	else if (iv)
 		beltCBCRefresh(state, iv);	
 	return 1;
 }
@@ -425,11 +422,8 @@ static int evpBeltCFB_init(EVP_CIPHER_CTX* ctx, const octet* key,
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (key)
-	{
-		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
-			EVP_CIPHER_CTX_iv(ctx));
-	}
-	if (!key && iv)
+		beltCFBStart(state, key, EVP_CIPHER_CTX_key_length(ctx), iv);
+	else if (iv)
 		beltCFBRefresh(state, iv);	
 	return 1;
 }
@@ -533,16 +527,14 @@ static int evpBeltCTR_init(EVP_CIPHER_CTX* ctx, const octet* key,
 {
 	blob_t state = EVP_CIPHER_CTX_get_blob(ctx);
 	if (iv)
-		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
-	if (key)
 	{
-		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx), 
-			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx),
-			EVP_CIPHER_CTX_iv(ctx));
+		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
+		if (!key)
+			beltCTRRefresh(state, iv);
 	}
-	if (!key && iv)
-		beltCTRRefresh(state, iv);	
+	if (key)
+		beltCTRStart(state, key, EVP_CIPHER_CTX_key_length(ctx), 
+			EVP_CIPHER_CTX_original_iv(ctx));
 	return 1;
 }
 
@@ -659,16 +651,14 @@ static int evpBeltDWP_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	state->block_len = 0;
 	if (iv)
-		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
-	if (key)
 	{
-		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
-			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltDWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
-			EVP_CIPHER_CTX_iv(ctx));
+		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
+		if (!key)
+			beltDWPRefresh(state->state, iv);
 	}
-	if (!key && iv)
-		beltDWPRefresh(state->state, iv);
+	if (key)
+		beltDWPStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx), 
+			EVP_CIPHER_CTX_original_iv(ctx));
 	return 1;
 }
 
@@ -758,11 +748,13 @@ static int evpBeltDWP_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
+	{
 		blob_t blob = blobCreate(sizeof(belt_aead_ctx) + beltDWP_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;
@@ -829,16 +821,14 @@ static int evpBeltCHE_init(EVP_CIPHER_CTX* ctx, const octet* key,
 	belt_aead_ctx* state = (belt_aead_ctx*)EVP_CIPHER_CTX_get_blob(ctx);
 	state->block_len = 0;
 	if (iv)
-		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
-	if (key)
 	{
-		memCopy(EVP_CIPHER_CTX_iv_noconst(ctx),
-			EVP_CIPHER_CTX_original_iv(ctx), 16);
-		beltCHEStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx),
-			EVP_CIPHER_CTX_iv(ctx));
+		memCopy((octet*)EVP_CIPHER_CTX_original_iv(ctx), iv, 16);
+		if (!key)
+			beltCHERefresh(state->state, iv);
 	}
-	if (!key && iv)
-		beltCHERefresh(state->state, iv);
+	if (key)
+		beltCHEStart(state->state, key, EVP_CIPHER_CTX_key_length(ctx), 
+			EVP_CIPHER_CTX_original_iv(ctx));
 	return 1;
 }
 
@@ -928,11 +918,13 @@ static int evpBeltCHE_ctrl(EVP_CIPHER_CTX* ctx, int type, int p1, void* p2)
 	switch (type)
 	{
 	case EVP_CTRL_INIT:
+	{
 		blob_t blob = blobCreate(sizeof(belt_aead_ctx) + beltCHE_keep());
 		if (blob && EVP_CIPHER_CTX_set_blob(ctx, blob))
 			break;
 		blobClose(blob);
 		return 0;
+	}
 	case EVP_CTRL_RAND_KEY:
 		if (!rngIsValid())
 			return 0;

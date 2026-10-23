@@ -4,7 +4,7 @@
 \brief Tests for aead ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2026.10.20
+\version 2026.10.23
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
@@ -68,7 +68,6 @@ bool_t aead_encrypt(const char* cipher_name,
 	ciph = EVP_CIPHER_fetch(NULL, cipher_name, NULL);
 	cipher = ciph;
 #endif // OPENSSL_VERSION_MAJOR >= 3
-
 	if (!cipher)
 		cipher = EVP_get_cipherbyname(cipher_name);
 	if (!cipher)
@@ -83,19 +82,16 @@ bool_t aead_encrypt(const char* cipher_name,
 		fprintf(stderr, "failed to create cipher context (%s)\n", cipher_name);
 		return FALSE;
 	}
-
 	if (set_aead_ctx(ctx, cipher, key_len, s_len) != 1)
 	{
 		fprintf(stderr, "failed to init encrypt(%s)\n", cipher_name);
 		goto err;
 	}
-
 	if (EVP_EncryptInit_ex(ctx, NULL, NULL, key, s) != 1)
 	{
 		fprintf(stderr, "failed to set key and iv(%s)\n", cipher_name);
 		goto err;
 	}
-
 	if (i && i_len > 0)
 	{
 		if (EVP_EncryptUpdate(ctx, NULL, &len, i, i_len) != 1)
@@ -104,7 +100,6 @@ bool_t aead_encrypt(const char* cipher_name,
 			goto err;
 		}
 	}
-
 	if (EVP_EncryptUpdate(ctx, out, &len, x, x_len) != 1)
 	{
 		fprintf(stderr, "failed to encrypt x(%s)\n", cipher_name);
@@ -242,7 +237,6 @@ bool_t cipher_unittest(const char* cipher_name, const char* prf)
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER* ciph = NULL;
 #endif // OPENSSL_VERSION_MAJOR >= 3
-
 
 	cipher = EVP_get_cipherbyname(cipher_name);
 #if OPENSSL_VERSION_MAJOR >= 3
@@ -390,9 +384,14 @@ bool_t cipher_reinit_iv_enc(const char* cipher_name, int block_len,
 		fprintf(stderr, "failed to init aead (%s)\n", cipher_name);
 		goto err;
 	}
-	if (EVP_EncryptInit_ex(ctx2, NULL, NULL, key, iv2) != 1)
+	if (EVP_EncryptInit_ex(ctx2, NULL, NULL, NULL, iv2) != 1)
 	{
-		fprintf(stderr, "failed to control init (%s)\n", cipher_name);
+		fprintf(stderr, "failed to control init IV (%s)\n", cipher_name);
+		goto err;
+	}
+	if (EVP_EncryptInit_ex(ctx2, NULL, NULL, key, NULL) != 1)
+	{
+		fprintf(stderr, "failed to control init key (%s)\n", cipher_name);
 		goto err;
 	}
 	if (aead && EVP_EncryptUpdate(ctx2, NULL, &len2, beltH() + 96, 32) != 1)

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5...4.0)
 project(BEE2EVP
-  VERSION 1.2.6
+  VERSION 1.2.7
   LANGUAGES C
 )
 

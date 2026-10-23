@@ -4,7 +4,7 @@
 \brief Tests for block ciphers
 \project bee2evp/test
 \created 2025.10.16
-\version 2025.10.31
+\version 2026.10.23
 \copyright The Bee2evp authors
 \license Licensed under the Apache License, Version 2.0 (see LICENSE.txt).
 *******************************************************************************
